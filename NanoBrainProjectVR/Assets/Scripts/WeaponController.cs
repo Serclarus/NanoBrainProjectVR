@@ -1,7 +1,11 @@
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 
+[RequireComponent(typeof(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable))]
 public class WeaponController : MonoBehaviour
 {
+    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable grabInteractable;
+
     [Header("Shooting Setup")]
     public float range = 100f;
     [Tooltip("Which layers should the bullet hit?")]
@@ -24,6 +28,31 @@ public class WeaponController : MonoBehaviour
     private Vector3 originalLocalRotation;
     private Vector3 currentRecoilOffset = Vector3.zero;
 
+    private void Awake()
+    {
+        grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+        
+        // Auto-subscribe to the trigger pull event!
+        if (grabInteractable != null)
+        {
+            grabInteractable.activated.AddListener(OnTriggerPulled);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (grabInteractable != null)
+        {
+            grabInteractable.activated.RemoveListener(OnTriggerPulled);
+        }
+    }
+
+    private void OnTriggerPulled(ActivateEventArgs args)
+    {
+        // This is called instantly when you pull the controller trigger while holding the weapon
+        FireWeapon();
+    }
+
     private void Start()
     {
         // Store the resting rotation of the gun relative to the hand
@@ -38,9 +67,9 @@ public class WeaponController : MonoBehaviour
     }
 
     // Call this function when the VR player pulls the trigger
-    // (e.g. hook this to XR Grab Interactable -> Activated event)
     public void FireWeapon()
     {
+        Debug.Log("FireWeapon called!");
         if (barrelPoint == null)
         {
             Debug.LogWarning("WeaponController: No barrel point assigned! Please create an empty GameObject at the barrel tip and assign it.");
