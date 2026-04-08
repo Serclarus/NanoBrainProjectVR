@@ -23,7 +23,9 @@ public class HitEffectPoolManager : MonoBehaviour
     public float effectDuration = 7f; 
 
     // Dictionary mapping SurfaceType to its queue of pooled GameObjects
+    // Now acts as a cyclic buffer where the oldest effect is dequeued and immediately enqueued at the end
     private Dictionary<SurfaceType, Queue<GameObject>> poolDictionary;
+    private Dictionary<GameObject, Coroutine> activeCoroutines;
 
     private void Awake()
     {
@@ -38,6 +40,7 @@ public class HitEffectPoolManager : MonoBehaviour
     private void InitializePools()
     {
         poolDictionary = new Dictionary<SurfaceType, Queue<GameObject>>();
+        activeCoroutines = new Dictionary<GameObject, Coroutine>();
 
         foreach (var setup in hitEffectSetups)
         {
@@ -67,10 +70,19 @@ public class HitEffectPoolManager : MonoBehaviour
                 return; // Nothing to spawn
         }
 
+        // Dequeue the oldest effect, no matter if it's currently active or not
         if (poolDictionary[type].Count > 0)
         {
             GameObject effect = poolDictionary[type].Dequeue();
             
+            // Stop the previous disable coroutine if one is running
+            if (activeCoroutines.TryGetValue(effect, out Coroutine existingCoroutine) && existingCoroutine != null)
+            {
+                StopCoroutine(existingCoroutine);
+            }
+            
+            // Disable it to properly reset particle systems or trail renderers before moving
+            effect.SetActive(false);
             effect.transform.position = position;
             effect.transform.rotation = Quaternion.LookRotation(normal);
             effect.SetActive(true);
@@ -78,19 +90,22 @@ public class HitEffectPoolManager : MonoBehaviour
             ParticleSystem ps = effect.GetComponent<ParticleSystem>();
             if (ps != null) ps.Play();
 
-            StartCoroutine(ReturnToPoolAfterTime(effect, type, effectDuration));
-        }
-        else
-        {
-            Debug.LogWarning($"Hit Effect Pool for {type} is empty!");
+            // Start a new coroutine to clear the effect eventually and track it
+            Coroutine newCoroutine = StartCoroutine(ReturnToPoolAfterTime(effect, effectDuration));
+            activeCoroutines[effect] = newCoroutine;
+            
+            // Re-queue the effect to the back so it can be reused once all other effects have been cycled
+            poolDictionary[type].Enqueue(effect);
         }
     }
 
-    private IEnumerator ReturnToPoolAfterTime(GameObject effect, SurfaceType type, float time)
+    private IEnumerator ReturnToPoolAfterTime(GameObject effect, float time)
     {
         yield return new WaitForSeconds(time);
         
-        effect.SetActive(false);
-        poolDictionary[type].Enqueue(effect);
+        if (effect != null)
+            effect.SetActive(false);
+            
+        // We do not enqueue here anymore because it remains in the queue sequence permanently
     }
 }
