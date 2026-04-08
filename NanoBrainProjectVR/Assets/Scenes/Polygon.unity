@@ -185,7 +185,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 15407b1a458f9a6479f8ff9b7b1e5a1c, type: 2}
+  - {fileID: 2100000, guid: 522eef13f1797cc4a920871596b491c9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -244,7 +244,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 5
+  surfaceType: 1
   pointsAwarded: 0
 --- !u!1 &172499890
 GameObject:
@@ -291,7 +291,7 @@ MonoBehaviour:
   - surfaceType: 4
     effectPrefab: {fileID: 7384050000351149955, guid: 8f8c16e59ad0d184cbf6c7ce6e1cb80c,
       type: 3}
-  poolSizePerType: 3
+  poolSizePerType: 20
   effectDuration: 10
 --- !u!4 &172499892
 Transform:
@@ -308,12 +308,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &323623167 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7749951880036618584, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 5142865702484425018}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &365969338
 GameObject:
   m_ObjectHideFlags: 0
@@ -380,7 +374,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 8404a75569e2ba6448a6813f3eea50c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -437,6 +431,7 @@ GameObject:
   m_Component:
   - component: {fileID: 731190586}
   - component: {fileID: 731190585}
+  - component: {fileID: 731190587}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -524,6 +519,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &731190587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 731190584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &845476240
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -634,12 +658,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 637a7c36dc874286a7ac74b1aeabc1ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &1064946088 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1020441360076171342, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 5142865702484425018}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1357378758
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1391,12 +1409,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 77ac6b10722bcca4a8baf70e44d89e78, type: 3}
---- !u!4 &1456072100 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3691292349818118756, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 5142865702484425018}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1603956695
 GameObject:
   m_ObjectHideFlags: 0
@@ -1605,46 +1617,30 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 195624438788695228, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: m_AttachTransform
-      value: 
-      objectReference: {fileID: 1064946088}
-    - target: {fileID: 195624438788695228, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: m_SecondaryAttachTransform
-      value: 
-      objectReference: {fileID: 1456072100}
-    - target: {fileID: 195624438788695228, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: m_Activated.m_PersistentCalls.m_Calls.Array.size
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 195624438788695228, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: m_Activated.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 195624438788695228, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: m_Activated.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
-      value: 2
-      objectReference: {fileID: 0}
     - target: {fileID: 895789616871731668, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
-      propertyPath: barrelPoint
+      propertyPath: tracerPrefab
       value: 
-      objectReference: {fileID: 323623167}
-    - target: {fileID: 895789616871731668, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
-        type: 3}
-      propertyPath: muzzleFlash
-      value: 
-      objectReference: {fileID: 198234346748616026, guid: ad2ab49d0a2a17148bd51c93d977bdbc,
-        type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 3686566140936502407, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
       propertyPath: m_Name
       value: Rifle
+      objectReference: {fileID: 0}
+    - target: {fileID: 3780053736820592314, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0003
+      objectReference: {fileID: 0}
+    - target: {fileID: 3780053736820592314, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.4587
+      objectReference: {fileID: 0}
+    - target: {fileID: 3943588126381375476, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5325819460760546043, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
@@ -1697,7 +1693,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1766836151967098080, guid: dfd0c6d885c9ac54fb9d573d9a9730e4, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dfd0c6d885c9ac54fb9d573d9a9730e4, type: 3}
