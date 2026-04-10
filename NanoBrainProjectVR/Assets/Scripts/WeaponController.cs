@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 
@@ -16,6 +18,37 @@ public class WeaponController : MonoBehaviour
     [Header("Visual Effects")]
     [Tooltip("Assign the generic muzzle flash particle system here")]
     public ParticleSystem muzzleFlash; 
+
+    [Header("Bolt Animation & Shell Ejection")]
+    [Tooltip("The moving part of the weapon (the bolt or slide)")]
+    public Transform boltTransform;
+    [Tooltip("How far the bolt moves backwards on the Z axis")]
+    public float boltTravelDistance = 0.05f;
+    [Tooltip("How fast the bolt snaps back")]
+    public float boltSnappiness = 30f;
+    [Tooltip("How fast the bolt springs forward")]
+    public float boltReturnSpeed = 15f;
+
+    [Tooltip("The point where shells are ejected from")]
+    public Transform shellEjectionPoint;
+    [Tooltip("The empty shell prefab to instantiate")]
+    public GameObject shellPrefab;
+    [Tooltip("How many shells to keep in the pool")]
+    public int shellPoolSize = 15;
+    [Tooltip("How long a shell lives before being disabled")]
+    public float shellLifeTime = 4f;
+    [Tooltip("Force applied to the ejected shell")]
+    public float shellEjectionForce = 3f;
+    [Tooltip("Spin applied to the ejected shell")]
+    public float shellTorque = 1f;
+
+    private Vector3 originalBoltPosition;
+    private float currentBoltOffset;
+    private float targetBoltOffset;
+    private bool hasEjectedShell = true;
+
+    private Queue<GameObject> shellPool;
+    private Dictionary<GameObject, Coroutine> activeShellCoroutines;
 
     [Header("Procedural Recoil Settings")]
     [Tooltip("Assign the visual model wrapper of the gun here. Rotating the root will conflict with VR Tracking!")]
@@ -85,6 +118,27 @@ public class WeaponController : MonoBehaviour
         {
             Debug.LogWarning("WeaponController: No 'Weapon Model' assigned! Recoil animation will not play. Please assign a visual child object.");
         }
+
+        if (boltTransform != null)
+        {
+            originalBoltPosition = boltTransform.localPosition;
+        }
+
+        if (shellPrefab != null && shellEjectionPoint != null)
+        {
+            shellPool = new Queue<GameObject>();
+            activeShellCoroutines = new Dictionary<GameObject, Coroutine>();
+
+            // Create a parent object just to keep the hierarchy clean
+            Transform poolParent = new GameObject(gameObject.name + "_ShellPool").transform;
+
+            for (int i = 0; i < shellPoolSize; i++)
+            {
+                GameObject shell = Instantiate(shellPrefab, poolParent);
+                shell.SetActive(false);
+                shellPool.Enqueue(shell);
+            }
+        }
     }
 
     private void Update()
@@ -102,6 +156,22 @@ public class WeaponController : MonoBehaviour
             // 3. Apply variations to the model
             weaponModel.localEulerAngles = originalModelRotation + currentRotation;
             weaponModel.localPosition = originalModelPosition + currentPosition;
+        }
+
+        if (boltTransform != null)
+        {
+            targetBoltOffset = Mathf.Lerp(targetBoltOffset, 0f, Time.deltaTime * boltReturnSpeed);
+            currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
+
+            // The prefab is reversed, so a positive local Z offset moves it physically backwards
+            boltTransform.localPosition = originalBoltPosition + new Vector3(0, 0, currentBoltOffset);
+
+            // Eject shell when the bolt visibly moves enough (lowered threshold to 30% and made absolute so it triggers reliably)
+            if (!hasEjectedShell && Mathf.Abs(currentBoltOffset) > Mathf.Abs(boltTravelDistance) * 0.3f)
+            {
+                EjectShell();
+                hasEjectedShell = true;
+            }
         }
     }
 
@@ -135,6 +205,12 @@ public class WeaponController : MonoBehaviour
             targetPosition += new Vector3(0, 0, -backwardKick);
         }
 
+        if (boltTransform != null)
+        {
+            targetBoltOffset = boltTravelDistance;
+            hasEjectedShell = false; // Prepare a new shell to be ejected as the bolt travels back
+        }
+
         // 3. Logic: Raycast Hit Detection
         if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, range, hitMask))
         {
@@ -156,6 +232,70 @@ public class WeaponController : MonoBehaviour
             {
                 HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, type);
             }
+        }
+    }
+
+    private void EjectShell()
+    {
+        if (shellEjectionPoint == null || shellPrefab == null || shellPool == null || shellPool.Count == 0)
+        {
+            Debug.LogWarning("WeaponController: Cannot eject shell! Ensure 'Shell Prefab' and 'Shell Ejection Point' are assigned in the inspector.");
+            return;
+        }
+
+        // Dequeue oldest shell (cyclic buffer format)
+        GameObject shell = shellPool.Dequeue();
+
+        if (activeShellCoroutines.TryGetValue(shell, out Coroutine existingCoroutine) && existingCoroutine != null)
+        {
+            StopCoroutine(existingCoroutine);
+        }
+
+        shell.SetActive(false);
+        shell.transform.position = shellEjectionPoint.position;
+        shell.transform.rotation = shellEjectionPoint.rotation;
+
+        Rigidbody shellRb = shell.GetComponent<Rigidbody>();
+        if (shellRb != null)
+        {
+            // Reset velocity physics so it doesn't fly crazy if recycled while moving
+            #if UNITY_6000_0_OR_NEWER
+            shellRb.linearVelocity = Vector3.zero;
+            #else
+            shellRb.velocity = Vector3.zero;
+            #endif
+            shellRb.angularVelocity = Vector3.zero;
+        }
+
+        shell.SetActive(true);
+
+        if (shellRb != null)
+        {
+            // Eject to the right and slightly up, relative to the ejection point
+            Vector3 ejectDirection = shellEjectionPoint.right + (shellEjectionPoint.up * 0.3f);
+            shellRb.AddForce(ejectDirection.normalized * shellEjectionForce, ForceMode.Impulse);
+            
+            // Add some random spin
+            shellRb.AddTorque(new Vector3(Random.Range(-shellTorque, shellTorque), Random.Range(-shellTorque, shellTorque), Random.Range(-shellTorque, shellTorque)), ForceMode.Impulse);
+        }
+        
+        // Add a slight variance to rotation for visuals
+        shell.transform.Rotate(new Vector3(0, Random.Range(-30f, 30f), 0));
+
+        // Start despawn timer for recycling
+        Coroutine newCoroutine = StartCoroutine(DisableShellAfterTime(shell, shellLifeTime));
+        activeShellCoroutines[shell] = newCoroutine;
+
+        // Requeue to end
+        shellPool.Enqueue(shell);
+    }
+
+    private IEnumerator DisableShellAfterTime(GameObject shell, float time)
+    {
+        yield return new WaitForSeconds(time);
+        if (shell != null)
+        {
+            shell.SetActive(false);
         }
     }
 
