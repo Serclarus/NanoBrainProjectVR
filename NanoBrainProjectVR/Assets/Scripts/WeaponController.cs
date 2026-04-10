@@ -19,6 +19,22 @@ public class WeaponController : MonoBehaviour
     [Tooltip("Assign the generic muzzle flash particle system here")]
     public ParticleSystem muzzleFlash; 
 
+    [Header("Audio Settings")]
+    [Tooltip("The audio clip played when the weapon fires")]
+    public AudioClip shootSound;
+    [Tooltip("The AudioSource component used to play the sound")]
+    public AudioSource audioSource;
+    [Tooltip("Slightly randomize the pitch of each shot so it doesn't sound repetitive")]
+    public Vector2 soundPitchRange = new Vector2(0.95f, 1.05f);
+    [Tooltip("Volume of the gunshot")]
+    [Range(0f, 1f)] public float shootVolume = 1f;
+
+    [Header("Controller Haptics")]
+    [Tooltip("How strong the controller vibrates (0.0 to 1.0)")]
+    [Range(0f, 1f)] public float hapticIntensity = 0.5f;
+    [Tooltip("How long the controller vibrates in seconds")]
+    public float hapticDuration = 0.1f;
+
     [Header("Bolt Animation & Shell Ejection")]
     [Tooltip("The moving part of the weapon (the bolt or slide)")]
     public Transform boltTransform;
@@ -108,6 +124,11 @@ public class WeaponController : MonoBehaviour
 
     private void Start()
     {
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+        }
+
         // Store the resting position/rotation of the visual model
         if (weaponModel != null)
         {
@@ -182,6 +203,26 @@ public class WeaponController : MonoBehaviour
         {
             Debug.LogWarning("WeaponController: No barrel point assigned! Please create an empty GameObject at the barrel tip and assign it.");
             return;
+        }
+
+        // 0. Audio: Play gunshot
+        if (audioSource != null && shootSound != null)
+        {
+            audioSource.pitch = Random.Range(soundPitchRange.x, soundPitchRange.y);
+            audioSource.PlayOneShot(shootSound, shootVolume);
+        }
+
+        // 0.5: Haptics: Send vibration to controller
+        if (grabInteractable != null)
+        {
+            foreach (var interactor in grabInteractable.interactorsSelecting)
+            {
+                var inputInteractor = interactor as UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor;
+                if (inputInteractor != null)
+                {
+                    inputInteractor.SendHapticImpulse(hapticIntensity, hapticDuration);
+                }
+            }
         }
 
         // 1. Visuals: Play the attached Particle Systems for flash & trail
