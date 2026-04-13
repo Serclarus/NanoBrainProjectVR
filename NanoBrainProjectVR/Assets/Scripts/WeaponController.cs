@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
+using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
 
 [RequireComponent(typeof(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable))]
 public class WeaponController : MonoBehaviour
@@ -15,6 +16,13 @@ public class WeaponController : MonoBehaviour
     [Tooltip("The point where the raycast bullet originates")]
     public Transform barrelPoint;
 
+    [Header("Ammo & Reloading Setup")]
+    [Tooltip("The socket interactor that holds the magazine")]
+    public XRSocketInteractor magazineSocket;
+    
+    private Magazine currentMagazine;
+    private bool isChambered = false;
+
     [Header("Visual Effects")]
     [Tooltip("Assign the generic muzzle flash particle system here")]
     public ParticleSystem muzzleFlash; 
@@ -22,6 +30,8 @@ public class WeaponController : MonoBehaviour
     [Header("Audio Settings")]
     [Tooltip("The audio clip played when the weapon fires")]
     public AudioClip shootSound;
+    [Tooltip("Sound to play when pulling the trigger but there's no ammo chambered")]
+    public AudioClip dryFireSound;
     [Tooltip("The AudioSource component used to play the sound")]
     public AudioSource audioSource;
     [Tooltip("Slightly randomize the pitch of each shot so it doesn't sound repetitive")]
@@ -58,9 +68,10 @@ public class WeaponController : MonoBehaviour
     [Tooltip("Spin applied to the ejected shell")]
     public float shellTorque = 1f;
 
-    private Vector3 originalBoltPosition;
-    private float currentBoltOffset;
-    private float targetBoltOffset;
+    [HideInInspector] public Vector3 originalBoltPosition;
+    [HideInInspector] public float currentBoltOffset;
+    [HideInInspector] public float targetBoltOffset;
+    [HideInInspector] public bool isSlideGrabbed = false;
     private bool hasEjectedShell = true;
 
     private Queue<GameObject> shellPool;
@@ -106,6 +117,12 @@ public class WeaponController : MonoBehaviour
         {
             grabInteractable.activated.AddListener(OnTriggerPulled);
         }
+
+        if (magazineSocket != null)
+        {
+            magazineSocket.selectEntered.AddListener(OnMagazineInserted);
+            magazineSocket.selectExited.AddListener(OnMagazineRemoved);
+        }
     }
 
     private void OnDestroy()
@@ -114,6 +131,26 @@ public class WeaponController : MonoBehaviour
         {
             grabInteractable.activated.RemoveListener(OnTriggerPulled);
         }
+
+        if (magazineSocket != null)
+        {
+            magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
+            magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
+        }
+    }
+
+    private void OnMagazineInserted(SelectEnterEventArgs args)
+    {
+        Magazine mag = args.interactableObject.transform.GetComponent<Magazine>();
+        if (mag != null)
+        {
+            currentMagazine = mag;
+        }
+    }
+
+    private void OnMagazineRemoved(SelectExitEventArgs args)
+    {
+        currentMagazine = null;
     }
 
     private void OnTriggerPulled(ActivateEventArgs args)
@@ -181,8 +218,11 @@ public class WeaponController : MonoBehaviour
 
         if (boltTransform != null)
         {
-            targetBoltOffset = Mathf.Lerp(targetBoltOffset, 0f, Time.deltaTime * boltReturnSpeed);
-            currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
+            if (!isSlideGrabbed)
+            {
+                targetBoltOffset = Mathf.Lerp(targetBoltOffset, 0f, Time.deltaTime * boltReturnSpeed);
+                currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
+            }
 
             // The prefab is reversed, so a positive local Z offset moves it physically backwards
             boltTransform.localPosition = originalBoltPosition + new Vector3(0, 0, currentBoltOffset);
@@ -204,6 +244,20 @@ public class WeaponController : MonoBehaviour
             Debug.LogWarning("WeaponController: No barrel point assigned! Please create an empty GameObject at the barrel tip and assign it.");
             return;
         }
+
+        if (!isChambered)
+        {
+            // Dry fire
+            if (audioSource != null && dryFireSound != null)
+            {
+                audioSource.pitch = 1f;
+                audioSource.PlayOneShot(dryFireSound, shootVolume);
+            }
+            return;
+        }
+
+        // We have a chambered round, commit to firing!
+        isChambered = false; // Spend the chambered round
 
         // 0. Audio: Play gunshot
         if (audioSource != null && shootSound != null)
@@ -250,6 +304,13 @@ public class WeaponController : MonoBehaviour
         {
             targetBoltOffset = boltTravelDistance;
             hasEjectedShell = false; // Prepare a new shell to be ejected as the bolt travels back
+        }
+
+        // After firing, the semi-auto gun attempts to chamber a new round
+        if (currentMagazine != null && currentMagazine.HasAmmo())
+        {
+            currentMagazine.ConsumeAmmo();
+            isChambered = true;
         }
 
         // 3. Logic: Raycast Hit Detection
@@ -345,7 +406,39 @@ public class WeaponController : MonoBehaviour
     [ContextMenu("Test Fire Gun")]
     public void DebugFire()
     {
+        // For debug firing, force chamber a round first so it always works
+        isChambered = true;
         FireWeapon();
         Debug.Log("Debug Fire Triggered!");
+    }
+
+    /// <summary>
+    /// Call this from an XR Grab Interactable event or custom script when the slide is fully pulled back.
+    /// This mimics a manual rack.
+    /// </summary>
+    public void RackSlide()
+    {
+        // 1. If there's an unfired chambered round, eject it. 
+        if (isChambered)
+        {
+            EjectShell();
+            isChambered = false;
+        }
+
+        // 2. Chamber a new round from the magazine if available
+        if (currentMagazine != null && currentMagazine.HasAmmo())
+        {
+            currentMagazine.ConsumeAmmo();
+            isChambered = true;
+            Debug.Log("Round Chambered!");
+        }
+
+        // Optionally visually rack the bolt via the procedural animation back to simulate the rack action
+        if (boltTransform != null)
+        {
+            targetBoltOffset = boltTravelDistance;
+            // We set this to true so we don't accidentally double-eject a shell through the Update logic
+            hasEjectedShell = true;
+        }
     }
 }
