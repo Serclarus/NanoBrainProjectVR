@@ -161,6 +161,18 @@ public class WeaponController : MonoBehaviour
 
     private void Start()
     {
+        // Safety check to ensure magazine is registered if it spawned attached to the socket
+        if (magazineSocket != null && currentMagazine == null)
+        {
+            // Specifically checking if there is a starting selected interactable that might have bypassed Awake() events
+            UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable attachedObj = magazineSocket.firstInteractableSelected;
+            if (attachedObj != null)
+            {
+                currentMagazine = attachedObj.transform.GetComponent<Magazine>();
+                if (currentMagazine != null) Debug.Log("Magazine detected in socket on Start!");
+            }
+        }
+
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
@@ -412,6 +424,13 @@ public class WeaponController : MonoBehaviour
         Debug.Log("Debug Fire Triggered!");
     }
 
+    [ContextMenu("Debug Rack Slide")]
+    public void DebugRackSlide()
+    {
+        RackSlide();
+        Debug.Log("Debug Rack Triggered!");
+    }
+
     /// <summary>
     /// Call this from an XR Grab Interactable event or custom script when the slide is fully pulled back.
     /// This mimics a manual rack.
@@ -426,17 +445,29 @@ public class WeaponController : MonoBehaviour
         }
 
         // 2. Chamber a new round from the magazine if available
-        if (currentMagazine != null && currentMagazine.HasAmmo())
+        if (currentMagazine != null)
         {
-            currentMagazine.ConsumeAmmo();
-            isChambered = true;
-            Debug.Log("Round Chambered!");
+            if (currentMagazine.HasAmmo())
+            {
+                currentMagazine.ConsumeAmmo();
+                isChambered = true;
+                Debug.Log("Round Chambered! Ammo left in mag: " + currentMagazine.currentAmmo);
+            }
+            else
+            {
+                Debug.LogWarning("Magazine is inserted, but it is empty!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Could not chamber round: No Magazine detected in the Socket!");
         }
 
         // Optionally visually rack the bolt via the procedural animation back to simulate the rack action
         if (boltTransform != null)
         {
             targetBoltOffset = boltTravelDistance;
+            currentBoltOffset = boltTravelDistance; // Snap it back instantly so you can see it return
             // We set this to true so we don't accidentally double-eject a shell through the Update logic
             hasEjectedShell = true;
         }
