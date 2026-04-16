@@ -1,24 +1,29 @@
+using XR.Interaction.Toolkit.Samples;
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace UnityEngine.XR.Content.Interaction
 {
+    [System.Serializable]
+    public class UnityEventFloat : UnityEvent<float> {}
+
     /// <summary>
     /// An interactable lever that snaps into an on or off position by a direct interactor
     /// </summary>
-    public class XRLever : XR.Interaction.Toolkit.Interactables.XRBaseInteractable
+    public class XRLever : UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable
     {
         const float k_LeverDeadZone = 0.1f; // Prevents rapid switching between on and off states when right in the middle
-
+        
         [SerializeField]
         [Tooltip("The object that is visually grabbed and manipulated")]
         Transform m_Handle = null;
-
+        
         [SerializeField]
-        [Tooltip("The transform to snap the interactor to when holding the lever")]
-        Transform m_InteractorSnapTransform = null;
-
+        [Tooltip("The default behaviour uses the attach transform")]
+        bool m_UseControllerForPosition = true;
+        
         [SerializeField]
         [Tooltip("The value of the lever")]
         bool m_Value = false;
@@ -45,58 +50,56 @@ namespace UnityEngine.XR.Content.Interaction
         [Tooltip("Events to trigger when the lever deactivates")]
         UnityEvent m_OnLeverDeactivate = new UnityEvent();
 
-        UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor m_Interactor;
-
+        [SerializeField]
+        [Tooltip("Events to trigger when the joystick's value changes")]
+        UnityEventFloat m_OnValueChange = new UnityEventFloat();
+        
+        IXRSelectInteractor m_Interactor;
+        ControllerInputActionManager m_Controller;
+        
         /// <summary>
         /// The object that is visually grabbed and manipulated
         /// </summary>
-        public Transform handle
-        {
-            get => m_Handle;
-            set => m_Handle = value;
-        }
+        public Transform Handle { get { return m_Handle; } set { m_Handle = value; } }
 
         /// <summary>
         /// The value of the lever
         /// </summary>
-        public bool value
+        public bool Value
         {
-            get => m_Value;
-            set => SetValue(value, true);
+            get { return m_Value; }
+            set { SetValue(value, true); }
         }
 
         /// <summary>
         /// If enabled, the lever will snap to the value position when released
         /// </summary>
-        public bool lockToValue { get; set; }
+        public bool LockToValue { get; set; }
 
         /// <summary>
         /// Angle of the lever in the 'on' position
         /// </summary>
-        public float maxAngle
-        {
-            get => m_MaxAngle;
-            set => m_MaxAngle = value;
-        }
+        public float MaxAngle { get { return m_MaxAngle; } set { m_MaxAngle = value; } }
 
         /// <summary>
         /// Angle of the lever in the 'off' position
         /// </summary>
-        public float minAngle
-        {
-            get => m_MinAngle;
-            set => m_MinAngle = value;
-        }
+        public float MinAngle { get { return m_MinAngle; } set { m_MinAngle = value; } }
 
         /// <summary>
         /// Events to trigger when the lever activates
         /// </summary>
-        public UnityEvent onLeverActivate => m_OnLeverActivate;
+        public UnityEvent OnLeverActivate => m_OnLeverActivate;
 
         /// <summary>
         /// Events to trigger when the lever deactivates
         /// </summary>
-        public UnityEvent onLeverDeactivate => m_OnLeverDeactivate;
+        public UnityEvent OnLeverDeactivate => m_OnLeverDeactivate;
+        
+        /// <summary>
+        /// Events to trigger when the slider is moved
+        /// </summary>
+        public UnityEventFloat OnValueChange => m_OnValueChange;
 
         void Start()
         {
@@ -120,23 +123,17 @@ namespace UnityEngine.XR.Content.Interaction
         void StartGrab(SelectEnterEventArgs args)
         {
             m_Interactor = args.interactorObject;
+            m_Controller = m_Interactor.transform.GetComponentInParent<ControllerInputActionManager>();
         }
 
         void EndGrab(SelectExitEventArgs args)
         {
             SetValue(m_Value, true);
             m_Interactor = null;
+            m_Controller = null;
+
         }
 
-        public override Transform GetAttachTransform(IXRInteractor interactor)
-        {
-            return m_InteractorSnapTransform;
-        }
-
-        // public override Transform GetAttachTransform(IXRInteractor interactor)
-        // {
-        //     return base.GetAttachTransform(interactor);
-        // }
         public override void ProcessInteractable(XRInteractionUpdateOrder.UpdatePhase updatePhase)
         {
             base.ProcessInteractable(updatePhase);
@@ -152,7 +149,12 @@ namespace UnityEngine.XR.Content.Interaction
 
         Vector3 GetLookDirection()
         {
-            Vector3 direction = m_Interactor.GetAttachTransform(this).position - m_Handle.position;
+            Vector3 direction;
+            if(m_UseControllerForPosition)
+                direction = m_Controller.transform.position - m_Handle.position;
+            else
+                direction = m_Interactor.GetAttachTransform(this).position - m_Handle.position;
+            
             direction = transform.InverseTransformDirection(direction);
             direction.x = 0;
 

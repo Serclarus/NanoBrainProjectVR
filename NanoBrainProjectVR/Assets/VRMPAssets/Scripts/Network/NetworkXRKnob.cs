@@ -36,22 +36,22 @@ namespace XRMultiplayer
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            m_XRKnob.onValueChange.AddListener(KnobChanged);
+            m_XRKnob.OnValueChange.AddListener(KnobChanged);
 
             if (IsOwner)
             {
-                m_NetworkedKnobValue.Value = m_XRKnob.value;
+                m_NetworkedKnobValue.Value = m_XRKnob.Value;
             }
             else
             {
-                m_XRKnob.value = m_NetworkedKnobValue.Value;
+                m_XRKnob.Value = m_NetworkedKnobValue.Value;
             }
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            m_XRKnob.onValueChange.RemoveListener(KnobChanged);
+            m_XRKnob.OnValueChange.RemoveListener(KnobChanged);
         }
 
         /// <summary>
@@ -85,9 +85,9 @@ namespace XRMultiplayer
         {
             if (clientId != NetworkManager.Singleton.LocalClientId)
             {
-                m_XRKnob.onValueChange.RemoveListener(KnobChanged);
-                m_XRKnob.value = newValue;
-                m_XRKnob.onValueChange.AddListener(KnobChanged);
+                m_XRKnob.OnValueChange.RemoveListener(KnobChanged);
+                m_XRKnob.Value = newValue;
+                m_XRKnob.OnValueChange.AddListener(KnobChanged);
             }
         }
     }

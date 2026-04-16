@@ -10,6 +10,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 using UnityEngine.Android;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Gravity;
+using XR.Interaction.Toolkit.Samples;
 
 namespace XRMultiplayer
 {

@@ -29,29 +29,29 @@ namespace XRMultiplayer
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            m_XRLever.onLeverActivate.AddListener(LeverChanged);
-            m_XRLever.onLeverDeactivate.AddListener(LeverChanged);
+            m_XRLever.OnLeverActivate.AddListener(LeverChanged);
+            m_XRLever.OnLeverDeactivate.AddListener(LeverChanged);
 
             if (IsOwner)
             {
-                m_NetworkedLeverValue.Value = m_XRLever.value;
+                m_NetworkedLeverValue.Value = m_XRLever.Value;
             }
             else
             {
-                m_XRLever.value = m_NetworkedLeverValue.Value;
+                m_XRLever.Value = m_NetworkedLeverValue.Value;
             }
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            m_XRLever.onLeverActivate.RemoveListener(LeverChanged);
-            m_XRLever.onLeverDeactivate.RemoveListener(LeverChanged);
+            m_XRLever.OnLeverActivate.RemoveListener(LeverChanged);
+            m_XRLever.OnLeverDeactivate.RemoveListener(LeverChanged);
         }
 
         void LeverChanged()
         {
-            LeverChangedOwnerRpc(m_XRLever.value, NetworkManager.Singleton.LocalClientId);
+            LeverChangedOwnerRpc(m_XRLever.Value, NetworkManager.Singleton.LocalClientId);
         }
 
         [Rpc(SendTo.Owner)]
@@ -66,11 +66,11 @@ namespace XRMultiplayer
         {
             if (clientId != NetworkManager.Singleton.LocalClientId)
             {
-                m_XRLever.onLeverActivate.RemoveListener(LeverChanged);
-                m_XRLever.onLeverDeactivate.RemoveListener(LeverChanged);
-                m_XRLever.value = newValue;
-                m_XRLever.onLeverActivate.AddListener(LeverChanged);
-                m_XRLever.onLeverDeactivate.AddListener(LeverChanged);
+                m_XRLever.OnLeverActivate.RemoveListener(LeverChanged);
+                m_XRLever.OnLeverDeactivate.RemoveListener(LeverChanged);
+                m_XRLever.Value = newValue;
+                m_XRLever.OnLeverActivate.AddListener(LeverChanged);
+                m_XRLever.OnLeverDeactivate.AddListener(LeverChanged);
             }
         }
     }
