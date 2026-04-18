@@ -201,6 +201,7 @@ GameObject:
   - component: {fileID: 895789616871731668}
   - component: {fileID: 6294691222663716107}
   - component: {fileID: 1279019519429355889}
+  - component: {fileID: 1790284929363005539}
   m_Layer: 8
   m_Name: Rifle
   m_TagString: Untagged
@@ -421,6 +422,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 183
   barrelPoint: {fileID: 7749951880036618584}
+  fullAuto: 1
+  fireRate: 600
+  triggerTransform: {fileID: 5542608683407440294}
+  triggerMaxAngle: 15
+  triggerRotateAxis: {x: 1, y: 0, z: 0}
   magazineSocket: {fileID: 4150510580697908368}
   muzzleFlash: {fileID: 3943588126381375476}
   shootSound: {fileID: 8300000, guid: fee771365867fd84faa5d2074301755a, type: 3}
@@ -573,6 +579,35 @@ MonoBehaviour:
   currentLeftHand: {fileID: 0}
   currentRightHand: {fileID: 0}
   grabAttachPoints: {fileID: 2101863333990848613}
+  interactable: {fileID: 195624438788695228}
+  MaintainHandOnObject: 1
+  WaitTillEaseInTimeToMaintainPosition: 1
+  overrideEaseTime: 0
+  easeInTimeOverride: 0
+--- !u!114 &1790284929363005539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3686566140936502407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18ad55086cb948e4da109d5c7dd7daca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MikeNspired.XRIStarterKit.XRHandPoser
+  leftHandPose: {fileID: 11400000, guid: a7811335a49948a4d8a7918249134c3b, type: 2}
+  rightHandPose: {fileID: 11400000, guid: a7811335a49948a4d8a7918249134c3b, type: 2}
+  LeftHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
+    type: 2}
+  RightHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
+    type: 2}
+  leftHandAttach: {fileID: 0}
+  rightHandAttach: {fileID: 0}
+  hasAnimationPose: 1
+  currentLeftHand: {fileID: 0}
+  currentRightHand: {fileID: 0}
+  grabAttachPoints: {fileID: 0}
   interactable: {fileID: 195624438788695228}
   MaintainHandOnObject: 1
   WaitTillEaseInTimeToMaintainPosition: 1
@@ -932,6 +967,12 @@ Transform:
 --- !u!4 &5542579580828753342 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4519716788627816, guid: ee329c3cd08e58645834d20702d7f6c6,
+    type: 3}
+  m_PrefabInstance: {fileID: 5547093800038069462}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5542608683407440294 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4628190596468080, guid: ee329c3cd08e58645834d20702d7f6c6,
     type: 3}
   m_PrefabInstance: {fileID: 5547093800038069462}
   m_PrefabAsset: {fileID: 0}

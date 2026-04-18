@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
 
@@ -15,6 +16,25 @@ public class WeaponController : MonoBehaviour
     public LayerMask hitMask = ~0; 
     [Tooltip("The point where the raycast bullet originates")]
     public Transform barrelPoint;
+
+    [Header("Fire Mode")]
+    [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
+    public bool fullAuto = true;
+    [Tooltip("Rounds per minute for full-auto fire")]
+    public float fireRate = 600f;
+    private float fireCooldownTimer = 0f;
+    private bool isTriggerHeld = false;
+    private bool isHeld = false;
+
+    [Header("Trigger Animation")]
+    [Tooltip("The trigger bone/transform on the weapon model")]
+    public Transform triggerTransform;
+    [Tooltip("Maximum rotation angle when the trigger is fully pulled (degrees). Positive = rotates on local X since the asset is backwards.")]
+    public float triggerMaxAngle = 15f;
+    [Tooltip("The axis around which the trigger rotates locally")]
+    public Vector3 triggerRotateAxis = Vector3.right;
+    private Quaternion triggerOriginalRotation;
+    private XRBaseInputInteractor currentHoldingInteractor;
 
     [Header("Ammo & Reloading Setup")]
     [Tooltip("The socket interactor that holds the magazine")]
@@ -112,10 +132,15 @@ public class WeaponController : MonoBehaviour
     {
         grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         
-        // Auto-subscribe to the trigger pull event!
         if (grabInteractable != null)
         {
-            grabInteractable.activated.AddListener(OnTriggerPulled);
+            // Track when the weapon is picked up / dropped
+            grabInteractable.selectEntered.AddListener(OnWeaponGrabbed);
+            grabInteractable.selectExited.AddListener(OnWeaponDropped);
+
+            // For full-auto: track trigger held state
+            grabInteractable.activated.AddListener(OnTriggerDown);
+            grabInteractable.deactivated.AddListener(OnTriggerUp);
         }
 
         if (magazineSocket != null)
@@ -123,13 +148,21 @@ public class WeaponController : MonoBehaviour
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
         }
+
+        if (triggerTransform != null)
+        {
+            triggerOriginalRotation = triggerTransform.localRotation;
+        }
     }
 
     private void OnDestroy()
     {
         if (grabInteractable != null)
         {
-            grabInteractable.activated.RemoveListener(OnTriggerPulled);
+            grabInteractable.selectEntered.RemoveListener(OnWeaponGrabbed);
+            grabInteractable.selectExited.RemoveListener(OnWeaponDropped);
+            grabInteractable.activated.RemoveListener(OnTriggerDown);
+            grabInteractable.deactivated.RemoveListener(OnTriggerUp);
         }
 
         if (magazineSocket != null)
@@ -137,6 +170,20 @@ public class WeaponController : MonoBehaviour
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
         }
+    }
+
+    private void OnWeaponGrabbed(SelectEnterEventArgs args)
+    {
+        isHeld = true;
+        // Cache the interactor so we can read its analog trigger value for trigger animation
+        currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
+    }
+
+    private void OnWeaponDropped(SelectExitEventArgs args)
+    {
+        isHeld = false;
+        isTriggerHeld = false;
+        currentHoldingInteractor = null;
     }
 
     private void OnMagazineInserted(SelectEnterEventArgs args)
@@ -153,10 +200,26 @@ public class WeaponController : MonoBehaviour
         currentMagazine = null;
     }
 
-    private void OnTriggerPulled(ActivateEventArgs args)
+    private void OnTriggerDown(ActivateEventArgs args)
     {
-        // This is called instantly when you pull the controller trigger while holding the weapon
-        FireWeapon();
+        isTriggerHeld = true;
+
+        // For semi-auto, fire immediately on press
+        if (!fullAuto)
+        {
+            FireWeapon();
+        }
+        else
+        {
+            // For full-auto, fire the first shot immediately and reset cooldown
+            fireCooldownTimer = 0f;
+            FireWeapon();
+        }
+    }
+
+    private void OnTriggerUp(DeactivateEventArgs args)
+    {
+        isTriggerHeld = false;
     }
 
     private void Start()
@@ -213,6 +276,30 @@ public class WeaponController : MonoBehaviour
 
     private void Update()
     {
+        // ── Full-Auto Firing ──
+        if (fullAuto && isTriggerHeld && isHeld)
+        {
+            fireCooldownTimer -= Time.deltaTime;
+            if (fireCooldownTimer <= 0f)
+            {
+                fireCooldownTimer = 60f / fireRate; // Convert RPM to seconds between shots
+                FireWeapon();
+            }
+        }
+
+        // ── Trigger Animation ──
+        if (triggerTransform != null)
+        {
+            float triggerInput = 0f;
+            if (isHeld && currentHoldingInteractor != null)
+            {
+                // Read the analog trigger value directly from whichever hand is holding the weapon
+                triggerInput = currentHoldingInteractor.activateInput.ReadValue();
+            }
+            // Rotate trigger based on analog input. Positive angle because the asset is backwards.
+            triggerTransform.localRotation = triggerOriginalRotation * Quaternion.AngleAxis(triggerInput * triggerMaxAngle, triggerRotateAxis);
+        }
+
         if (weaponModel != null)
         {
             // 1. The target variables steadily recover back to zero (neutral state)
