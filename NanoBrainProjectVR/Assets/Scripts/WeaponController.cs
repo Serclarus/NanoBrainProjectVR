@@ -8,6 +8,19 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketIn
 [RequireComponent(typeof(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable))]
 public class WeaponController : MonoBehaviour
 {
+    [System.Serializable]
+    public struct RecoilTier
+    {
+        [Tooltip("Min and Max upward kick (Pitch)")]
+        public Vector2 pitchRange;
+        [Tooltip("Side to side wobble per shot (Yaw)")]
+        public Vector2 yawRange;
+        [Tooltip("Rotational twist per shot (Roll)")]
+        public Vector2 rollRange;
+        [Tooltip("How far the gun kicks back per shot")]
+        public float backwardKick;
+    }
+
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable grabInteractable;
 
     [Header("Shooting Setup")]
@@ -101,23 +114,50 @@ public class WeaponController : MonoBehaviour
     [Tooltip("Assign the visual model wrapper of the gun here. Rotating the root will conflict with VR Tracking!")]
     public Transform weaponModel;
 
-    [Header("Recoil - Positional Kick")]
-    [Tooltip("How far the gun physically kicks back towards the player shoulder per shot")]
-    public float backwardKick = 0.05f; 
+    [Header("Recoil - Per-Tier Settings (based on consecutive shots)")]
+    [Tooltip("Recoil for shots 1-3 (initial burst)")]
+    public RecoilTier tier1_Shots1to3 = new RecoilTier
+    {
+        pitchRange = new Vector2(1.0f, 2.0f),
+        yawRange = new Vector2(-0.3f, 0.3f),
+        rollRange = new Vector2(-0.2f, 0.2f),
+        backwardKick = 0.01f
+    };
 
-    [Header("Recoil - Rotational Kick")]
-    [Tooltip("Min and Max upward kick (Pitch)")]
-    public Vector2 recoilPitchRange = new Vector2(4f, 8f);
-    [Tooltip("Side to side wobble per shot (Yaw)")]
-    public Vector2 recoilYawRange = new Vector2(-2f, 2f);
-    [Tooltip("Rotational twist per shot (Roll)")]
-    public Vector2 recoilRollRange = new Vector2(-1f, 1f);
+    [Tooltip("Recoil for shots 4-8 (building up)")]
+    public RecoilTier tier2_Shots4to8 = new RecoilTier
+    {
+        pitchRange = new Vector2(2.0f, 4.0f),
+        yawRange = new Vector2(-1.0f, 1.0f),
+        rollRange = new Vector2(-0.5f, 0.5f),
+        backwardKick = 0.025f
+    };
+
+    [Tooltip("Recoil for shots 9-17 (sustained fire)")]
+    public RecoilTier tier3_Shots9to17 = new RecoilTier
+    {
+        pitchRange = new Vector2(3.0f, 6.0f),
+        yawRange = new Vector2(-2.0f, 2.0f),
+        rollRange = new Vector2(-0.8f, 0.8f),
+        backwardKick = 0.04f
+    };
+
+    [Tooltip("Recoil for shots 18-30 (full spray)")]
+    public RecoilTier tier4_Shots18plus = new RecoilTier
+    {
+        pitchRange = new Vector2(4.0f, 8.0f),
+        yawRange = new Vector2(-3.0f, 3.0f),
+        rollRange = new Vector2(-1.0f, 1.0f),
+        backwardKick = 0.05f
+    };
 
     [Header("Recoil - Feel (Dynamics)")]
     [Tooltip("How fast the gun snaps to the peak of the recoil. High values feel punchy and sharp.")]
     public float snappiness = 20f;
     [Tooltip("How slow the gun recovers back to rest position. Low values feel heavy.")]
     public float returnSpeed = 8f;
+
+    private int consecutiveShots = 0;
     
     private Vector3 originalModelRotation;
     private Vector3 originalModelPosition;
@@ -220,6 +260,7 @@ public class WeaponController : MonoBehaviour
     private void OnTriggerUp(DeactivateEventArgs args)
     {
         isTriggerHeld = false;
+        consecutiveShots = 0; // Reset burst counter when trigger is released
     }
 
     private void Start()
@@ -387,16 +428,29 @@ public class WeaponController : MonoBehaviour
             muzzleFlash.Play(true);
         }
 
-        // 2. Procedural Recoil Integration: Define the randomized strength of the current shot
+        // 2. Procedural Recoil Integration: pick the correct tier based on consecutive shot count
         if (weaponModel != null)
         {
-            float pitch = Random.Range(recoilPitchRange.x, recoilPitchRange.y); // Positive X since the model has a reversed origin
-            float yaw = Random.Range(recoilYawRange.x, recoilYawRange.y);
-            float roll = Random.Range(recoilRollRange.x, recoilRollRange.y);
+            consecutiveShots++;
 
-            // Add onto the current recoil target rather than replacing it, causing recoil stacking for rapid fire!
+            // Select the recoil tier based on how many consecutive shots have been fired
+            RecoilTier tier;
+            if (consecutiveShots <= 3)
+                tier = tier1_Shots1to3;
+            else if (consecutiveShots <= 8)
+                tier = tier2_Shots4to8;
+            else if (consecutiveShots <= 17)
+                tier = tier3_Shots9to17;
+            else
+                tier = tier4_Shots18plus;
+
+            float pitch = Random.Range(tier.pitchRange.x, tier.pitchRange.y);
+            float yaw = Random.Range(tier.yawRange.x, tier.yawRange.y);
+            float roll = Random.Range(tier.rollRange.x, tier.rollRange.y);
+
+            // Add onto the current recoil target for stacking
             targetRotation += new Vector3(pitch, yaw, roll);
-            targetPosition += new Vector3(0, 0, -backwardKick);
+            targetPosition += new Vector3(0, 0, -tier.backwardKick);
         }
 
         if (boltTransform != null)

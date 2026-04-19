@@ -201,7 +201,6 @@ GameObject:
   - component: {fileID: 895789616871731668}
   - component: {fileID: 6294691222663716107}
   - component: {fileID: 1279019519429355889}
-  - component: {fileID: 1790284929363005539}
   m_Layer: 8
   m_Name: Rifle
   m_TagString: Untagged
@@ -224,7 +223,6 @@ Transform:
   m_Children:
   - {fileID: 5542579580828753342}
   - {fileID: 1020441360076171342}
-  - {fileID: 2101863333990848613}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &6301076706769821368
@@ -452,10 +450,26 @@ MonoBehaviour:
   targetBoltOffset: 0
   isSlideGrabbed: 0
   weaponModel: {fileID: 5542579580828753342}
-  backwardKick: 0.05
-  recoilPitchRange: {x: 4, y: 8}
-  recoilYawRange: {x: -2, y: 2}
-  recoilRollRange: {x: -1, y: 1}
+  tier1_Shots1to3:
+    pitchRange: {x: 1, y: 2}
+    yawRange: {x: -0.3, y: 0.3}
+    rollRange: {x: -0.2, y: 0.2}
+    backwardKick: 0.01
+  tier2_Shots4to8:
+    pitchRange: {x: 3, y: 6}
+    yawRange: {x: -1.3, y: 1.3}
+    rollRange: {x: -0.7, y: 0.7}
+    backwardKick: 0.03
+  tier3_Shots9to17:
+    pitchRange: {x: 2, y: 4}
+    yawRange: {x: -1, y: 1}
+    rollRange: {x: -0.5, y: 0.5}
+    backwardKick: 0.025
+  tier4_Shots18plus:
+    pitchRange: {x: 2, y: 4}
+    yawRange: {x: -1, y: 1}
+    rollRange: {x: -0.5, y: 0.5}
+    backwardKick: 0.025
   snappiness: 20
   returnSpeed: 5
 --- !u!82 &6294691222663716107
@@ -584,35 +598,6 @@ MonoBehaviour:
   WaitTillEaseInTimeToMaintainPosition: 1
   overrideEaseTime: 0
   easeInTimeOverride: 0
---- !u!114 &1790284929363005539
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3686566140936502407}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18ad55086cb948e4da109d5c7dd7daca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MikeNspired.XRIStarterKit.XRHandPoser
-  leftHandPose: {fileID: 11400000, guid: a7811335a49948a4d8a7918249134c3b, type: 2}
-  rightHandPose: {fileID: 11400000, guid: a7811335a49948a4d8a7918249134c3b, type: 2}
-  LeftHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
-    type: 2}
-  RightHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
-    type: 2}
-  leftHandAttach: {fileID: 0}
-  rightHandAttach: {fileID: 0}
-  hasAnimationPose: 1
-  currentLeftHand: {fileID: 0}
-  currentRightHand: {fileID: 0}
-  grabAttachPoints: {fileID: 0}
-  interactable: {fileID: 195624438788695228}
-  MaintainHandOnObject: 1
-  WaitTillEaseInTimeToMaintainPosition: 1
-  overrideEaseTime: 0
-  easeInTimeOverride: 0
 --- !u!1 &4570005373817171110
 GameObject:
   m_ObjectHideFlags: 0
@@ -699,14 +684,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5415530269821189822}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2629510626911302497}
   - {fileID: 175561727659909601}
-  m_Father: {fileID: 5325819460760546043}
+  m_Father: {fileID: 5542579580828753342}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5470112909512395886
 GameObject:
@@ -944,6 +929,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 488241533567920435}
+    - targetCorrespondingSourceObject: {fileID: 4519716788627816, guid: ee329c3cd08e58645834d20702d7f6c6,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2101863333990848613}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1452442627303592, guid: ee329c3cd08e58645834d20702d7f6c6,
         type: 3}
