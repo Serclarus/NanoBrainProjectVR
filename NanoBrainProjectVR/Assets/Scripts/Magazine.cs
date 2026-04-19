@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables; // Needed for XRI 3.0+
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 [RequireComponent(typeof(XRGrabInteractable))]
 public class Magazine : MonoBehaviour
@@ -66,12 +67,27 @@ public class Magazine : MonoBehaviour
     private void OnDropped(SelectExitEventArgs args)
     {
         isHeld = false;
+
+        // Force physics back on when dropped into the world (not into a socket).
+        // This fixes mags floating after being pulled from the ammo pouch socket,
+        // because XRI may remember the kinematic state the socket set.
+        bool droppedIntoSocket = args.interactorObject is XRSocketInteractor;
+        if (!droppedIntoSocket)
+        {
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+            }
+        }
+
         CheckDespawnCondition();
     }
 
     private void CheckDespawnCondition()
     {
-        if (!isHeld && !HasAmmo() && despawnCoroutine == null)
+        if (!isHeld && despawnCoroutine == null)
         {
             despawnCoroutine = StartCoroutine(DespawnRoutine());
         }

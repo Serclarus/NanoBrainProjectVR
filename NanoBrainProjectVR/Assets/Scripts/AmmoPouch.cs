@@ -14,11 +14,17 @@ public class AmmoPouch : MonoBehaviour
     public float spawnDelay = 0.5f;
 
     private XRSocketInteractor socket;
+    private bool isSpawning = false;
 
     private void Awake()
     {
         socket = GetComponent<XRSocketInteractor>();
         socket.selectExited.AddListener(OnMagazineRemoved);
+
+        // Prevent the socket from auto-grabbing random mags the player drops nearby.
+        // We only insert mags manually via SelectEnter in SpawnMagazine().
+        socket.hoverSocketSnapping = false;
+        socket.startingSelectedInteractable = null;
     }
 
     private void OnDestroy()
@@ -28,7 +34,7 @@ public class AmmoPouch : MonoBehaviour
 
     private void Start()
     {
-        // Try filling the socket on spawn if empty
+        // Fill the socket on spawn if empty
         if (!socket.hasSelection)
         {
             SpawnMagazine();
@@ -37,7 +43,10 @@ public class AmmoPouch : MonoBehaviour
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
-        // Only spawn a new one if the player actually grabbed it out, not if we destroyed it
+        // Ignore selectExited events we caused ourselves during spawning
+        if (isSpawning) return;
+
+        // Only spawn a new one if the game is still running
         if (gameObject.activeInHierarchy)
         {
             StartCoroutine(SpawnRoutine());
@@ -62,14 +71,16 @@ public class AmmoPouch : MonoBehaviour
             return;
         }
 
+        isSpawning = true;
+
         GameObject newMag = Instantiate(magazinePrefab, transform.position, transform.rotation);
         IXRSelectInteractable interactable = newMag.GetComponentInChildren<IXRSelectInteractable>();
 
         if (interactable != null)
         {
-            // By telling the InteractionManager to SelectEnter, we securely slot it into the socket perfectly.
-            // Ignore warnings about obsolete APIs, this works cross-version for XRI 2 and 3 cleanly.
             socket.interactionManager.SelectEnter((IXRSelectInteractor)socket, interactable);
         }
+
+        isSpawning = false;
     }
 }
