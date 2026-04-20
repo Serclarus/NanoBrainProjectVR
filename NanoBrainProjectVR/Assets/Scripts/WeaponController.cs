@@ -38,6 +38,7 @@ public class WeaponController : MonoBehaviour
     private float fireCooldownTimer = 0f;
     private bool isTriggerHeld = false;
     private bool isHeld = false;
+    private bool hasPlayedDryFire = false;
 
     [Header("Trigger Animation")]
     [Tooltip("The trigger bone/transform on the weapon model")]
@@ -243,6 +244,7 @@ public class WeaponController : MonoBehaviour
     private void OnTriggerDown(ActivateEventArgs args)
     {
         isTriggerHeld = true;
+        hasPlayedDryFire = false;
 
         // For semi-auto, fire immediately on press
         if (!fullAuto)
@@ -388,10 +390,14 @@ public class WeaponController : MonoBehaviour
         if (!isChambered)
         {
             // Dry fire
-            if (audioSource != null && dryFireSound != null)
+            if (!hasPlayedDryFire)
             {
-                audioSource.pitch = 1f;
-                audioSource.PlayOneShot(dryFireSound, shootVolume);
+                if (audioSource != null && dryFireSound != null)
+                {
+                    audioSource.pitch = 1f;
+                    audioSource.PlayOneShot(dryFireSound, shootVolume);
+                }
+                hasPlayedDryFire = true;
             }
             return;
         }
