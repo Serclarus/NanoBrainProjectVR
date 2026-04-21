@@ -21,6 +21,10 @@ public class Magazine : MonoBehaviour
     [Tooltip("How many seconds until the magazine destroys itself after being dropped empty?")]
     public float despawnDelay = 10f;
 
+    [Header("Visuals")]
+    [Tooltip("The bullet object to hide when the magazine is empty. Leaves empty to auto-detect a child named 'Bullet'.")]
+    public GameObject topBulletVisual;
+
     private XRGrabInteractable grabInteractable;
     private Coroutine despawnCoroutine;
     private bool isHeld = false;
@@ -50,7 +54,16 @@ public class Magazine : MonoBehaviour
             currentAmmo = maxAmmo;
         }
 
+        UpdateVisuals();
         CheckDespawnCondition(); // Run check in case it spawns totally empty on the floor
+    }
+
+    private void UpdateVisuals()
+    {
+        if (topBulletVisual != null)
+        {
+            topBulletVisual.SetActive(HasAmmo());
+        }
     }
 
     private void OnGrabbedOrSocketed(SelectEnterEventArgs args)
@@ -122,8 +135,9 @@ public class Magazine : MonoBehaviour
             currentAmmo--;
             
             // If we just shot the last bullet, check if we immediately need to start the despawn timer (if it's not held/socketed somehow)
-            if (currentAmmo == 0)
+            if (currentAmmo <= 0)
             {
+                UpdateVisuals();
                 CheckDespawnCondition();
             }
 

@@ -370,8 +370,8 @@ public class WeaponController : MonoBehaviour
                 currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
             }
 
-            // The prefab is reversed, so a positive local Z offset moves it physically backwards
-            boltTransform.localPosition = originalBoltPosition + new Vector3(0, 0, currentBoltOffset);
+            // For a correct prefab (+Z forward), moving backwards requires a negative local Z offset
+            boltTransform.localPosition = originalBoltPosition + new Vector3(0, 0, -currentBoltOffset);
 
             // Eject shell when the bolt visibly moves enough (lowered threshold to 30% and made absolute so it triggers reliably)
             if (!hasEjectedShell && Mathf.Abs(currentBoltOffset) > Mathf.Abs(boltTravelDistance) * 0.3f)
@@ -468,7 +468,8 @@ public class WeaponController : MonoBehaviour
             }
 
             // Add onto the current recoil target for stacking
-            targetRotation += new Vector3(pitch, yaw, roll);
+            // -pitch pitches UP on a standard Unity object (+Z forward)
+            targetRotation += new Vector3(-pitch, yaw, roll);
             targetPosition += new Vector3(0, 0, -kick);
         }
 
