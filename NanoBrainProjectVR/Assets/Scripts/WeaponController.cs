@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
 
-[RequireComponent(typeof(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable))]
+[RequireComponent(typeof(TwoHandGrabInteractable))]
 public class WeaponController : MonoBehaviour
 {
     [System.Serializable]
@@ -21,7 +21,7 @@ public class WeaponController : MonoBehaviour
         public float backwardKick;
     }
 
-    private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable grabInteractable;
+    private TwoHandGrabInteractable grabInteractable;
 
     [Header("Shooting Setup")]
     public float range = 100f;
@@ -158,6 +158,10 @@ public class WeaponController : MonoBehaviour
     [Tooltip("How slow the gun recovers back to rest position. Low values feel heavy.")]
     public float returnSpeed = 8f;
 
+    [Header("Two-Handed Feel")]
+    [Tooltip("Multiplier for recoil when holding the weapon with both hands")]
+    public float twoHandRecoilModifier = 0.4f;
+
     private int consecutiveShots = 0;
     
     private Vector3 originalModelRotation;
@@ -171,7 +175,7 @@ public class WeaponController : MonoBehaviour
 
     private void Awake()
     {
-        grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+        grabInteractable = GetComponent<TwoHandGrabInteractable>();
         
         if (grabInteractable != null)
         {
@@ -453,10 +457,19 @@ public class WeaponController : MonoBehaviour
             float pitch = Random.Range(tier.pitchRange.x, tier.pitchRange.y);
             float yaw = Random.Range(tier.yawRange.x, tier.yawRange.y);
             float roll = Random.Range(tier.rollRange.x, tier.rollRange.y);
+            float kick = tier.backwardKick;
+
+            if (grabInteractable != null && grabInteractable.IsTwoHandedGrabbed)
+            {
+                pitch *= twoHandRecoilModifier;
+                yaw *= twoHandRecoilModifier;
+                roll *= twoHandRecoilModifier;
+                kick *= twoHandRecoilModifier;
+            }
 
             // Add onto the current recoil target for stacking
             targetRotation += new Vector3(pitch, yaw, roll);
-            targetPosition += new Vector3(0, 0, -tier.backwardKick);
+            targetPosition += new Vector3(0, 0, -kick);
         }
 
         if (boltTransform != null)
