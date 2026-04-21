@@ -1788,7 +1788,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -3820,6 +3820,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 895789616871731668, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
+      propertyPath: triggerMaxAngle
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 895789616871731668, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
       propertyPath: triggerTransform
       value: 
       objectReference: {fileID: 1740153098}
@@ -3828,10 +3833,45 @@ PrefabInstance:
       propertyPath: interactable
       value: 
       objectReference: {fileID: 1301755560}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.0244
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.07169998
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.17160034
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629510626911302497, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: 3686566140936502407, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
       propertyPath: m_Name
       value: Rifle
+      objectReference: {fileID: 0}
+    - target: {fileID: 4150510580697908368, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
+        type: 3}
+      propertyPath: m_ParentInteractableObject
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4150510580697908368, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
@@ -3924,7 +3964,7 @@ PrefabInstance:
       addedObject: {fileID: 1301755561}
     - targetCorrespondingSourceObject: {fileID: 3686566140936502407, guid: dfd0c6d885c9ac54fb9d573d9a9730e4,
         type: 3}
-      insertIndex: -1
+      insertIndex: 4
       addedObject: {fileID: 1301755560}
   m_SourcePrefab: {fileID: 100100000, guid: dfd0c6d885c9ac54fb9d573d9a9730e4, type: 3}
 --- !u!1660057539 &9223372036854775807
