@@ -5774,7 +5774,7 @@ MonoBehaviour:
   m_SnapToColliderVolume: 1
   m_ReinitializeDynamicAttachEverySingleGrab: 1
   m_AttachEaseInTime: 0.15
-  m_MovementType: 0
+  m_MovementType: 2
   m_PredictedVisualsTransform: {fileID: 0}
   m_VelocityDamping: 1
   m_VelocityScale: 1
@@ -5782,11 +5782,11 @@ MonoBehaviour:
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
   m_SmoothPosition: 0
-  m_SmoothPositionAmount: 8
+  m_SmoothPositionAmount: 20
   m_TightenPosition: 0.1
   m_TrackRotation: 1
   m_SmoothRotation: 0
-  m_SmoothRotationAmount: 8
+  m_SmoothRotationAmount: 20
   m_TightenRotation: 0.1
   m_TrackScale: 1
   m_SmoothScale: 0
@@ -5857,7 +5857,7 @@ MonoBehaviour:
   boltTravelDistance: 0.2
   boltSnappiness: 30
   boltReturnSpeed: 15
-  shellEjectionPoint: {fileID: 1003450165151893295}
+  shellEjectionPoint: {fileID: 1537252579095675873}
   shellPrefab: {fileID: 1425047151767239946, guid: ea6960e5082e28e4f821814d07a95670,
     type: 3}
   shellPoolSize: 30

@@ -3648,6 +3648,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
   surfaceType: 5
   pointsAwarded: 0
+--- !u!114 &1756380721 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8259603190386800545, guid: 81908e6265049a24da238898ce99a90c,
+    type: 3}
+  m_PrefabInstance: {fileID: 5047584016799928798}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49ec276529034a9409332b0c31ae6b71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TwoHandGrabInteractable
+--- !u!1 &1848192291 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3280965375498052790, guid: bb973221d90de9c4ba307fbda03e2019,
+    type: 3}
+  m_PrefabInstance: {fileID: 1893052702445409743}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1914565788
 GameObject:
   m_ObjectHideFlags: 0
@@ -4823,9 +4841,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9115388725021802028, guid: bb973221d90de9c4ba307fbda03e2019,
         type: 3}
-      propertyPath: infiniteAmmo
-      value: 1
-      objectReference: {fileID: 0}
+      propertyPath: topBulletVisual
+      value: 
+      objectReference: {fileID: 1848192291}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4963,7 +4981,7 @@ PrefabInstance:
         type: 3}
       propertyPath: interactable
       value: 
-      objectReference: {fileID: 1301755560}
+      objectReference: {fileID: 1756380721}
     - target: {fileID: 7121643266348946437, guid: 81908e6265049a24da238898ce99a90c,
         type: 3}
       propertyPath: m_Name
