@@ -15,7 +15,7 @@ public class WeaponSlide : MonoBehaviour
     public Vector3 pullAxis = new Vector3(0, 0, 1);
 
     private XRSimpleInteractable interactable;
-    private UnityEngine.XR.Interaction.Toolkit.Interactors.IXRInteractor currentInteractor;
+    private UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor currentInteractor;
     
     private bool isGrabbed = false;
     private bool hasRackedThisPull = false;
@@ -86,6 +86,12 @@ public class WeaponSlide : MonoBehaviour
             {
                 hasRackedThisPull = true;
                 weapon.RackSlide();
+
+                // Force release the hand so it doesn't hold the bolt forever
+                if (interactable.interactionManager != null && currentInteractor != null)
+                {
+                    interactable.interactionManager.SelectCancel(currentInteractor, interactable);
+                }
             }
         }
     }
