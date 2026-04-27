@@ -499,7 +499,7 @@ public class WeaponController : MonoBehaviour
                 type = hittable.surfaceType;
                 
                 // Trigger the damage/score logic
-                hittable.OnHit();
+                hittable.OnHit(hit);
             }
 
             // Spawn hit effect from the pool precisely on the surface
