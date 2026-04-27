@@ -39,16 +39,26 @@ public class HittableSurface : MonoBehaviour
              "The target must use a MeshCollider for UV lookup to work.")]
     public Texture2D scoreMap;
 
-    [Tooltip("Map each color on the score map to a point value. " +
-             "Colors are matched with a tolerance so you don't need pixel-perfect painting.")]
+    [Tooltip("Map each color on the score map to a point value. Use pure, distinct colors (no gradients).")]
     public ScoreColorMapping[] colorMappings;
-
-    [Tooltip("How close the sampled color needs to be to a mapping color to count as a match (0-1). " +
-             "Lower = stricter matching. 0.15 works well for distinct colors.")]
-    [Range(0.01f, 0.5f)]
-    public float colorMatchTolerance = 0.15f;
     
+    // Pre-cached Color32 versions of mapping colors for fast byte comparison
+    private Color32[] cachedColors;
+
     // You can add health variables here later when we make the Boars
+
+    private void Awake()
+    {
+        // Pre-convert mapping colors to Color32 once so we don't do it every shot
+        if (colorMappings != null && colorMappings.Length > 0)
+        {
+            cachedColors = new Color32[colorMappings.Length];
+            for (int i = 0; i < colorMappings.Length; i++)
+            {
+                cachedColors[i] = colorMappings[i].zoneColor;
+            }
+        }
+    }
 
     /// <summary>
     /// Legacy overload for backward compatibility (no hit position).
@@ -74,7 +84,7 @@ public class HittableSurface : MonoBehaviour
     public void OnHit(RaycastHit hit)
     {
         // If no score map is set up, fall back to the flat value
-        if (scoreMap == null || colorMappings == null || colorMappings.Length == 0)
+        if (scoreMap == null || cachedColors == null || cachedColors.Length == 0)
         {
             OnHit();
             return;
@@ -83,26 +93,23 @@ public class HittableSurface : MonoBehaviour
         // Get the UV coordinate where the bullet hit
         Vector2 uv = hit.textureCoord;
 
-        // Sample the score map texture at that UV
+        // Sample the score map texture at that UV (Color32 avoids float conversion)
         int pixelX = Mathf.FloorToInt(uv.x * scoreMap.width);
         int pixelY = Mathf.FloorToInt(uv.y * scoreMap.height);
         pixelX = Mathf.Clamp(pixelX, 0, scoreMap.width - 1);
         pixelY = Mathf.Clamp(pixelY, 0, scoreMap.height - 1);
 
-        Color sampledColor = scoreMap.GetPixel(pixelX, pixelY);
+        Color32 sampled = scoreMap.GetPixel32(pixelX, pixelY);
 
-        // Find the closest matching color in our mappings
+        // Exact byte-level RGB match (ignore alpha)
         int awardedPoints = 0;
         string zoneLabel = "Miss";
 
-        for (int i = 0; i < colorMappings.Length; i++)
+        for (int i = 0; i < cachedColors.Length; i++)
         {
-            // Compare RGB channels (ignore alpha)
-            float diff = Mathf.Abs(sampledColor.r - colorMappings[i].zoneColor.r)
-                       + Mathf.Abs(sampledColor.g - colorMappings[i].zoneColor.g)
-                       + Mathf.Abs(sampledColor.b - colorMappings[i].zoneColor.b);
-
-            if (diff <= colorMatchTolerance)
+            if (sampled.r == cachedColors[i].r &&
+                sampled.g == cachedColors[i].g &&
+                sampled.b == cachedColors[i].b)
             {
                 awardedPoints = colorMappings[i].points;
                 zoneLabel = string.IsNullOrEmpty(colorMappings[i].label) 
