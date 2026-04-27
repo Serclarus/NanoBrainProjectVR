@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 
 [RequireComponent(typeof(XRSocketInteractor))]
-public class AmmoPouch : MonoBehaviour
+public class AmmoPouch : MonoBehaviour, IXRSelectFilter, IXRHoverFilter
 {
     [Tooltip("The Magazine prefab that this pouch will constantly dispense.")]
     public GameObject magazinePrefab;
@@ -16,6 +17,8 @@ public class AmmoPouch : MonoBehaviour
     private XRSocketInteractor socket;
     private bool isSpawning = false;
 
+    public bool canProcess => isActiveAndEnabled;
+
     private void Awake()
     {
         socket = GetComponent<XRSocketInteractor>();
@@ -25,11 +28,17 @@ public class AmmoPouch : MonoBehaviour
         // We only insert mags manually via SelectEnter in SpawnMagazine().
         socket.hoverSocketSnapping = false;
         socket.startingSelectedInteractable = null;
+
+        // Add filters so it doesn't grab or hover items dropped in its trigger
+        socket.selectFilters.Add(this);
+        socket.hoverFilters.Add(this);
     }
 
     private void OnDestroy()
     {
         socket.selectExited.RemoveListener(OnMagazineRemoved);
+        socket.selectFilters.Remove(this);
+        socket.hoverFilters.Remove(this);
     }
 
     private void Start()
@@ -82,5 +91,27 @@ public class AmmoPouch : MonoBehaviour
         }
 
         isSpawning = false;
+    }
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        // Only allow selection if we are explicitly spawning it right now,
+        // or if it's ALREADY held by this socket.
+        if (isSpawning) return true;
+        if (socket.hasSelection && socket.interactablesSelected.Contains(interactable)) return true;
+        
+        return false;
+    }
+
+    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
+    {
+        // Same logic for hover - only allow what we spawn or what we already hold.
+        if (isSpawning) return true;
+        if (interactable is IXRSelectInteractable selectInteractable)
+        {
+            if (socket.hasSelection && socket.interactablesSelected.Contains(selectInteractable)) return true;
+        }
+
+        return false;
     }
 }
