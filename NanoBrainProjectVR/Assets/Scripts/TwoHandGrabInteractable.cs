@@ -62,46 +62,45 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         {
             if (IsTwoHandedGrabbed)
             {
-                // The interactor holding the main grip
                 IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
 
                 // The point on the weapon where the primary hand is attached
                 Transform primaryAttach = GetAttachTransform(primaryInteractor);
                 
-                // The actual physical positions of the user's controllers
-                Transform primaryHand = primaryInteractor.GetAttachTransform(this);
-                Transform secondaryHand = secondaryInteractor.GetAttachTransform(secondaryGrip);
+                // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
+                Transform secondaryController = secondaryInteractor.transform;
 
-                // Calculate the direction vector from the back hand to the front hand
-                Vector3 directionToFrontHand = secondaryHand.position - primaryHand.position;
+                // The vector from the back hand (pivot) to the front grip on the weapon
+                Vector3 currentWeaponDir = secondaryGrip.transform.position - primaryAttach.position;
+                
+                // The vector from the back hand (pivot) to the player's ACTUAL real-world front hand
+                Vector3 targetWeaponDir = secondaryController.position - primaryAttach.position;
 
-                if (directionToFrontHand.sqrMagnitude > 0.01f)
+                if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
-                    // Target forward orientation aligned with hands, maintaining the primary hand's UP axis
-                    Quaternion targetLook = Quaternion.LookRotation(directionToFrontHand.normalized, primaryHand.up);
+                    // Calculate how much we need to swing the weapon to align the front grip with the front hand
+                    Quaternion rotationDifference = Quaternion.FromToRotation(currentWeaponDir.normalized, targetWeaponDir.normalized);
 
-                    // Compute the primary attach point's local rotation and position differences
-                    // so we can properly offset the entire weapon model around the pivot point.
-                    Quaternion localRot = Quaternion.Inverse(transform.rotation) * primaryAttach.rotation;
-                    Vector3 localPos = transform.InverseTransformPoint(primaryAttach.position);
+                    // Apply this rotation to the weapon
+                    Quaternion finalRot = rotationDifference * transform.rotation;
 
-                    // Re-calculate the root rotation and position applying the inverse local offsets
-                    Quaternion finalRot = targetLook * Quaternion.Inverse(localRot);
-                    Vector3 finalPos = primaryHand.position - (finalRot * localPos);
+                    // To pivot around the primary hand, we calculate the offset from the weapon root to the primary hand,
+                    // rotate that offset, and apply it back.
+                    Vector3 pivotOffset = transform.position - primaryAttach.position;
+                    Vector3 rotatedOffset = rotationDifference * pivotOffset;
+                    Vector3 finalPos = primaryAttach.position + rotatedOffset;
 
                     transform.position = finalPos;
                     transform.rotation = finalRot;
 
-                    // If we have a Rigidbody and aren't using instantaneous movement, 
-                    // we need to explicitly tell the physics engine about this override.
+                    // Tell the physics engine about this override
                     Rigidbody rb = GetComponent<Rigidbody>();
                     if (rb != null)
                     {
                         rb.MovePosition(finalPos);
                         rb.MoveRotation(finalRot);
                         
-                        // Clear velocities to stop the physics engine from fighting our manual rotation
-                        rb.linearVelocity = Vector3.zero;
+                        rb.velocity = Vector3.zero;
                         rb.angularVelocity = Vector3.zero;
                     }
                 }
