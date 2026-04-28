@@ -11,6 +11,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     public XRSimpleInteractable secondaryGrip;
 
     private IXRSelectInteractor secondaryInteractor;
+    private MovementType originalMovementType;
 
     /// <summary>
     /// Checks if the object is currently held by both hands.
@@ -44,12 +45,19 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     {
         Debug.Log("=== SECONDARY GRAB DETECTED ===");
         secondaryInteractor = args.interactorObject;
+        
+        // Temporarily switch to instantaneous movement to stop physics fights
+        originalMovementType = movementType;
+        movementType = MovementType.Instantaneous;
     }
 
     private void OnSecondaryRelease(SelectExitEventArgs args)
     {
         Debug.Log("=== SECONDARY GRAB RELEASED ===");
         secondaryInteractor = null;
+        
+        // Restore original movement type
+        movementType = originalMovementType;
     }
 
     public override void ProcessInteractable(XRInteractionUpdateOrder.UpdatePhase updatePhase)
@@ -57,14 +65,13 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         // Let the base class (and Grab Transformer) perform the standard position/rotation processing first
         base.ProcessInteractable(updatePhase);
 
-        // During the Dynamic phase, we override the rotation to point the barrel towards the secondary hand
-        if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Dynamic)
+        // Override the rotation during both phases to prevent physics engine jitter
+        if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Dynamic || 
+            updatePhase == XRInteractionUpdateOrder.UpdatePhase.Fixed)
         {
             if (IsTwoHandedGrabbed)
             {
                 IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
-
-                // The point on the weapon where the primary hand is attached
                 Transform primaryAttach = GetAttachTransform(primaryInteractor);
                 
                 // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
@@ -78,7 +85,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
                 if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
-                    Debug.Log($"[TwoHand] Pivot to Target Dist: {targetWeaponDir.magnitude}");
                     // Calculate how much we need to swing the weapon to align the front grip with the front hand
                     Quaternion rotationDifference = Quaternion.FromToRotation(currentWeaponDir.normalized, targetWeaponDir.normalized);
 
@@ -103,10 +109,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         
                         rb.velocity = Vector3.zero;
                         rb.angularVelocity = Vector3.zero;
-                    }
-                    else
-                    {
-                        Debug.LogWarning("TwoHandGrabInteractable: No Rigidbody found in parent!");
                     }
                 }
             }
