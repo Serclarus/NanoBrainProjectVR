@@ -320,6 +320,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
   surfaceType: 1
   pointsAwarded: 0
+  scoreMap: {fileID: 0}
+  colorMappings: []
 --- !u!4 &81542829 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5720639466237907174, guid: 692ddf452dd19e748b656d5f167b6c23,
@@ -506,6 +508,74 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &225458650
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 6790692600407611281, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_Name
+      value: target
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.96
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.41
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.43
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 8337848788901288390, guid: 42611be6d1f18e74bad9fd6a587101fb,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 42611be6d1f18e74bad9fd6a587101fb, type: 3}
 --- !u!1 &365969338
 GameObject:
   m_ObjectHideFlags: 0
@@ -3826,6 +3896,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
   surfaceType: 5
   pointsAwarded: 0
+  scoreMap: {fileID: 0}
+  colorMappings: []
 --- !u!114 &1756380721 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8259603190386800545, guid: 81908e6265049a24da238898ce99a90c,
@@ -5236,6 +5308,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8699559900671002707, guid: 81908e6265049a24da238898ce99a90c,
         type: 3}
+      propertyPath: shootVolume
+      value: 0.029751478
+      objectReference: {fileID: 0}
+    - target: {fileID: 8699559900671002707, guid: 81908e6265049a24da238898ce99a90c,
+        type: 3}
       propertyPath: weaponModel
       value: 
       objectReference: {fileID: 1129418818}
@@ -5332,3 +5409,4 @@ SceneRoots:
   - {fileID: 977701635}
   - {fileID: 1893052702445409743}
   - {fileID: 5047584016799928798}
+  - {fileID: 225458650}
