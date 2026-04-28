@@ -107,7 +107,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         rb.MovePosition(finalPos);
                         rb.MoveRotation(finalRot);
                         
-                        rb.velocity = Vector3.zero;
+                        rb.linearVelocity = Vector3.zero;
                         rb.angularVelocity = Vector3.zero;
                     }
                 }
