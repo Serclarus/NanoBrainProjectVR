@@ -42,11 +42,13 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
     private void OnSecondaryGrab(SelectEnterEventArgs args)
     {
+        Debug.Log("=== SECONDARY GRAB DETECTED ===");
         secondaryInteractor = args.interactorObject;
     }
 
     private void OnSecondaryRelease(SelectExitEventArgs args)
     {
+        Debug.Log("=== SECONDARY GRAB RELEASED ===");
         secondaryInteractor = null;
     }
 
