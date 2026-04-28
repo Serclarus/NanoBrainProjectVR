@@ -11,7 +11,8 @@ GameObject:
   - component: {fileID: 8337848788901288390}
   - component: {fileID: 2946453061124457976}
   - component: {fileID: 9033805954503391697}
-  - component: {fileID: 7821460226029508992}
+  - component: {fileID: 6543671392826853508}
+  - component: {fileID: 5558633815756166598}
   m_Layer: 0
   m_Name: target
   m_TagString: Untagged
@@ -26,13 +27,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6790692600407611281}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2946453061124457976
 MeshFilter:
@@ -59,6 +60,11 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -80,20 +86,65 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7821460226029508992
-BoxCollider:
+--- !u!64 &6543671392826853508
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6790692600407611281}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 0.7008929, y: 1.8077313, z: 0.15266587}
-  m_Center: {x: 0, y: 0, z: -0.00000014901161}
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -3860864116172256851, guid: 35a29c477d9e2224e9d7d755eeb42d9a, type: 3}
+--- !u!114 &5558633815756166598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6790692600407611281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
+  surfaceType: 5
+  pointsAwarded: 0
+  scoreMap: {fileID: 2800000, guid: 11d07e69926a48c43a3045bb6dccb352, type: 3}
+  colorMappings:
+  - zoneColor: {r: 1, g: 0, b: 0, a: 1}
+    points: 15
+    label: BullseyeHead
+  - zoneColor: {r: 0, g: 1, b: 0, a: 0}
+    points: 12
+    label: BullseyeBody
+  - zoneColor: {r: 0, g: 0, b: 1, a: 0}
+    points: 10
+    label: 10pts(blue)
+  - zoneColor: {r: 1, g: 1, b: 0, a: 0}
+    points: 9
+    label: 9pts(yellow)
+  - zoneColor: {r: 0, g: 1, b: 1, a: 0}
+    points: 8
+    label: 8pts(cyan)
+  - zoneColor: {r: 1, g: 0, b: 1, a: 0}
+    points: 7
+    label: 7pts(magenta)
