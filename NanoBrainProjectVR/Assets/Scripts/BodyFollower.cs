@@ -22,6 +22,9 @@ public class BodyFollower : MonoBehaviour
     [Tooltip("Forward/backward offset from the body center. Positive = in front, Negative = behind. (e.g. -0.1 for slightly behind)")]
     public float forwardOffset = 0f;
 
+    [Tooltip("Extra rotation applied to the model on top of body tracking. Use this to fix model orientation (e.g. X=-90 for models that need to be tilted).")]
+    public Vector3 rotationOffset = Vector3.zero;
+
     [Header("Rotation Settings")]
     [Tooltip("How fast the belt rotates to face the direction you are looking. High values are snappy, low values drag smoothly.")]
     public float rotationSmoothness = 5f;
@@ -103,8 +106,8 @@ public class BodyFollower : MonoBehaviour
                 }
             }
 
-            // Smoothly rotate the actual transform to match the calculated body yaw
-            Quaternion targetBodyRotation = Quaternion.Euler(0, currentBodyYaw, 0);
+            // Smoothly rotate the actual transform to match the calculated body yaw, then apply the model's rotation offset
+            Quaternion targetBodyRotation = Quaternion.Euler(0, currentBodyYaw, 0) * Quaternion.Euler(rotationOffset);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetBodyRotation, Time.deltaTime * rotationSmoothness);
         }
     }
