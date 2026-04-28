@@ -86,8 +86,24 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     Vector3 localPos = transform.InverseTransformPoint(primaryAttach.position);
 
                     // Re-calculate the root rotation and position applying the inverse local offsets
-                    transform.rotation = targetLook * Quaternion.Inverse(localRot);
-                    transform.position = primaryHand.position - (transform.rotation * localPos);
+                    Quaternion finalRot = targetLook * Quaternion.Inverse(localRot);
+                    Vector3 finalPos = primaryHand.position - (finalRot * localPos);
+
+                    transform.position = finalPos;
+                    transform.rotation = finalRot;
+
+                    // If we have a Rigidbody and aren't using instantaneous movement, 
+                    // we need to explicitly tell the physics engine about this override.
+                    Rigidbody rb = GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        rb.MovePosition(finalPos);
+                        rb.MoveRotation(finalRot);
+                        
+                        // Clear velocities to stop the physics engine from fighting our manual rotation
+                        rb.velocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                    }
                 }
             }
         }
