@@ -93,6 +93,14 @@ public class HittableSurface : MonoBehaviour
         // Get the UV coordinate where the bullet hit
         Vector2 uv = hit.textureCoord;
 
+        // UV (0,0) usually means the collider is not a MeshCollider
+        if (uv == Vector2.zero)
+        {
+            Debug.LogWarning($"[ScoreMap] UV is (0,0) on '{gameObject.name}' — make sure the target has a MeshCollider, not a Box/Capsule collider!");
+            OnHit();
+            return;
+        }
+
         // Sample the score map texture at that UV (Color32 avoids float conversion)
         int pixelX = Mathf.FloorToInt(uv.x * scoreMap.width);
         int pixelY = Mathf.FloorToInt(uv.y * scoreMap.height);
@@ -100,6 +108,8 @@ public class HittableSurface : MonoBehaviour
         pixelY = Mathf.Clamp(pixelY, 0, scoreMap.height - 1);
 
         Color32 sampled = scoreMap.GetPixel32(pixelX, pixelY);
+
+        Debug.Log($"[ScoreMap] UV:({uv.x:F3}, {uv.y:F3}) | Pixel:({pixelX}, {pixelY}) | Color: R={sampled.r} G={sampled.g} B={sampled.b}");
 
         // Exact byte-level RGB match (ignore alpha)
         int awardedPoints = 0;
@@ -122,7 +132,11 @@ public class HittableSurface : MonoBehaviour
         if (awardedPoints > 0 && ScoreManager.Instance != null)
         {
             ScoreManager.Instance.AddScore(awardedPoints);
-            Debug.Log($"Target Hit! Zone: {zoneLabel} | Points: +{awardedPoints}");
+            Debug.Log($"[ScoreMap] ✓ Zone: {zoneLabel} | Points: +{awardedPoints}");
+        }
+        else
+        {
+            Debug.Log($"[ScoreMap] ✗ No matching zone for color R={sampled.r} G={sampled.g} B={sampled.b} — 0 points");
         }
     }
 }
