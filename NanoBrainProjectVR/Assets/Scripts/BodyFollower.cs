@@ -16,6 +16,12 @@ public class BodyFollower : MonoBehaviour
     [Tooltip("How far down from the headset should the belt sit? (Usually ~0.6m)")]
     public float bodyHeightOffset = 0.6f;
 
+    [Tooltip("Side offset from the body center. Positive = right hip, Negative = left hip. (e.g. 0.2 for right hip)")]
+    public float sideOffset = 0f;
+
+    [Tooltip("Forward/backward offset from the body center. Positive = in front, Negative = behind. (e.g. -0.1 for slightly behind)")]
+    public float forwardOffset = 0f;
+
     [Header("Rotation Settings")]
     [Tooltip("How fast the belt rotates to face the direction you are looking. High values are snappy, low values drag smoothly.")]
     public float rotationSmoothness = 5f;
@@ -45,8 +51,15 @@ public class BodyFollower : MonoBehaviour
         if (head == null) return;
 
         // 1. Position follows X and Z of the head exactly, but Y is forced to the chest/hip height.
-        Vector3 targetPosition = new Vector3(head.position.x, head.position.y - bodyHeightOffset, head.position.z);
-        transform.position = targetPosition;
+        Vector3 centerPosition = new Vector3(head.position.x, head.position.y - bodyHeightOffset, head.position.z);
+
+        // Apply side and forward offsets relative to the body's current facing direction
+        Vector3 right = transform.right * sideOffset;
+        Vector3 forward = transform.forward * forwardOffset;
+        transform.position = centerPosition + right + forward;
+
+        // Keep a reference for the hand direction calculations below
+        Vector3 targetPosition = centerPosition;
 
         // 2. Calculate the estimated "Forward" direction using a blend of Head and Hands
         Vector3 headForward = head.forward;
