@@ -65,9 +65,11 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         // Let the base class (and Grab Transformer) perform the standard position/rotation processing first
         base.ProcessInteractable(updatePhase);
 
-        // Override the rotation during both phases to prevent physics engine jitter
+        // Override the rotation during all phases to prevent XRI's low-latency updates from snapping it back
         if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Dynamic || 
-            updatePhase == XRInteractionUpdateOrder.UpdatePhase.Fixed)
+            updatePhase == XRInteractionUpdateOrder.UpdatePhase.Fixed ||
+            updatePhase == XRInteractionUpdateOrder.UpdatePhase.Late ||
+            updatePhase == XRInteractionUpdateOrder.UpdatePhase.OnBeforeRender)
         {
             if (IsTwoHandedGrabbed)
             {
