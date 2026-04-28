@@ -60,6 +60,17 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         movementType = originalMovementType;
     }
 
+    protected override void OnSelectExited(SelectExitEventArgs args)
+    {
+        base.OnSelectExited(args);
+
+        // If the main hand releases the weapon, force the front hand to let go as well
+        if (secondaryInteractor != null && secondaryGrip != null)
+        {
+            interactionManager.SelectCancel(secondaryInteractor, secondaryGrip);
+        }
+    }
+
     public override void ProcessInteractable(XRInteractionUpdateOrder.UpdatePhase updatePhase)
     {
         // Let the base class (and Grab Transformer) perform the standard position/rotation processing first
@@ -79,11 +90,14 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                 // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
                 Transform secondaryController = secondaryInteractor.transform;
 
+                // Pivot exactly around the raw primary controller to guarantee no translational "pulling"
+                Vector3 truePivot = primaryInteractor.transform.position;
+
                 // The vector from the back hand (pivot) to the front grip on the weapon
-                Vector3 currentWeaponDir = secondaryGrip.transform.position - primaryAttach.position;
+                Vector3 currentWeaponDir = secondaryGrip.transform.position - truePivot;
                 
                 // The vector from the back hand (pivot) to the player's ACTUAL real-world front hand
-                Vector3 targetWeaponDir = secondaryController.position - primaryAttach.position;
+                Vector3 targetWeaponDir = secondaryController.position - truePivot;
 
                 if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
@@ -93,11 +107,10 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     // Apply this rotation to the weapon
                     Quaternion finalRot = rotationDifference * transform.rotation;
 
-                    // To pivot around the primary hand, we calculate the offset from the weapon root to the primary hand,
-                    // rotate that offset, and apply it back.
-                    Vector3 pivotOffset = transform.position - primaryAttach.position;
+                    // Pivot around the true controller position
+                    Vector3 pivotOffset = transform.position - truePivot;
                     Vector3 rotatedOffset = rotationDifference * pivotOffset;
-                    Vector3 finalPos = primaryAttach.position + rotatedOffset;
+                    Vector3 finalPos = truePivot + rotatedOffset;
 
                     transform.position = finalPos;
                     transform.rotation = finalRot;
