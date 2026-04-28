@@ -107,7 +107,7 @@ public class HittableSurface : MonoBehaviour
         pixelX = Mathf.Clamp(pixelX, 0, scoreMap.width - 1);
         pixelY = Mathf.Clamp(pixelY, 0, scoreMap.height - 1);
 
-        Color32 sampled = scoreMap.GetPixel32(pixelX, pixelY);
+        Color32 sampled = scoreMap.GetPixel(pixelX, pixelY);
 
         Debug.Log($"[ScoreMap] UV:({uv.x:F3}, {uv.y:F3}) | Pixel:({pixelX}, {pixelY}) | Color: R={sampled.r} G={sampled.g} B={sampled.b}");
 
