@@ -78,6 +78,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
                 if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
+                    Debug.Log($"[TwoHand] Pivot to Target Dist: {targetWeaponDir.magnitude}");
                     // Calculate how much we need to swing the weapon to align the front grip with the front hand
                     Quaternion rotationDifference = Quaternion.FromToRotation(currentWeaponDir.normalized, targetWeaponDir.normalized);
 
@@ -94,14 +95,18 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     transform.rotation = finalRot;
 
                     // Tell the physics engine about this override
-                    Rigidbody rb = GetComponent<Rigidbody>();
+                    Rigidbody rb = GetComponentInParent<Rigidbody>();
                     if (rb != null)
                     {
                         rb.MovePosition(finalPos);
                         rb.MoveRotation(finalRot);
                         
-                        rb.linearVelocity = Vector3.zero;
+                        rb.velocity = Vector3.zero;
                         rb.angularVelocity = Vector3.zero;
+                    }
+                    else
+                    {
+                        Debug.LogWarning("TwoHandGrabInteractable: No Rigidbody found in parent!");
                     }
                 }
             }
