@@ -101,7 +101,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         rb.MoveRotation(finalRot);
                         
                         // Clear velocities to stop the physics engine from fighting our manual rotation
-                        rb.velocity = Vector3.zero;
+                        rb.linearVelocity = Vector3.zero;
                         rb.angularVelocity = Vector3.zero;
                     }
                 }
