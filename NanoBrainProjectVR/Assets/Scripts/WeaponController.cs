@@ -257,8 +257,8 @@ public class WeaponController : MonoBehaviour
         }
         else
         {
-            // For full-auto, fire the first shot immediately and reset cooldown
-            fireCooldownTimer = 0f;
+            // For full-auto, fire the first shot immediately and start cooldown
+            fireCooldownTimer = 60f / fireRate;
             FireWeapon();
         }
     }
@@ -519,7 +519,7 @@ public class WeaponController : MonoBehaviour
             // Spawn hit effect from the pool precisely on the surface
             if (HitEffectPoolManager.Instance != null)
             {
-                HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, type);
+                HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, type, hit.collider.transform);
             }
         }
     }

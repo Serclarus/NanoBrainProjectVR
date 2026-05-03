@@ -34,7 +34,7 @@ public class ScoreManager : MonoBehaviour
     {
         if (scoreTextUI != null)
         {
-            scoreTextUI.text = "Score: " + localPlayerScore.ToString();
+            scoreTextUI.text = localPlayerScore.ToString();
         }
     }
 }

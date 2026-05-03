@@ -59,7 +59,7 @@ public class HitEffectPoolManager : MonoBehaviour
         }
     }
 
-    public void SpawnHitEffect(Vector3 position, Vector3 normal, SurfaceType type)
+    public void SpawnHitEffect(Vector3 position, Vector3 normal, SurfaceType type, Transform parent = null)
     {
         // If we shoot something that has no effect set up, fallback to Default
         if (!poolDictionary.ContainsKey(type))
@@ -83,6 +83,16 @@ public class HitEffectPoolManager : MonoBehaviour
             
             // Disable it to properly reset particle systems or trail renderers before moving
             effect.SetActive(false);
+            
+            if (parent != null)
+            {
+                effect.transform.SetParent(parent, true);
+            }
+            else
+            {
+                effect.transform.SetParent(transform, true);
+            }
+
             effect.transform.position = position;
             effect.transform.rotation = Quaternion.LookRotation(normal);
             effect.SetActive(true);

@@ -77,7 +77,7 @@ public class ShootingRangeManager : MonoBehaviour
         }
 
         PlayPhaseChangeSound();
-        UpdateUI($"Phase 1 - Multiplier: {phase1Multiplier}x\nTime: {currentTimer:F1}s");
+        UpdateUI();
     }
 
     private void Update()
@@ -101,7 +101,7 @@ public class ShootingRangeManager : MonoBehaviour
         }
         else
         {
-            UpdateUI($"Phase {currentPhase} - Multiplier: {GetCurrentMultiplier()}x\nTime: {currentTimer:F1}s");
+            UpdateUI();
         }
     }
 
@@ -113,17 +113,17 @@ public class ShootingRangeManager : MonoBehaviour
 
         if (currentPhase == 1)
         {
-            UpdateUI("Target Moving... (Hold Fire)");
+            UpdateUI();
             MoveTargetsToPhase(1, () => StartPhase(2, phase2Duration, phase2Multiplier));
         }
         else if (currentPhase == 2)
         {
-            UpdateUI("Target Moving... (Hold Fire)");
+            UpdateUI();
             MoveTargetsToPhase(2, () => StartPhase(3, phase3Duration, phase3Multiplier));
         }
         else if (currentPhase == 3)
         {
-            UpdateUI("Range Complete! Resetting...");
+            UpdateUI();
             // Reset the range after Phase 3
             currentPhase = 0;
             StartCoroutine(ResetRangeRoutine());
@@ -133,7 +133,7 @@ public class ShootingRangeManager : MonoBehaviour
     private IEnumerator ResetRangeRoutine()
     {
         yield return new WaitForSeconds(3f);
-        UpdateUI("Targets Returning...");
+        UpdateUI();
         
         bool targetsMoved = false;
         MoveTargetsToPhase(0, () => targetsMoved = true);
@@ -143,7 +143,8 @@ public class ShootingRangeManager : MonoBehaviour
             yield return null;
         }
 
-        UpdateUI("Range Ready. Shoot to start!");
+        currentTimer = phase1Duration;
+        UpdateUI();
         isShootingAllowed = true;
     }
 
@@ -161,7 +162,7 @@ public class ShootingRangeManager : MonoBehaviour
         }
 
         PlayPhaseChangeSound();
-        UpdateUI($"Phase {currentPhase} - Multiplier: {multiplier}x\nTime: {currentTimer:F1}s");
+        UpdateUI();
     }
 
     private void MoveTargetsToPhase(int index, System.Action onAllComplete)
@@ -222,11 +223,14 @@ public class ShootingRangeManager : MonoBehaviour
         }
     }
 
-    private void UpdateUI(string text)
+    private void UpdateUI()
     {
         if (statusText != null)
         {
-            statusText.text = text;
+            float time = Mathf.Max(0, currentTimer);
+            int minutes = Mathf.FloorToInt(time / 60F);
+            int seconds = Mathf.FloorToInt(time - minutes * 60);
+            statusText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
         }
     }
 }
