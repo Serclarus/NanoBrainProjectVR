@@ -6,6 +6,7 @@ public class ScoreManager : MonoBehaviour
     public static ScoreManager Instance { get; private set; }
 
     private int localPlayerScore = 0;
+    public float currentMultiplier = 1.0f;
 
     [Header("UI References")]
     [Tooltip("Optional: Drag a TextMeshProUGUI element here to display score")]
@@ -23,8 +24,9 @@ public class ScoreManager : MonoBehaviour
 
     public void AddScore(int points)
     {
-        localPlayerScore += points;
-        Debug.Log($"Score Added: +{points} | Total Score: {localPlayerScore}");
+        int finalPoints = Mathf.RoundToInt(points * currentMultiplier);
+        localPlayerScore += finalPoints;
+        Debug.Log($"Score Added: +{finalPoints} (Base: {points}, Mult: {currentMultiplier}) | Total Score: {localPlayerScore}");
         UpdateScoreUI();
     }
 

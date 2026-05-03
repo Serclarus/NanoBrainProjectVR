@@ -385,6 +385,20 @@ public class WeaponController : MonoBehaviour
     // Call this function when the VR player pulls the trigger
     public void FireWeapon()
     {
+        if (ShootingRangeManager.Instance != null && !ShootingRangeManager.Instance.isShootingAllowed)
+        {
+            if (!hasPlayedDryFire)
+            {
+                if (audioSource != null && dryFireSound != null)
+                {
+                    audioSource.pitch = 1f;
+                    audioSource.PlayOneShot(dryFireSound, shootVolume);
+                }
+                hasPlayedDryFire = true;
+            }
+            return;
+        }
+
         if (barrelPoint == null)
         {
             Debug.LogWarning("WeaponController: No barrel point assigned! Please create an empty GameObject at the barrel tip and assign it.");
