@@ -133,12 +133,17 @@ public class ShootingRangeManager : MonoBehaviour
     private IEnumerator ResetRangeRoutine()
     {
         yield return new WaitForSeconds(3f);
-        UpdateUI("Range Ready. Shoot to start!");
-        // Reset targets
-        foreach (var mover in targetMovers)
+        UpdateUI("Targets Returning...");
+        
+        bool targetsMoved = false;
+        MoveTargetsToPhase(0, () => targetsMoved = true);
+        
+        while (!targetsMoved)
         {
-            if (mover != null) mover.ResetToPhase(0);
+            yield return null;
         }
+
+        UpdateUI("Range Ready. Shoot to start!");
         isShootingAllowed = true;
     }
 
