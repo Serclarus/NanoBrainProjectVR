@@ -4,9 +4,10 @@ using UnityEngine;
 
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
+using Unity.Netcode; // Required for NGO
 
 [RequireComponent(typeof(TwoHandGrabInteractable))]
-public class WeaponController : MonoBehaviour
+public class WeaponController : NetworkBehaviour
 {
     [System.Serializable]
     public struct RecoilTier
@@ -55,7 +56,7 @@ public class WeaponController : MonoBehaviour
     public XRSocketInteractor magazineSocket;
     
     private Magazine currentMagazine;
-    private bool isChambered = false;
+    public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Visual Effects")]
     [Tooltip("Assign the generic muzzle flash particle system here")]
@@ -385,15 +386,13 @@ public class WeaponController : MonoBehaviour
     // Call this function when the VR player pulls the trigger
     public void FireWeapon()
     {
+        if (IsSpawned && !IsOwner) return; // Only owner calculates hits and ammo
+
         if (ShootingRangeManager.Instance != null && !ShootingRangeManager.Instance.isShootingAllowed)
         {
             if (!hasPlayedDryFire)
             {
-                if (audioSource != null && dryFireSound != null)
-                {
-                    audioSource.pitch = 1f;
-                    audioSource.PlayOneShot(dryFireSound, shootVolume);
-                }
+                DryFireRpc();
                 hasPlayedDryFire = true;
             }
             return;
@@ -405,24 +404,91 @@ public class WeaponController : MonoBehaviour
             return;
         }
 
-        if (!isChambered)
+        if (!isChambered.Value)
         {
             // Dry fire
             if (!hasPlayedDryFire)
             {
-                if (audioSource != null && dryFireSound != null)
-                {
-                    audioSource.pitch = 1f;
-                    audioSource.PlayOneShot(dryFireSound, shootVolume);
-                }
+                DryFireRpc();
                 hasPlayedDryFire = true;
             }
             return;
         }
 
         // We have a chambered round, commit to firing!
-        isChambered = false; // Spend the chambered round
+        isChambered.Value = false; // Spend the chambered round
+        consecutiveShots++;
 
+        // After firing, the semi-auto gun attempts to chamber a new round
+        if (currentMagazine != null && currentMagazine.HasAmmo())
+        {
+            currentMagazine.ConsumeAmmo();
+            isChambered.Value = true;
+        }
+
+        // 3. Logic: Raycast Hit Detection
+        bool hitSomething = false;
+        Vector3 hitPoint = Vector3.zero;
+        Vector3 hitNormal = Vector3.zero;
+        SurfaceType hitType = SurfaceType.Default;
+
+        if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, range, hitMask))
+        {
+            hitSomething = true;
+            hitPoint = hit.point;
+            hitNormal = hit.normal;
+
+            // 4. Hit Logic (Highly Optimized: Single GetComponent call)
+            HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
+            
+            if (hittable != null)
+            {
+                // Read the material type for the particles
+                hitType = hittable.surfaceType;
+                
+                // Trigger the damage/score logic
+                hittable.OnHit(hit);
+            }
+
+            // Spawn hit effect from the pool precisely on the surface locally with parent
+            if (HitEffectPoolManager.Instance != null)
+            {
+                HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, hitType, hit.collider.transform);
+            }
+        }
+
+        // Tell all clients to play visuals
+        FireVisualsRpc(consecutiveShots);
+        
+        if (hitSomething)
+        {
+            SpawnHitEffectRpc(hitPoint, hitNormal, hitType);
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void DryFireRpc()
+    {
+        if (audioSource != null && dryFireSound != null)
+        {
+            audioSource.pitch = 1f;
+            audioSource.PlayOneShot(dryFireSound, shootVolume);
+        }
+    }
+
+    [Rpc(SendTo.NotOwner)]
+    private void SpawnHitEffectRpc(Vector3 hitPoint, Vector3 hitNormal, SurfaceType hitType)
+    {
+        if (HitEffectPoolManager.Instance != null)
+        {
+            // Spawn without parent on non-owner clients
+            HitEffectPoolManager.Instance.SpawnHitEffect(hitPoint, hitNormal, hitType, null);
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void FireVisualsRpc(int shots)
+    {
         // 0. Audio: Play gunshot
         if (audioSource != null && shootSound != null)
         {
@@ -431,7 +497,7 @@ public class WeaponController : MonoBehaviour
         }
 
         // 0.5: Haptics: Send vibration to controller
-        if (grabInteractable != null)
+        if (isHeld && grabInteractable != null)
         {
             foreach (var interactor in grabInteractable.interactorsSelecting)
             {
@@ -455,15 +521,13 @@ public class WeaponController : MonoBehaviour
         // 2. Procedural Recoil Integration: pick the correct tier based on consecutive shot count
         if (weaponModel != null)
         {
-            consecutiveShots++;
-
             // Select the recoil tier based on how many consecutive shots have been fired
             RecoilTier tier;
-            if (consecutiveShots <= 3)
+            if (shots <= 3)
                 tier = tier1_Shots1to3;
-            else if (consecutiveShots <= 8)
+            else if (shots <= 8)
                 tier = tier2_Shots4to8;
-            else if (consecutiveShots <= 17)
+            else if (shots <= 17)
                 tier = tier3_Shots9to17;
             else
                 tier = tier4_Shots18plus;
@@ -491,36 +555,6 @@ public class WeaponController : MonoBehaviour
         {
             targetBoltOffset = boltTravelDistance;
             hasEjectedShell = false; // Prepare a new shell to be ejected as the bolt travels back
-        }
-
-        // After firing, the semi-auto gun attempts to chamber a new round
-        if (currentMagazine != null && currentMagazine.HasAmmo())
-        {
-            currentMagazine.ConsumeAmmo();
-            isChambered = true;
-        }
-
-        // 3. Logic: Raycast Hit Detection
-        if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, range, hitMask))
-        {
-            // 4. Hit Logic (Highly Optimized: Single GetComponent call)
-            SurfaceType type = SurfaceType.Default;
-            HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
-            
-            if (hittable != null)
-            {
-                // Read the material type for the particles
-                type = hittable.surfaceType;
-                
-                // Trigger the damage/score logic
-                hittable.OnHit(hit);
-            }
-
-            // Spawn hit effect from the pool precisely on the surface
-            if (HitEffectPoolManager.Instance != null)
-            {
-                HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, type, hit.collider.transform);
-            }
         }
     }
 
@@ -594,7 +628,7 @@ public class WeaponController : MonoBehaviour
     public void DebugFire()
     {
         // For debug firing, force chamber a round first so it always works
-        isChambered = true;
+        isChambered.Value = true;
         FireWeapon();
         Debug.Log("Debug Fire Triggered!");
     }
@@ -606,17 +640,17 @@ public class WeaponController : MonoBehaviour
         Debug.Log("Debug Rack Triggered!");
     }
 
-    /// <summary>
-    /// Call this from an XR Grab Interactable event or custom script when the slide is fully pulled back.
-    /// This mimics a manual rack.
-    /// </summary>
     public void RackSlide()
     {
+        if (IsSpawned && !IsOwner) return; // Only owner initiates mechanical actions
+        
+        bool ejectRound = false;
+        
         // 1. If there's an unfired chambered round, eject it. 
-        if (isChambered)
+        if (isChambered.Value)
         {
-            EjectShell();
-            isChambered = false;
+            ejectRound = true;
+            isChambered.Value = false;
         }
 
         // 2. Chamber a new round from the magazine if available
@@ -625,8 +659,8 @@ public class WeaponController : MonoBehaviour
             if (currentMagazine.HasAmmo())
             {
                 currentMagazine.ConsumeAmmo();
-                isChambered = true;
-                Debug.Log("Round Chambered! Ammo left in mag: " + currentMagazine.currentAmmo);
+                isChambered.Value = true;
+                Debug.Log("Round Chambered!");
             }
             else
             {
@@ -638,7 +672,18 @@ public class WeaponController : MonoBehaviour
             Debug.LogWarning("Could not chamber round: No Magazine detected in the Socket!");
         }
 
-        // Optionally visually rack the bolt via the procedural animation back to simulate the rack action
+        RackSlideRpc(ejectRound);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void RackSlideRpc(bool ejectRound)
+    {
+        if (ejectRound)
+        {
+            EjectShell();
+        }
+
+        // Visually rack the bolt via the procedural animation back to simulate the rack action
         if (boltTransform != null)
         {
             targetBoltOffset = boltTravelDistance;

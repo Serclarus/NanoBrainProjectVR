@@ -3,16 +3,20 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables; // Needed for XRI 3.0+
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using Unity.Netcode;
 
 [RequireComponent(typeof(XRGrabInteractable))]
-public class Magazine : MonoBehaviour
+public class Magazine : NetworkBehaviour
 {
     [Header("Ammo Settings")]
     [Tooltip("Maximum amount of bullets this magazine can hold.")]
     public int maxAmmo = 30;
 
-    [Tooltip("Current amount of bullets in the magazine.")]
-    public int currentAmmo = 30;
+    [Tooltip("Initial amount of bullets in the magazine.")]
+    public int initialAmmo = 30;
+    
+    [HideInInspector]
+    public NetworkVariable<int> currentAmmo = new NetworkVariable<int>(30, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Tooltip("If true, the magazine will never run out of ammo.")]
     public bool infiniteAmmo = false;
@@ -45,17 +49,39 @@ public class Magazine : MonoBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (IsOwner)
+        {
+            if (initialAmmo > maxAmmo)
+            {
+                currentAmmo.Value = maxAmmo;
+            }
+            else
+            {
+                currentAmmo.Value = initialAmmo;
+            }
+        }
+        
+        currentAmmo.OnValueChanged += OnAmmoChanged;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        currentAmmo.OnValueChanged -= OnAmmoChanged;
+    }
+
     private void Start()
     {
-        // Safety check to ensure we don't start with more ammo than allowed 
-        // (unless set via inspector intentionally, but good practice).
-        if (currentAmmo > maxAmmo)
-        {
-            currentAmmo = maxAmmo;
-        }
-
         UpdateVisuals();
         CheckDespawnCondition(); // Run check in case it spawns totally empty on the floor
+    }
+
+    private void OnAmmoChanged(int previousValue, int newValue)
+    {
+        UpdateVisuals();
     }
 
     private void UpdateVisuals()
@@ -109,8 +135,23 @@ public class Magazine : MonoBehaviour
     private IEnumerator DespawnRoutine()
     {
         yield return new WaitForSeconds(despawnDelay);
-        // Poof!
-        Destroy(gameObject);
+        if (IsSpawned)
+        {
+            if (IsOwner)
+            {
+                RequestDespawnRpc();
+            }
+        }
+        else
+        {
+            Destroy(gameObject); // Fallback if not networked yet
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestDespawnRpc()
+    {
+        NetworkObject.Despawn();
     }
 
     /// <summary>
@@ -119,7 +160,7 @@ public class Magazine : MonoBehaviour
     public bool HasAmmo()
     {
         if (infiniteAmmo) return true;
-        return currentAmmo > 0;
+        return currentAmmo.Value > 0;
     }
 
     /// <summary>
@@ -128,14 +169,16 @@ public class Magazine : MonoBehaviour
     /// </summary>
     public bool ConsumeAmmo()
     {
+        if (!IsOwner && IsSpawned) return false;
+
         if (infiniteAmmo) return true;
 
-        if (currentAmmo > 0)
+        if (currentAmmo.Value > 0)
         {
-            currentAmmo--;
+            currentAmmo.Value--;
             
             // If we just shot the last bullet, check if we immediately need to start the despawn timer (if it's not held/socketed somehow)
-            if (currentAmmo <= 0)
+            if (currentAmmo.Value <= 0)
             {
                 UpdateVisuals();
                 CheckDespawnCondition();
