@@ -394,7 +394,9 @@ public class WeaponController : NetworkBehaviour
         {
             if (!hasPlayedDryFire)
             {
-                DryFireRpc();
+                if (IsSpawned) DryFireRpc();
+                else PlayDryFireLocal();
+                
                 hasPlayedDryFire = true;
             }
             return;
@@ -411,7 +413,9 @@ public class WeaponController : NetworkBehaviour
             // Dry fire
             if (!hasPlayedDryFire)
             {
-                DryFireRpc();
+                if (IsSpawned) DryFireRpc();
+                else PlayDryFireLocal();
+                
                 hasPlayedDryFire = true;
             }
             return;
@@ -460,16 +464,27 @@ public class WeaponController : NetworkBehaviour
         }
 
         // Tell all clients to play visuals
-        FireVisualsRpc(consecutiveShots);
+        if (IsSpawned)
+            FireVisualsRpc(consecutiveShots);
+        else
+            PlayFireVisualsLocal(consecutiveShots);
         
         if (hitSomething)
         {
-            SpawnHitEffectRpc(hitPoint, hitNormal, hitType);
+            if (IsSpawned)
+                SpawnHitEffectRpc(hitPoint, hitNormal, hitType);
+            else
+                SpawnHitEffectLocal(hitPoint, hitNormal, hitType);
         }
     }
 
     [Rpc(SendTo.Everyone)]
     private void DryFireRpc()
+    {
+        PlayDryFireLocal();
+    }
+
+    private void PlayDryFireLocal()
     {
         if (audioSource != null && dryFireSound != null)
         {
@@ -481,15 +496,25 @@ public class WeaponController : NetworkBehaviour
     [Rpc(SendTo.NotOwner)]
     private void SpawnHitEffectRpc(Vector3 hitPoint, Vector3 hitNormal, SurfaceType hitType)
     {
+        SpawnHitEffectLocal(hitPoint, hitNormal, hitType);
+    }
+
+    private void SpawnHitEffectLocal(Vector3 hitPoint, Vector3 hitNormal, SurfaceType hitType)
+    {
         if (HitEffectPoolManager.Instance != null)
         {
-            // Spawn without parent on non-owner clients
+            // Spawn without parent on non-owner/offline clients
             HitEffectPoolManager.Instance.SpawnHitEffect(hitPoint, hitNormal, hitType, null);
         }
     }
 
     [Rpc(SendTo.Everyone)]
     private void FireVisualsRpc(int shots)
+    {
+        PlayFireVisualsLocal(shots);
+    }
+
+    private void PlayFireVisualsLocal(int shots)
     {
         // 0. Audio: Play gunshot
         if (audioSource != null && shootSound != null)
@@ -674,11 +699,19 @@ public class WeaponController : NetworkBehaviour
             Debug.LogWarning("Could not chamber round: No Magazine detected in the Socket!");
         }
 
-        RackSlideRpc(ejectRound);
+        if (IsSpawned)
+            RackSlideRpc(ejectRound);
+        else
+            PlayRackSlideLocal(ejectRound);
     }
 
     [Rpc(SendTo.Everyone)]
     private void RackSlideRpc(bool ejectRound)
+    {
+        PlayRackSlideLocal(ejectRound);
+    }
+
+    private void PlayRackSlideLocal(bool ejectRound)
     {
         if (ejectRound)
         {
