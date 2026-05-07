@@ -201,8 +201,10 @@ public class WeaponController : NetworkBehaviour
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
+        base.OnDestroy();
+        
         if (grabInteractable != null)
         {
             grabInteractable.selectEntered.RemoveListener(OnWeaponGrabbed);
