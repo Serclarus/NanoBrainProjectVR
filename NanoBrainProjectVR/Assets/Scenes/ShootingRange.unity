@@ -994,7 +994,7 @@ GameObject:
   - component: {fileID: 83899921}
   - component: {fileID: 83899920}
   m_Layer: 0
-  m_Name: TimeText
+  m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4998,6 +4998,7 @@ GameObject:
   - component: {fileID: 380148474}
   - component: {fileID: 380148473}
   - component: {fileID: 380148476}
+  - component: {fileID: 380148477}
   m_Layer: 0
   m_Name: JoinButton
   m_TagString: Untagged
@@ -5141,6 +5142,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 7.480748, y: 2.6452694, z: 0.72883093}
   m_Center: {x: -0.0056193913, y: 0.014955057, z: 0.13558409}
+--- !u!114 &380148477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380148472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee87ff0e4c6382d4a9098c4eaebcfe8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PhysicalTouchButton
+  onButtonTouch:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 380148474}
+        m_TargetAssemblyTypeName: NetworkConnectionButtons, Assembly-CSharp
+        m_MethodName: JoinRelayLobby
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  cooldownDelay: 1
+  hapticIntensity: 0.5
+  hapticDuration: 0.1
+  buttonText: {fileID: 83899920}
 --- !u!1 &392595600
 GameObject:
   m_ObjectHideFlags: 0
@@ -10275,7 +10307,7 @@ GameObject:
   - component: {fileID: 738993352}
   - component: {fileID: 738993351}
   m_Layer: 0
-  m_Name: TimeText
+  m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20217,6 +20249,41 @@ PrefabInstance:
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1153587615230119192, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1153587615230119192, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1153587615230119192, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1153587615230119192, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1339823300485290393, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1339823300485290393, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1339823300485290393, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3088556171141835317, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -20225,6 +20292,46 @@ PrefabInstance:
     - target: {fileID: 3088556171141835317, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4155537854260005700, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4155537854260005700, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4155537854260005700, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4155537854260005700, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5187516752444087277, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5187516752444087277, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5187516752444087277, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5187516752444087277, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7174019212652907432, guid: 77ac6b10722bcca4a8baf70e44d89e78,
@@ -20281,6 +20388,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: XR Interaction Setup (MP Variant)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7413506793532227578, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7413506793532227578, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7413506793532227578, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7413506793532227578, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7565494415570717466, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
@@ -25417,6 +25544,7 @@ GameObject:
   - component: {fileID: 1817378130}
   - component: {fileID: 1817378129}
   - component: {fileID: 1817378132}
+  - component: {fileID: 1817378133}
   m_Layer: 0
   m_Name: HostButton
   m_TagString: Untagged
@@ -25560,6 +25688,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 7.108949, y: 2.6106908, z: 0.68365127}
   m_Center: {x: -0.078980155, y: -0.10523363, z: 0.15817173}
+--- !u!114 &1817378133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1817378128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee87ff0e4c6382d4a9098c4eaebcfe8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PhysicalTouchButton
+  onButtonTouch:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1817378130}
+        m_TargetAssemblyTypeName: NetworkConnectionButtons, Assembly-CSharp
+        m_MethodName: HostRelayLobby
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  cooldownDelay: 1
+  hapticIntensity: 0.5
+  hapticDuration: 0.1
+  buttonText: {fileID: 738993351}
 --- !u!1 &1820305318
 GameObject:
   m_ObjectHideFlags: 0
