@@ -5078,7 +5078,7 @@ GameObject:
   - component: {fileID: 8984669427194182907}
   - component: {fileID: 4059965037710819467}
   - component: {fileID: 2145881611890471337}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: WPN_AKM_bolt_carrier
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5263,7 +5263,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -5552,7 +5552,7 @@ MonoBehaviour:
   m_AttachTransform: {fileID: 0}
   m_KeepSelectedTargetValid: 1
   m_DisableVisualsWhenBlockedInGroup: 1
-  m_StartingSelectedInteractable: {fileID: 8259603190386800545}
+  m_StartingSelectedInteractable: {fileID: 0}
   m_StartingTargetFilter: {fileID: 0}
   m_AutoFindParentInteractableInHierarchy: 0
   m_ParentInteractableObject: {fileID: 8259603190386800545}
@@ -5749,7 +5749,8 @@ GameObject:
   - component: {fileID: 541513578881812698}
   - component: {fileID: 1845322652871049960}
   - component: {fileID: 2124419018286080890}
-  m_Layer: 0
+  - component: {fileID: 2005365606717831611}
+  m_Layer: 8
   m_Name: WPN_AKM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5829,6 +5830,27 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &2005365606717831611
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5690620302946348170}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.044492044, y: 0.47596556, z: 0.07443328}
+  m_Center: {x: -0.0023142584, y: 0.010744184, z: -0.017378964}
 --- !u!1 &6255468486973937695
 GameObject:
   m_ObjectHideFlags: 0
@@ -6013,8 +6035,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.06327033, y: 0.14656258, z: 0.15820122}
-  m_Center: {x: -0.0036334246, y: -0.04959643, z: -0.13905334}
+  m_Size: {x: 0.04504776, y: 0.17623281, z: 0.055980146}
+  m_Center: {x: -0.004091263, y: -0.03476131, z: -0.1562188}
 --- !u!54 &1866944337604239615
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6184,7 +6206,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3300468902
+  GlobalObjectIdHash: 3522345017
   InScenePlacedSourceGlobalObjectIdHash: 2741449650
   DeferredDespawnTick: 0
   Ownership: 1
@@ -6283,7 +6305,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MikeNspired.XRIStarterKit.XRHandPoser
   leftHandPose: {fileID: 11400000, guid: 7491dd184f9a9b04cbbe8437fe55ae09, type: 2}
-  rightHandPose: {fileID: 11400000, guid: 1597f14c4e6ddf042be9d0db0c6fdb1c, type: 2}
+  rightHandPose: {fileID: 11400000, guid: 7491dd184f9a9b04cbbe8437fe55ae09, type: 2}
   LeftHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
     type: 2}
   RightHandAnimationPose: {fileID: 11400000, guid: 75e5ac1451d9efb46b147dba2d683191,
@@ -6503,7 +6525,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9210565571938336921}
-  m_Layer: 0
+  - component: {fileID: 8243276661131078296}
+  m_Layer: 8
   m_Name: WPN_AKM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6534,6 +6557,27 @@ Transform:
   - {fileID: 8129628212668937248}
   m_Father: {fileID: 3571701202094694108}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &8243276661131078296
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7517676517083344163}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.030353546, y: 0.035945773, z: 0.23005724}
+  m_Center: {x: -0.006849289, y: 0.014519393, z: 0.33547628}
 --- !u!1 &7881709168821592690
 GameObject:
   m_ObjectHideFlags: 0
@@ -6545,7 +6589,8 @@ GameObject:
   - component: {fileID: 7950030294718878253}
   - component: {fileID: 8138674100413699047}
   - component: {fileID: 449484672308299901}
-  m_Layer: 0
+  - component: {fileID: 4293148149902235199}
+  m_Layer: 8
   m_Name: WPN_AKM_trigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6624,6 +6669,27 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &4293148149902235199
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7881709168821592690}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.035751343, y: 0.053861078, z: 0.106174916}
+  m_Center: {x: 0.00037002563, y: -0.018037573, z: 0.01637194}
 --- !u!1 &8234626876767592532
 GameObject:
   m_ObjectHideFlags: 0
