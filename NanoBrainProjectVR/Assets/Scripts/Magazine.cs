@@ -40,8 +40,10 @@ public class Magazine : NetworkBehaviour
         grabInteractable.selectExited.AddListener(OnDropped);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
+        base.OnDestroy();
+        
         if (grabInteractable != null)
         {
             grabInteractable.selectEntered.RemoveListener(OnGrabbedOrSocketed);
