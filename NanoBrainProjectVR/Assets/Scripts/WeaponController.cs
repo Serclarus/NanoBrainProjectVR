@@ -326,6 +326,13 @@ public class WeaponController : NetworkBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            DebugRackSlide();
+        }
+#endif
+
         // ── Full-Auto Firing ──
         if (fullAuto && isTriggerHeld && isHeld)
         {
