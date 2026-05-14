@@ -131,7 +131,7 @@ namespace XRMultiplayer
             if (IsOwner)
             {
                 m_XROrigin = FindFirstObjectByType<XROrigin>();
-                if (m_XROrigin != null && m_XROrigin.TryGetComponent(out m_XRModalityManager))
+                if (m_XROrigin.TryGetComponent(out m_XRModalityManager))
                 {
                     SetupLocalHands();
                 }
