@@ -189,17 +189,17 @@ namespace XRMultiplayer
         ///<inheritdoc/>
         protected virtual void Update()
         {
-            if (IsOwner && XRINetworkGameManager.Instance.positionalVoiceChat)
+            if (IsOwner && XRINetworkGameManager.Instance != null && XRINetworkGameManager.Instance.positionalVoiceChat)
             {
                 if (Time.time > m_VoicePositionCheckTimer)
                 {
                     m_VoicePositionCheckTimer += m_VoicePositionUpdateTime;
 
-                    if (Vector3.Distance(m_PrevHeadPos, m_HeadOrigin.position) > m_VoiceUpdatePosotionDelta)
+                    if (m_HeadOrigin != null && m_VoiceChat != null)
                     {
-                        m_PrevHeadPos = m_HeadOrigin.position;
-                        if (XRINetworkGameManager.Instance.positionalVoiceChat)
+                        if (Vector3.Distance(m_PrevHeadPos, m_HeadOrigin.position) > m_VoiceUpdatePosotionDelta)
                         {
+                            m_PrevHeadPos = m_HeadOrigin.position;
                             m_VoiceChat.Set3DAudio(m_HeadOrigin);
                         }
                     }
