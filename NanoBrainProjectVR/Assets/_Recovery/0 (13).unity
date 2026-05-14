@@ -13425,7 +13425,7 @@ PrefabInstance:
     - target: {fileID: 8647664954492677990, guid: 0267a1d338db2bf4c9625e450bbaaad0,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -14840,6 +14840,12 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &987475509 stripped
+BoxCollider:
+  m_CorrespondingSourceObject: {fileID: 4059965037710819467, guid: 81908e6265049a24da238898ce99a90c,
+    type: 3}
+  m_PrefabInstance: {fileID: 5047584016799928798}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &990662904
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21281,7 +21287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4143509934
+  GlobalObjectIdHash: 22081679
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -22352,8 +22358,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.3411524, y: 2.5765996, z: 1.3685852}
-  m_Center: {x: 0.000000029802322, y: 0, z: 0}
+  m_Size: {x: 1.3411524, y: 0.85272014, z: 1.0366781}
+  m_Center: {x: 0, y: -0.8619397, z: 0.16595352}
 --- !u!4 &1519474070 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5873913885800256426, guid: cca5aebc1b7a8844d86da7c520097183,
@@ -23166,7 +23172,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1589005228
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25821,6 +25827,12 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!65 &1769940109 stripped
+BoxCollider:
+  m_CorrespondingSourceObject: {fileID: 7599575759986319009, guid: 81908e6265049a24da238898ce99a90c,
+    type: 3}
+  m_PrefabInstance: {fileID: 5047584016799928798}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1771477813 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5658906698624420981, guid: 57a56c396347dde4f8d22d7031edabca,
@@ -31128,7 +31140,7 @@ PrefabInstance:
     - target: {fileID: 5087823492143518475, guid: 3967f87296c892e40b57e37bc8601550,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -32475,6 +32487,11 @@ PrefabInstance:
       propertyPath: m_StartingSelectedInteractable
       value: 
       objectReference: {fileID: 3394083089540292491}
+    - target: {fileID: 319631446197280734, guid: 81908e6265049a24da238898ce99a90c,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[0]'
+      value: 
+      objectReference: {fileID: 987475509}
     - target: {fileID: 2908588147146295675, guid: 81908e6265049a24da238898ce99a90c,
         type: 3}
       propertyPath: GlobalObjectIdHash
@@ -32535,6 +32552,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: RifleAKM
       objectReference: {fileID: 0}
+    - target: {fileID: 8259603190386800545, guid: 81908e6265049a24da238898ce99a90c,
+        type: 3}
+      propertyPath: m_Colliders.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8259603190386800545, guid: 81908e6265049a24da238898ce99a90c,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1769940109}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
