@@ -234,7 +234,10 @@ namespace XRMultiplayer
                 // Local Name unsubscribe.
                 XRINetworkGameManager.LocalPlayerName.Unsubscribe(UpdateLocalPlayerName);
                 XRINetworkGameManager.LocalPlayerColor.Unsubscribe(UpdateLocalPlayerColor);
-                m_VoiceChat.selfMuted.Unsubscribe(SelfMutedChanged);
+                if (m_VoiceChat != null)
+                {
+                    m_VoiceChat.selfMuted.Unsubscribe(SelfMutedChanged);
+                }
             }
             else if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient)
             {
@@ -311,8 +314,11 @@ namespace XRMultiplayer
             m_PlayerName.Value = new FixedString128Bytes(XRINetworkGameManager.LocalPlayerName.Value);
             XRINetworkGameManager.LocalPlayerColor.Subscribe(UpdateLocalPlayerColor);
             XRINetworkGameManager.LocalPlayerName.Subscribe(UpdateLocalPlayerName);
-            m_VoiceChat.selfMuted.Subscribe(SelfMutedChanged);
-            m_VoiceChat.ToggleSelfMute(true, true);
+            if (m_VoiceChat != null)
+            {
+                m_VoiceChat.selfMuted.Subscribe(SelfMutedChanged);
+                m_VoiceChat.ToggleSelfMute(true, true);
+            }
 
             onSpawnedLocal?.Invoke();
         }
@@ -362,15 +368,24 @@ namespace XRMultiplayer
             WorldCanvas worldCanvas = FindFirstObjectByType<WorldCanvas>();
             if (worldCanvas != null)
             {
-                // If we are using a World Canvas, reparent name tag and destroy local canvas.
-                Canvas localCanvas = m_PlayerNameTag.GetComponentInParent<Canvas>();
-                worldCanvas.SetupPlayerNameTag(this, m_PlayerNameTag);
-                Destroy(localCanvas.gameObject);
+                if (m_PlayerNameTag != null)
+                {
+                    // If we are using a World Canvas, reparent name tag and destroy local canvas.
+                    Canvas localCanvas = m_PlayerNameTag.GetComponentInParent<Canvas>();
+                    worldCanvas.SetupPlayerNameTag(this, m_PlayerNameTag);
+                    if (localCanvas != null)
+                    {
+                        Destroy(localCanvas.gameObject);
+                    }
+                }
             }
             else
             {
                 // If we are not using a World Canvas, setup the name tag for local use.
-                m_PlayerNameTag.SetupNameTag(this);
+                if (m_PlayerNameTag != null)
+                {
+                    m_PlayerNameTag.SetupNameTag(this);
+                }
             }
 
             onSpawnedAll?.Invoke();
@@ -412,6 +427,8 @@ namespace XRMultiplayer
         /// </summary>
         public void SetupVoicePlayer()
         {
+            if (m_VoiceChat == null) return;
+            
             m_VivoxParticipant = m_VoiceChat.GetVivoxParticipantById(playerVoiceId);
             if (m_VivoxParticipant != null)
             {
@@ -437,7 +454,7 @@ namespace XRMultiplayer
             if (!IsOwner) return;
             m_PlayerVoiceId.Value = new FixedString128Bytes(voiceId);
             SetupVoicePlayer();
-            if (XRINetworkGameManager.Instance.positionalVoiceChat)
+            if (XRINetworkGameManager.Instance.positionalVoiceChat && m_VoiceChat != null)
             {
                 m_VoiceChat.Set3DAudio(m_HeadOrigin);
             }
