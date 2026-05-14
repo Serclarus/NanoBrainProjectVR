@@ -265,9 +265,11 @@ namespace XRMultiplayer
                 if (m_XROrigin != null)
                 {
                     m_HeadOrigin = m_XROrigin.Camera.transform;
+                    Debug.Log($"<color=green>SUCCESS: Found XR Origin! HeadOrigin is {m_HeadOrigin.name}</color>");
                 }
                 else
                 {
+                    Debug.LogError("<color=red>CRITICAL FAILURE: m_XROrigin is NULL! FindFirstObjectByType failed to find the XR Origin in the scene!</color>");
                     Utils.Log("No XR Rig Available", 1);
                 }
 
