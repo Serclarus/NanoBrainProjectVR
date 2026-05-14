@@ -5078,7 +5078,7 @@ GameObject:
   - component: {fileID: 8984669427194182907}
   - component: {fileID: 4059965037710819467}
   - component: {fileID: 2145881611890471337}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: WPN_AKM_bolt_carrier
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5172,7 +5172,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable
   m_InteractionManager: {fileID: 0}
   m_Colliders:
-  - {fileID: 0}
+  - {fileID: 4059965037710819467}
   m_InteractionLayers:
     m_Bits: 1
   m_DistanceCalculationMode: 1
@@ -5489,6 +5489,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3398695907390129914}
   - component: {fileID: 292264695700268188}
+  - component: {fileID: 3408750398876207127}
   m_Layer: 0
   m_Name: MagSocket
   m_TagString: Untagged
@@ -5559,6 +5560,27 @@ MonoBehaviour:
   m_SocketScaleMode: 0
   m_FixedScale: {x: 1, y: 1, z: 1}
   m_TargetBoundsSize: {x: 1, y: 1, z: 1}
+--- !u!65 &3408750398876207127
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364941774885705187}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.075873196, y: 0.11828971, z: 0.03479861}
+  m_Center: {x: -0.010534651, y: 0.035678104, z: 0.07252113}
 --- !u!1 &5666970300986484425
 GameObject:
   m_ObjectHideFlags: 0
@@ -5609,7 +5631,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -11566,8 +11588,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8332400447327267994}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3352437, y: 0.22960533, z: 0.51631504, w: 0.7538646}
-  m_LocalPosition: {x: -0.059400007, y: 0.0067000417, z: 0.0021001548}
+  m_LocalRotation: {x: 0.06306223, y: 0.8640869, z: 0.4703989, w: -0.16763602}
+  m_LocalPosition: {x: 0.009299968, y: -0.05260008, z: 0.10359997}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
