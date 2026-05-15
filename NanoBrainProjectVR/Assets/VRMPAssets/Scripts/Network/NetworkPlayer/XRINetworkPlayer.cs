@@ -287,7 +287,7 @@ namespace XRMultiplayer
             GameObject pouchPrefab = null;
             foreach (var prefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
             {
-                if (prefab.Prefab.GetComponent<AmmoPouch>() != null)
+                if (prefab.Prefab.name.Contains("MagPouch") || prefab.Prefab.name.Contains("AmmoPouch"))
                 {
                     pouchPrefab = prefab.Prefab;
                     break;
