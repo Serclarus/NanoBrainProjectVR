@@ -275,34 +275,8 @@ namespace XRMultiplayer
                 }
 
                 SetupLocalPlayer();
-                SpawnMagPouchServerRpc();
             }
             CompleteSetup();
-        }
-
-        [ServerRpc]
-        private void SpawnMagPouchServerRpc(ServerRpcParams rpcParams = default)
-        {
-            // Find the MagPouch prefab in the NetworkManager's registered prefabs
-            GameObject pouchPrefab = null;
-            foreach (var prefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
-            {
-                if (prefab.Prefab.name.Contains("MagPouch") || prefab.Prefab.name.Contains("AmmoPouch"))
-                {
-                    pouchPrefab = prefab.Prefab;
-                    break;
-                }
-            }
-
-            if (pouchPrefab != null)
-            {
-                GameObject newPouch = Instantiate(pouchPrefab);
-                NetworkObject netObj = newPouch.GetComponent<NetworkObject>();
-                if (netObj != null)
-                {
-                    netObj.SpawnWithOwnership(rpcParams.Receive.SenderClientId);
-                }
-            }
         }
 
         public override void OnNetworkDespawn()
@@ -498,35 +472,6 @@ namespace XRMultiplayer
                     m_VivoxParticipant.MutePlayerLocally();
                 else
                     m_VivoxParticipant.UnmutePlayerLocally();
-            }
-        }
-
-        [ServerRpc]
-        public void SpawnMagazineServerRpc(Vector3 position, Quaternion rotation, ServerRpcParams rpcParams = default)
-        {
-            // Find the magazine prefab in the NetworkManager's registered prefabs
-            GameObject magPrefab = null;
-            foreach (var prefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
-            {
-                if (prefab.Prefab.name.Contains("Magazine") || prefab.Prefab.name.Contains("Mag"))
-                {
-                    magPrefab = prefab.Prefab;
-                    break;
-                }
-            }
-
-            if (magPrefab != null)
-            {
-                GameObject newMag = Instantiate(magPrefab, position, rotation);
-                NetworkObject netObj = newMag.GetComponent<NetworkObject>();
-                if (netObj != null)
-                {
-                    netObj.SpawnWithOwnership(rpcParams.Receive.SenderClientId);
-                }
-            }
-            else
-            {
-                Utils.Log("SpawnMagazineServerRpc: Could not find a registered NetworkPrefab with a Magazine script!", 1);
             }
         }
     }

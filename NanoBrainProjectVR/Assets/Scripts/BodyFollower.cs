@@ -1,7 +1,6 @@
 using UnityEngine;
-using Unity.Netcode;
 
-public class BodyFollower : NetworkBehaviour
+public class BodyFollower : MonoBehaviour
 {
     [Header("Tracking Targets")]
     [Tooltip("Assign the Main Camera (the VR Headset) here")]
@@ -41,35 +40,17 @@ public class BodyFollower : NetworkBehaviour
 
     private float currentBodyYaw;
 
-    public override void OnNetworkSpawn()
-    {
-        base.OnNetworkSpawn();
-        if (IsOwner)
-        {
-            if (head == null && Camera.main != null)
-            {
-                head = Camera.main.transform;
-            }
-        }
-    }
-
     private void Start()
     {
-        // Fallback for purely offline scenes
-        if (!NetworkManager.Singleton.IsListening)
+        if (head == null)
         {
-            if (head == null && Camera.main != null)
-            {
-                head = Camera.main.transform;
-            }
+            if (Camera.main != null) head = Camera.main.transform;
+            else Debug.LogWarning("BodyFollower: No head transform assigned and no Main Camera found!");
         }
     }
 
     private void Update()
     {
-        // Only the owner should update the position (NetworkTransform syncs it to others)
-        if (NetworkManager.Singleton.IsListening && !IsOwner) return;
-
         if (head == null) return;
 
         // 1. Position follows X and Z of the head exactly, but Y is forced to the chest/hip height.

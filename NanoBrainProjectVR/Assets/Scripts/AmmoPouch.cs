@@ -4,9 +4,6 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Filtering;
-using XRMultiplayer;
-
-using Unity.Netcode;
 
 [RequireComponent(typeof(XRSocketInteractor))]
 public class AmmoPouch : MonoBehaviour, IXRSelectFilter, IXRHoverFilter
@@ -85,72 +82,36 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter, IXRHoverFilter
 
         isSpawning = true;
 
-        if (XRINetworkPlayer.LocalPlayer != null)
-        {
-            // Ask the Server to spawn the magazine via our Network Avatar
-            XRINetworkPlayer.LocalPlayer.SpawnMagazineServerRpc(transform.position, transform.rotation);
-            
-            // Wait for it to arrive from the server, then socket it locally
-            StartCoroutine(WaitAndSocket());
-        }
-        else
-        {
-            // Fallback for completely offline play
-            GameObject newMag = Instantiate(magazinePrefab, transform.position, transform.rotation);
-            IXRSelectInteractable interactable = newMag.GetComponentInChildren<IXRSelectInteractable>();
-            if (interactable != null)
-            {
-                socket.interactionManager.SelectEnter((IXRSelectInteractor)socket, interactable);
-            }
-            isSpawning = false;
-        }
-    }
+        GameObject newMag = Instantiate(magazinePrefab, transform.position, transform.rotation);
+        IXRSelectInteractable interactable = newMag.GetComponentInChildren<IXRSelectInteractable>();
 
-    private IEnumerator WaitAndSocket()
-    {
-        // Give the server a moment to spawn the object and sync it to us
-        yield return new WaitForSeconds(0.2f);
-
-        // Find the newest magazine that was spawned near us
-        Collider[] hits = Physics.OverlapSphere(transform.position, 0.5f);
-        IXRSelectInteractable targetMag = null;
-
-        foreach (var hit in hits)
+        if (interactable != null)
         {
-            IXRSelectInteractable interactable = hit.GetComponentInParent<IXRSelectInteractable>();
-            if (interactable != null && hit.GetComponentInParent<Magazine>() != null)
-            {
-                // Make sure it's not already held by someone else
-                if (interactable.interactorsSelecting.Count == 0)
-                {
-                    targetMag = interactable;
-                    break;
-                }
-            }
+            socket.interactionManager.SelectEnter((IXRSelectInteractor)socket, interactable);
         }
 
-        if (targetMag != null)
-        {
-            socket.interactionManager.SelectEnter((IXRSelectInteractor)socket, targetMag);
-        }
-        
         isSpawning = false;
     }
 
     public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
     {
+        // Only allow selection if we are explicitly spawning it right now,
+        // or if it's ALREADY held by this socket.
         if (isSpawning) return true;
         if (socket.hasSelection && socket.interactablesSelected.Contains(interactable)) return true;
+        
         return false;
     }
 
     public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
     {
+        // Same logic for hover - only allow what we spawn or what we already hold.
         if (isSpawning) return true;
         if (interactable is IXRSelectInteractable selectInteractable)
         {
             if (socket.hasSelection && socket.interactablesSelected.Contains(selectInteractable)) return true;
         }
+
         return false;
     }
 }
