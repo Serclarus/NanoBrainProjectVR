@@ -76,7 +76,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         // Let the base class (and Grab Transformer) perform the standard position/rotation processing first
         base.ProcessInteractable(updatePhase);
 
-        // Override the rotation during all phases to prevent XRI's low-latency updates from snapping it back
+        // Override the position and rotation to strictly lock the weapon between the two hands
         if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Dynamic || 
             updatePhase == XRInteractionUpdateOrder.UpdatePhase.Fixed ||
             updatePhase == XRInteractionUpdateOrder.UpdatePhase.Late ||
@@ -85,43 +85,42 @@ public class TwoHandGrabInteractable : XRGrabInteractable
             if (IsTwoHandedGrabbed)
             {
                 IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
+                
+                // Get the physical real-world locations of the player's hands
+                Transform primaryHand = primaryInteractor.GetAttachTransform(this);
+                Transform secondaryHand = secondaryInteractor.GetAttachTransform(secondaryGrip);
+                
+                // Get the attachment point on the weapon itself
                 Transform primaryAttach = GetAttachTransform(primaryInteractor);
-                
-                // Pivot exactly around the primary attach point so the back hand doesn't slide/translate
-                Vector3 truePivot = primaryAttach.position;
 
-                // The vector from the back hand (pivot) to the front grip on the weapon
-                Vector3 currentWeaponDir = secondaryGrip.transform.position - truePivot;
+                // Find the direction between the two real-world hands
+                Vector3 targetWeaponDir = secondaryHand.position - primaryHand.position;
                 
-                // We want the front grip to point exactly at the secondary interactor's attach point
-                Transform secondaryAttach = secondaryInteractor.GetAttachTransform(secondaryGrip);
-                Vector3 targetWeaponDir = secondaryAttach.position - truePivot;
+                // Find the current direction between the weapon's grips
+                Vector3 currentWeaponDir = secondaryGrip.transform.position - primaryAttach.position;
 
                 if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
-                    // Calculate how much we need to swing the weapon to align the front grip with the front hand
+                    // 1. Rotate the weapon to perfectly align the front grip with the front hand
                     Quaternion rotationDifference = Quaternion.FromToRotation(currentWeaponDir.normalized, targetWeaponDir.normalized);
+                    transform.rotation = rotationDifference * transform.rotation;
 
-                    // Apply this rotation to the weapon
-                    Quaternion finalRot = rotationDifference * transform.rotation;
+                    // 2. FORCE the main grip to stay exactly inside the player's primary hand. 
+                    // This absolutely guarantees the back hand cannot slide or shift!
+                    Vector3 offset = primaryAttach.position - transform.position;
+                    transform.position = primaryHand.position - offset;
 
-                    // Pivot around the true pivot position
-                    Vector3 pivotOffset = transform.position - truePivot;
-                    Vector3 rotatedOffset = rotationDifference * pivotOffset;
-                    Vector3 finalPos = truePivot + rotatedOffset;
-
-                    transform.position = finalPos;
-                    transform.rotation = finalRot;
-
-                    // Tell the physics engine about this override
-                    Rigidbody rb = GetComponentInParent<Rigidbody>();
-                    if (rb != null)
+                    // 3. Update the physics body so it doesn't try to pull the weapon away from us
+                    if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Fixed)
                     {
-                        rb.MovePosition(finalPos);
-                        rb.MoveRotation(finalRot);
-                        
-                        rb.linearVelocity = Vector3.zero;
-                        rb.angularVelocity = Vector3.zero;
+                        Rigidbody rb = GetComponentInParent<Rigidbody>();
+                        if (rb != null)
+                        {
+                            rb.position = transform.position;
+                            rb.rotation = transform.rotation;
+                            rb.linearVelocity = Vector3.zero;
+                            rb.angularVelocity = Vector3.zero;
+                        }
                     }
                 }
             }
