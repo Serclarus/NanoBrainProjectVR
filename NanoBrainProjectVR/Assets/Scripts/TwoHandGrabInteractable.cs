@@ -12,7 +12,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
     private IXRSelectInteractor secondaryInteractor;
     private MovementType originalMovementType;
-    private Vector3 initialSecondaryGripLocalPos;
 
     /// <summary>
     /// Checks if the object is currently held by both hands.
@@ -26,7 +25,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         // Listen to secondary grip events
         if (secondaryGrip != null)
         {
-            initialSecondaryGripLocalPos = secondaryGrip.transform.localPosition;
             secondaryGrip.selectEntered.AddListener(OnSecondaryGrab);
             secondaryGrip.selectExited.AddListener(OnSecondaryRelease);
         }
@@ -48,12 +46,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         Debug.Log("=== SECONDARY GRAB DETECTED ===");
         secondaryInteractor = args.interactorObject;
         
-        // Dynamically move the entire secondary grip object to the EXACT position of the physical hand
-        // This prevents the visual hand model from snapping to the center of the grip!
-        Transform interactorAttach = args.interactorObject.GetAttachTransform(secondaryGrip);
-        secondaryGrip.transform.position = interactorAttach.position;
-        secondaryGrip.transform.rotation = interactorAttach.rotation;
-
         // Temporarily switch to instantaneous movement to stop physics fights
         originalMovementType = movementType;
         movementType = MovementType.Instantaneous;
@@ -63,9 +55,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     {
         Debug.Log("=== SECONDARY GRAB RELEASED ===");
         secondaryInteractor = null;
-        
-        // Reset the grip back to its original spot on the barrel
-        secondaryGrip.transform.localPosition = initialSecondaryGripLocalPos;
         
         // Restore original movement type
         movementType = originalMovementType;
@@ -96,6 +85,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
             if (IsTwoHandedGrabbed)
             {
                 IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
+                Transform primaryAttach = GetAttachTransform(primaryInteractor);
                 
                 // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
                 Transform secondaryController = secondaryInteractor.transform;
@@ -103,11 +93,8 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                 // Pivot exactly around the raw primary controller to guarantee no translational "pulling"
                 Vector3 truePivot = primaryInteractor.transform.position;
 
-                // Calculate where the barrel grip originally was so the math knows how to rotate the weapon
-                Vector3 originalGripWorldPos = secondaryGrip.transform.parent.TransformPoint(initialSecondaryGripLocalPos);
-
-                // The vector from the back hand (pivot) to the original front grip on the weapon
-                Vector3 currentWeaponDir = originalGripWorldPos - truePivot;
+                // The vector from the back hand (pivot) to the front grip on the weapon
+                Vector3 currentWeaponDir = secondaryGrip.transform.position - truePivot;
                 
                 // The vector from the back hand (pivot) to the player's ACTUAL real-world front hand
                 Vector3 targetWeaponDir = secondaryController.position - truePivot;
