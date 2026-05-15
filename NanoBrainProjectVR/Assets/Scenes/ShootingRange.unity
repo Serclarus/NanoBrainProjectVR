@@ -21699,6 +21699,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1736831640869766237, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2630166069285867003, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2699295885192630998, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_IsActive
@@ -23902,7 +23912,6 @@ GameObject:
   - component: {fileID: 1568935918}
   - component: {fileID: 1568935917}
   m_Layer: 0
-  m_Name: MagPouch1
   m_Name: Point Light (8)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -32728,6 +32737,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
+        type: 3}
+      propertyPath: m_NetworkConfig.PlayerPrefab
+      value: 
+      objectReference: {fileID: 3837387124584857465, guid: 9038b6d4048f6d94a9704305000802d1,
+        type: 3}
     - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
         type: 3}
       propertyPath: m_NetworkConfig.Prefabs.NetworkPrefabsLists.Array.size
