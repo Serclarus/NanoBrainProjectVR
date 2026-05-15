@@ -508,7 +508,7 @@ namespace XRMultiplayer
             GameObject magPrefab = null;
             foreach (var prefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
             {
-                if (prefab.Prefab.GetComponent<Magazine>() != null)
+                if (prefab.Prefab.name.Contains("Magazine") || prefab.Prefab.name.Contains("Mag"))
                 {
                     magPrefab = prefab.Prefab;
                     break;
