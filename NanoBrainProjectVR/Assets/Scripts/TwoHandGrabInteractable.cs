@@ -87,17 +87,15 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                 IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
                 Transform primaryAttach = GetAttachTransform(primaryInteractor);
                 
-                // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
-                Transform secondaryController = secondaryInteractor.transform;
-
-                // Pivot exactly around the raw primary controller to guarantee no translational "pulling"
-                Vector3 truePivot = primaryInteractor.transform.position;
+                // Pivot exactly around the primary attach point so the back hand doesn't slide/translate
+                Vector3 truePivot = primaryAttach.position;
 
                 // The vector from the back hand (pivot) to the front grip on the weapon
                 Vector3 currentWeaponDir = secondaryGrip.transform.position - truePivot;
                 
-                // The vector from the back hand (pivot) to the player's ACTUAL real-world front hand
-                Vector3 targetWeaponDir = secondaryController.position - truePivot;
+                // We want the front grip to point exactly at the secondary interactor's attach point
+                Transform secondaryAttach = secondaryInteractor.GetAttachTransform(secondaryGrip);
+                Vector3 targetWeaponDir = secondaryAttach.position - truePivot;
 
                 if (currentWeaponDir.sqrMagnitude > 0.01f && targetWeaponDir.sqrMagnitude > 0.01f)
                 {
@@ -107,7 +105,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     // Apply this rotation to the weapon
                     Quaternion finalRot = rotationDifference * transform.rotation;
 
-                    // Pivot around the true controller position
+                    // Pivot around the true pivot position
                     Vector3 pivotOffset = transform.position - truePivot;
                     Vector3 rotatedOffset = rotationDifference * pivotOffset;
                     Vector3 finalPos = truePivot + rotatedOffset;
