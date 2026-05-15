@@ -46,6 +46,19 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         Debug.Log("=== SECONDARY GRAB DETECTED ===");
         secondaryInteractor = args.interactorObject;
         
+        // Dynamically move the attach transform of the secondary grip to the EXACT position of the physical hand
+        // This prevents the visual hand model from snapping to the center of the grip!
+        if (secondaryGrip.attachTransform == null)
+        {
+            GameObject attachObj = new GameObject("DynamicSecondaryAttach");
+            attachObj.transform.SetParent(secondaryGrip.transform, false);
+            secondaryGrip.attachTransform = attachObj.transform;
+        }
+        
+        Transform interactorAttach = args.interactorObject.GetAttachTransform(secondaryGrip);
+        secondaryGrip.attachTransform.position = interactorAttach.position;
+        secondaryGrip.attachTransform.rotation = interactorAttach.rotation;
+
         // Temporarily switch to instantaneous movement to stop physics fights
         originalMovementType = movementType;
         movementType = MovementType.Instantaneous;
