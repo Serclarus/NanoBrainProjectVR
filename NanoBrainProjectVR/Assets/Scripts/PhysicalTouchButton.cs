@@ -69,12 +69,21 @@ public class PhysicalTouchButton : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // Log absolutely everything that touches the button to help debug physics!
+        Debug.Log($"Button was physically touched by: {other.name} (Tag: {other.tag})");
+
         // Ignore if the button is on cooldown
         if (Time.time < lastPressTime + cooldownDelay) return;
 
-        // Check if the object touching us is part of the player or hands
-        if (other.CompareTag("Player") || other.name.ToLower().Contains("hand") || other.name.ToLower().Contains("controller"))
+        // Check if the object touching us is a VR Interactor (hand) or has the right name/tag
+        bool isHand = other.GetComponentInParent<XRBaseInteractor>() != null || 
+                      other.CompareTag("Player") || 
+                      other.name.ToLower().Contains("hand") || 
+                      other.name.ToLower().Contains("controller");
+
+        if (isHand)
         {
+            Debug.Log($"SUCCESS: Valid hand touch registered from {other.name}!");
             lastPressTime = Time.time;
             wasTouched = true; // Mark this specific button as the one that was pressed
             
