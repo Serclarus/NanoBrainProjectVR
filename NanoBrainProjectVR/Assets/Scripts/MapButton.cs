@@ -24,13 +24,16 @@ public class MapButton : MonoBehaviour
     // You can call this from your Button's OnClick() or XR Interactable SelectEntered event!
     public void ClickMapButton()
     {
+        Debug.Log($"[MapButton] ClickMapButton was successfully triggered on {gameObject.name}!");
+
         if (menuController != null)
         {
+            Debug.Log($"[MapButton] Sending data to MainMenuController...");
             menuController.SelectMap(previewSkybox, sceneToLoad, buttonTextComponent);
         }
         else
         {
-            Debug.LogError("No MainMenuController found in the scene!");
+            Debug.LogError("[MapButton] No MainMenuController found in the scene! Did you create a MenuManager object and attach the script?");
         }
     }
 }
