@@ -11,6 +11,8 @@ public class MainMenuController : MonoBehaviour
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
+    private Color originalTextColor = Color.white;
+    private string originalTextString = "";
 
     private void Start()
     {
@@ -34,7 +36,11 @@ public class MainMenuController : MonoBehaviour
         if (selectedSceneName == sceneToLoad)
         {
             Debug.Log($"Loading Scene: {sceneToLoad}");
-            if (buttonTextComponent != null) buttonTextComponent.text = "Loading...";
+            if (buttonTextComponent != null) 
+            {
+                buttonTextComponent.text = "Loading...";
+                buttonTextComponent.color = Color.yellow;
+            }
             SceneManager.LoadScene(sceneToLoad);
             return;
         }
@@ -42,13 +48,20 @@ public class MainMenuController : MonoBehaviour
         // 2. If they click a NEW map button, we reset the old button (if there was one)
         if (selectedButtonText != null)
         {
-            selectedButtonText.text = "Preview"; // Change the old button back to Preview
+            selectedButtonText.text = originalTextString; // Revert to its original exact text (e.g., "Shooting Range")
+            selectedButtonText.color = originalTextColor; // Revert to original color
         }
 
         // 3. Set the new preview state
         selectedSceneName = sceneToLoad;
         selectedButtonText = buttonTextComponent;
         
+        if (selectedButtonText != null)
+        {
+            originalTextColor = selectedButtonText.color; // Save its normal color before turning it green
+            originalTextString = selectedButtonText.text; // Save its normal text before turning it to Start
+        }
+
         // 4. Change the skybox to magically immerse them in the preview!
         if (previewSkybox != null)
         {
@@ -56,10 +69,11 @@ public class MainMenuController : MonoBehaviour
             DynamicGI.UpdateEnvironment(); // Update the lighting to match the new skybox!
         }
 
-        // 5. Change this button's text to "Start"
+        // 5. Change this button's text to "Start" in Green!
         if (selectedButtonText != null)
         {
             selectedButtonText.text = "Start";
+            selectedButtonText.color = Color.green;
         }
     }
 
@@ -72,7 +86,8 @@ public class MainMenuController : MonoBehaviour
         
         if (selectedButtonText != null)
         {
-            selectedButtonText.text = "Preview";
+            selectedButtonText.text = originalTextString;
+            selectedButtonText.color = originalTextColor;
             selectedButtonText = null;
         }
 
