@@ -47,20 +47,25 @@ public class PhysicalTouchButton : MonoBehaviour
 
     private void OnConnectionStateChanged(XRINetworkGameManager.ConnectionState state)
     {
+        Debug.Log($"[ColorDebug] OnConnectionStateChanged triggered! New State: {state}, wasTouched: {wasTouched}, buttonText assigned: {buttonText != null}");
+
         if (buttonText == null || !wasTouched) return;
 
         // If this specific button was touched, update its visuals based on the network state
         if (state == XRINetworkGameManager.ConnectionState.Connecting || 
             state == XRINetworkGameManager.ConnectionState.Authenticating)
         {
+            Debug.Log("[ColorDebug] Changing color to Blue!");
             buttonText.color = Color.blue;
         }
         else if (state == XRINetworkGameManager.ConnectionState.Connected)
         {
+            Debug.Log("[ColorDebug] Changing color to Green!");
             buttonText.color = Color.green;
         }
         else if (state == XRINetworkGameManager.ConnectionState.None)
         {
+            Debug.Log("[ColorDebug] Resetting color!");
             // If disconnected, reset the button
             buttonText.color = originalColor;
             wasTouched = false;
@@ -75,12 +80,14 @@ public class PhysicalTouchButton : MonoBehaviour
         // Check if the object touching us is part of the player or hands
         if (other.CompareTag("Player") || other.name.ToLower().Contains("hand") || other.name.ToLower().Contains("controller"))
         {
+            Debug.Log($"[ColorDebug] Button Touched by {other.name}! Current State: {XRINetworkGameManager.CurrentConnectionState.Value}");
             lastPressTime = Time.time;
             wasTouched = true; // Mark this specific button as the one that was pressed
             
             // If the state is currently 'None', pre-emptively turn it blue so it reacts instantly to the touch
             if (buttonText != null && XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None)
             {
+                Debug.Log("[ColorDebug] Preemptively turning Blue!");
                 buttonText.color = Color.blue;
             }
 
