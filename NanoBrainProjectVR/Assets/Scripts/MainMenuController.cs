@@ -4,15 +4,18 @@ using TMPro; // Needed for changing button text
 
 public class MainMenuController : MonoBehaviour
 {
-    [Header("Skybox Settings")]
-    [Tooltip("The blank, neutral skybox for the main menu")]
+    [Header("Menu Setup")]
+    [Tooltip("The blank skybox (or generic room) when nothing is selected")]
     public Material defaultSkybox;
-    
+
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
     private Color originalTextColor = Color.white;
     private string originalTextString = "";
+    
+    // Track the currently active 3D map so we can turn it off
+    private GameObject currentlyActivePreview;
 
     private void Start()
     {
@@ -27,10 +30,10 @@ public class MainMenuController : MonoBehaviour
     /// <summary>
     /// Call this from your Map Button's Unity Event (e.g. OnClick or SelectEntered).
     /// </summary>
-    /// <param name="previewSkybox">The 360 skybox material for this specific map.</param>
+    /// <param name="mapPreviewObject">The deactivated 3D geometry of the map.</param>
     /// <param name="sceneToLoad">The exact name of the Unity Scene to load.</param>
     /// <param name="buttonTextComponent">The TMP_Text component on the button so we can change it to 'Start'.</param>
-    public void SelectMap(Material previewSkybox, string sceneToLoad, TMP_Text buttonTextComponent)
+    public void SelectMap(GameObject mapPreviewObject, string sceneToLoad, TMP_Text buttonTextComponent)
     {
         // 1. If they click the SAME button twice (which now says "Start"), we load the game!
         if (selectedSceneName == sceneToLoad)
@@ -41,7 +44,7 @@ public class MainMenuController : MonoBehaviour
                 buttonTextComponent.text = "Loading...";
                 buttonTextComponent.color = Color.yellow;
             }
-            SceneManager.LoadScene(sceneToLoad);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneToLoad);
             return;
         }
 
@@ -52,9 +55,16 @@ public class MainMenuController : MonoBehaviour
             selectedButtonText.color = originalTextColor; // Revert to original color
         }
 
-        // 3. Set the new preview state
+        // 3. Turn OFF the old 3D map preview
+        if (currentlyActivePreview != null)
+        {
+            currentlyActivePreview.SetActive(false);
+        }
+
+        // 4. Set the new preview state
         selectedSceneName = sceneToLoad;
         selectedButtonText = buttonTextComponent;
+        currentlyActivePreview = mapPreviewObject;
         
         if (selectedButtonText != null)
         {
@@ -62,14 +72,13 @@ public class MainMenuController : MonoBehaviour
             originalTextString = selectedButtonText.text; // Save its normal text before turning it to Start
         }
 
-        // 4. Change the skybox to magically immerse them in the preview!
-        if (previewSkybox != null)
+        // 5. Turn ON the new 3D map preview!
+        if (currentlyActivePreview != null)
         {
-            RenderSettings.skybox = previewSkybox;
-            DynamicGI.UpdateEnvironment(); // Update the lighting to match the new skybox!
+            currentlyActivePreview.SetActive(true);
         }
 
-        // 5. Change this button's text to "Start" in Green!
+        // 6. Change this button's text to "Start" in Green!
         if (selectedButtonText != null)
         {
             selectedButtonText.text = "Start";
@@ -91,10 +100,10 @@ public class MainMenuController : MonoBehaviour
             selectedButtonText = null;
         }
 
-        if (defaultSkybox != null)
+        if (currentlyActivePreview != null)
         {
-            RenderSettings.skybox = defaultSkybox;
-            DynamicGI.UpdateEnvironment();
+            currentlyActivePreview.SetActive(false);
+            currentlyActivePreview = null;
         }
     }
 }

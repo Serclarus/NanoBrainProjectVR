@@ -4,8 +4,8 @@ using TMPro;
 public class MapButton : MonoBehaviour
 {
     [Header("Map Settings")]
-    [Tooltip("The 360 Skybox Material for this map")]
-    public Material previewSkybox;
+    [Tooltip("The 3D Object containing your map geometry (keep it unchecked/deactivated)")]
+    public GameObject mapPreviewObject;
     
     [Tooltip("The exact name of the Unity Scene to load")]
     public string sceneToLoad;
@@ -47,7 +47,7 @@ public class MapButton : MonoBehaviour
         if (menuController != null)
         {
             Debug.Log($"[MapButton] Sending data to MainMenuController...");
-            menuController.SelectMap(previewSkybox, sceneToLoad, buttonTextComponent);
+            menuController.SelectMap(mapPreviewObject, sceneToLoad, buttonTextComponent);
         }
         else
         {
