@@ -67,6 +67,13 @@ public class PhysicalTouchButton : MonoBehaviour
         }
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        // If the user unchecks "Is Trigger", Unity will fire OnCollisionEnter instead.
+        // We can just route this directly to our trigger logic so it works both ways!
+        OnTriggerEnter(collision.collider);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         // Log absolutely everything that touches the button to help debug physics!
