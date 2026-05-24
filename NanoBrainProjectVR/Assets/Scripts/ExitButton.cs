@@ -81,8 +81,15 @@ public class ExitButton : MonoBehaviour
                 XRINetworkGameManager.Instance.LeaveLocalConnection();
             }
 
-            // Load the Main Menu
-            SceneManager.LoadScene(mainMenuSceneName);
+            // Use the smooth VR fader if it exists!
+            if (VRSceneFader.Instance != null)
+            {
+                VRSceneFader.Instance.FadeToScene(mainMenuSceneName);
+            }
+            else
+            {
+                SceneManager.LoadScene(mainMenuSceneName);
+            }
         }
     }
 

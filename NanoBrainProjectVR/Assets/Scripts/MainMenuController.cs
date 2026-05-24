@@ -47,26 +47,42 @@ public class MainMenuController : MonoBehaviour
                 buttonTextComponent.text = "Loading...";
                 buttonTextComponent.color = Color.yellow;
             }
-            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneToLoad);
+
+            // Use the smooth fade if it exists!
+            if (VRSceneFader.Instance != null) {
+                VRSceneFader.Instance.FadeToScene(sceneToLoad);
+            } else {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(sceneToLoad);
+            }
             return;
         }
 
-        // 2. If they click a NEW map button, we reset the old button (if there was one)
+        // 2. If they click a NEW map button, we reset the old button
         if (selectedButtonText != null)
         {
-            selectedButtonText.text = originalTextString; // Revert to its original exact text (e.g., "Shooting Range")
-            selectedButtonText.color = originalTextColor; // Revert to original color
+            selectedButtonText.text = originalTextString; // Revert text
+            selectedButtonText.color = originalTextColor; // Revert color
         }
 
+        // If VRSceneFader exists, do a quick Blink transition!
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.Blink(() =>
+            {
+                SwapMapGeometry(mapPreviewObject, sceneToLoad, buttonTextComponent, linkedToggleObject);
+            });
+        }
+        else
+        {
+            SwapMapGeometry(mapPreviewObject, sceneToLoad, buttonTextComponent, linkedToggleObject);
+        }
+    }
+
+    private void SwapMapGeometry(GameObject mapPreviewObject, string sceneToLoad, TMP_Text buttonTextComponent, GameObject linkedToggleObject)
+    {
         // 3. Turn OFF the old 3D map preview and revert its linked object
-        if (currentlyActivePreview != null)
-        {
-            currentlyActivePreview.SetActive(false);
-        }
-        if (currentlyLinkedToggleObject != null)
-        {
-            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Reverse it back!
-        }
+        if (currentlyActivePreview != null) currentlyActivePreview.SetActive(false);
+        if (currentlyLinkedToggleObject != null) currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
 
         // 4. Set the new preview state
         selectedSceneName = sceneToLoad;
@@ -76,19 +92,13 @@ public class MainMenuController : MonoBehaviour
         
         if (selectedButtonText != null)
         {
-            originalTextColor = selectedButtonText.color; // Save its normal color before turning it green
-            originalTextString = selectedButtonText.text; // Save its normal text before turning it to Start
+            originalTextColor = selectedButtonText.color;
+            originalTextString = selectedButtonText.text;
         }
 
         // 5. Turn ON the new 3D map preview and reverse its linked object!
-        if (currentlyActivePreview != null)
-        {
-            currentlyActivePreview.SetActive(true);
-        }
-        if (currentlyLinkedToggleObject != null)
-        {
-            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Toggle it!
-        }
+        if (currentlyActivePreview != null) currentlyActivePreview.SetActive(true);
+        if (currentlyLinkedToggleObject != null) currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
 
         // 6. Change this button's text to "Start" in Green!
         if (selectedButtonText != null)
@@ -102,6 +112,18 @@ public class MainMenuController : MonoBehaviour
     /// Optional: A button to cancel the preview and go back to the blank room
     /// </summary>
     public void CancelPreview()
+    {
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.Blink(() => { ExecuteCancelPreview(); });
+        }
+        else
+        {
+            ExecuteCancelPreview();
+        }
+    }
+
+    private void ExecuteCancelPreview()
     {
         selectedSceneName = "";
         
@@ -120,7 +142,7 @@ public class MainMenuController : MonoBehaviour
         
         if (currentlyLinkedToggleObject != null)
         {
-            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Reverse it back
+            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
             currentlyLinkedToggleObject = null;
         }
     }
