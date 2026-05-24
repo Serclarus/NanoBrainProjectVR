@@ -16,6 +16,9 @@ public class MainMenuController : MonoBehaviour
     
     // Track the currently active 3D map so we can turn it off
     private GameObject currentlyActivePreview;
+    
+    // Optional: An object that gets toggled when a preview is active
+    private GameObject currentlyLinkedToggleObject;
 
     private void Start()
     {
@@ -33,7 +36,7 @@ public class MainMenuController : MonoBehaviour
     /// <param name="mapPreviewObject">The deactivated 3D geometry of the map.</param>
     /// <param name="sceneToLoad">The exact name of the Unity Scene to load.</param>
     /// <param name="buttonTextComponent">The TMP_Text component on the button so we can change it to 'Start'.</param>
-    public void SelectMap(GameObject mapPreviewObject, string sceneToLoad, TMP_Text buttonTextComponent)
+    public void SelectMap(GameObject mapPreviewObject, string sceneToLoad, TMP_Text buttonTextComponent, GameObject linkedToggleObject = null)
     {
         // 1. If they click the SAME button twice (which now says "Start"), we load the game!
         if (selectedSceneName == sceneToLoad)
@@ -55,16 +58,21 @@ public class MainMenuController : MonoBehaviour
             selectedButtonText.color = originalTextColor; // Revert to original color
         }
 
-        // 3. Turn OFF the old 3D map preview
+        // 3. Turn OFF the old 3D map preview and revert its linked object
         if (currentlyActivePreview != null)
         {
             currentlyActivePreview.SetActive(false);
+        }
+        if (currentlyLinkedToggleObject != null)
+        {
+            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Reverse it back!
         }
 
         // 4. Set the new preview state
         selectedSceneName = sceneToLoad;
         selectedButtonText = buttonTextComponent;
         currentlyActivePreview = mapPreviewObject;
+        currentlyLinkedToggleObject = linkedToggleObject;
         
         if (selectedButtonText != null)
         {
@@ -72,10 +80,14 @@ public class MainMenuController : MonoBehaviour
             originalTextString = selectedButtonText.text; // Save its normal text before turning it to Start
         }
 
-        // 5. Turn ON the new 3D map preview!
+        // 5. Turn ON the new 3D map preview and reverse its linked object!
         if (currentlyActivePreview != null)
         {
             currentlyActivePreview.SetActive(true);
+        }
+        if (currentlyLinkedToggleObject != null)
+        {
+            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Toggle it!
         }
 
         // 6. Change this button's text to "Start" in Green!
@@ -104,6 +116,12 @@ public class MainMenuController : MonoBehaviour
         {
             currentlyActivePreview.SetActive(false);
             currentlyActivePreview = null;
+        }
+        
+        if (currentlyLinkedToggleObject != null)
+        {
+            currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf); // Reverse it back
+            currentlyLinkedToggleObject = null;
         }
     }
 }

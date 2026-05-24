@@ -13,6 +13,9 @@ public class MapButton : MonoBehaviour
     [Tooltip("The text component on this button so we can change it to 'Start'")]
     public TMP_Text buttonTextComponent;
 
+    [Tooltip("Optional: An object that will reverse its active state when this map is previewed (e.g., hiding a default room)")]
+    public GameObject linkedToggleObject;
+
     private MainMenuController menuController;
 
     private float lastPressTime = 0f;
@@ -47,7 +50,7 @@ public class MapButton : MonoBehaviour
         if (menuController != null)
         {
             Debug.Log($"[MapButton] Sending data to MainMenuController...");
-            menuController.SelectMap(mapPreviewObject, sceneToLoad, buttonTextComponent);
+            menuController.SelectMap(mapPreviewObject, sceneToLoad, buttonTextComponent, linkedToggleObject);
         }
         else
         {
