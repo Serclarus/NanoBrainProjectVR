@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using XRMultiplayer;
 
 public class ExitButton : MonoBehaviour
 {
