@@ -7,13 +7,19 @@ public class VRSceneFader : MonoBehaviour
 {
     public static VRSceneFader Instance;
 
-    [Header("Fade Settings")]
-    [Tooltip("How long it takes to fade to complete black when changing scenes (seconds)")]
-    public float sceneFadeDuration = 1.0f;
+    [Header("Full Scene Loading")]
+    [Tooltip("How long it takes to fade to pitch black when leaving a scene (seconds)")]
+    public float fadeToBlackDuration = 1.0f;
+    [Tooltip("How long it takes to wake up from pitch black when entering a scene (seconds)")]
+    public float fadeToClearDuration = 1.5f;
     
-    [Tooltip("How long it takes for a quick 'blink' effect when previewing maps (seconds)")]
-    public float blinkDuration = 0.15f;
+    [Header("Fast Blink Preview")]
+    [Tooltip("How fast it blinks to black when previewing a map")]
+    public float blinkToBlackDuration = 0.15f;
+    [Tooltip("How fast it wakes back up from the blink")]
+    public float blinkToClearDuration = 0.25f;
 
+    [Header("Colors")]
     [Tooltip("The color of the fade (pitch black is best for VR)")]
     public Color fadeColor = Color.black;
 
@@ -60,7 +66,7 @@ public class VRSceneFader : MonoBehaviour
     private void Start()
     {
         // Whenever a scene finishes loading, instantly fade from black to clear!
-        StartCoroutine(FadeRoutine(1f, 0f, sceneFadeDuration));
+        StartCoroutine(FadeRoutine(1f, 0f, fadeToClearDuration));
     }
 
     /// <summary>
@@ -74,7 +80,7 @@ public class VRSceneFader : MonoBehaviour
     private IEnumerator FadeAndLoadRoutine(string sceneName)
     {
         // 1. Fully complete the fade to black (wait for it!)
-        yield return StartCoroutine(FadeRoutine(0f, 1f, sceneFadeDuration));
+        yield return StartCoroutine(FadeRoutine(0f, 1f, fadeToBlackDuration));
         
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         SceneManager.LoadScene(sceneName);
@@ -91,13 +97,13 @@ public class VRSceneFader : MonoBehaviour
     private IEnumerator BlinkRoutine(System.Action onBlinkMiddle)
     {
         // Fast fade to black
-        yield return StartCoroutine(FadeRoutine(0f, 1f, blinkDuration));
+        yield return StartCoroutine(FadeRoutine(0f, 1f, blinkToBlackDuration));
         
         // At pitch black, run whatever code we passed in (like swapping 3D map objects!)
         if (onBlinkMiddle != null) onBlinkMiddle.Invoke();
 
         // Fast fade back to clear
-        yield return StartCoroutine(FadeRoutine(1f, 0f, blinkDuration));
+        yield return StartCoroutine(FadeRoutine(1f, 0f, blinkToClearDuration));
     }
 
     // The core math for fading smoothly over time
