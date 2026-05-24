@@ -52,7 +52,14 @@ public class ExitDoorHandle : MonoBehaviour
         if (turnAmount >= turnThreshold)
         {
             hasOpened = true;
-            Debug.Log($"Door opened! Returning to {mainMenuSceneName}...");
+            Debug.Log($"Door opened! Disconnecting from server and returning to {mainMenuSceneName}...");
+
+            // Properly disconnect from the multiplayer session if one exists!
+            if (XRINetworkGameManager.Instance != null)
+            {
+                XRINetworkGameManager.Instance.LeaveLocalConnection();
+            }
+
             SceneManager.LoadScene(mainMenuSceneName);
         }
     }
