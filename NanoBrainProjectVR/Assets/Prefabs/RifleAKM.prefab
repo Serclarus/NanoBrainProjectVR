@@ -5261,7 +5261,7 @@ BoxCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4352
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -5629,7 +5629,7 @@ BoxCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4352
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -5652,7 +5652,7 @@ MonoBehaviour:
   m_InteractionManager: {fileID: 0}
   m_Colliders: []
   m_InteractionLayers:
-    m_Bits: 5
+    m_Bits: 1
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
@@ -5970,6 +5970,7 @@ GameObject:
   - component: {fileID: 4720777727785034721}
   - component: {fileID: 3144038195845386442}
   - component: {fileID: 7599575759986319009}
+  - component: {fileID: 397748246730711265}
   m_Layer: 8
   m_Name: RifleAKM
   m_TagString: Untagged
@@ -6034,7 +6035,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TwoHandGrabInteractable
   m_InteractionManager: {fileID: 0}
-  m_Colliders: []
+  m_Colliders:
+  - {fileID: 7599575759986319009}
   m_InteractionLayers:
     m_Bits: 1
   m_DistanceCalculationMode: 1
@@ -6451,7 +6453,7 @@ BoxCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4352
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -6459,6 +6461,27 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.046696503, y: 0.1269759, z: 0.13029858}
   m_Center: {x: -0.002801627, y: -0.06093806, z: -0.13639653}
+--- !u!65 &397748246730711265
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7121643266348946437}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.045524318, y: 0.164307, z: 0.8833686}
+  m_Center: {x: -0.0048892573, y: -0.024313986, z: 0.017767921}
 --- !u!1 &7517676517083344163
 GameObject:
   m_ObjectHideFlags: 0
