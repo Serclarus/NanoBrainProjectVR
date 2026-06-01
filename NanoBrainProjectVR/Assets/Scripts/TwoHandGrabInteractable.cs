@@ -22,6 +22,8 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     public float pumpForwardZ = 0.2f;
     [Tooltip("Local Z position of the pump when pulled all the way back")]
     public float pumpBackZ = 0.0f;
+    [Tooltip("Deadzone distance. The hand must move this far before the pump slides, preventing jitter while aiming.")]
+    public float pumpDeadzone = 0.02f;
 
     public UnityEngine.Events.UnityEvent OnPumpPulledBack;
     public UnityEngine.Events.UnityEvent OnPumpPushedForward;
@@ -118,9 +120,22 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     // Find where the player's front hand is along the local Z axis of the gun!
                     Vector3 localHandPos = transform.InverseTransformPoint(secondaryController.position);
                     
+                    float currentZ = pumpSlideTransform.localPosition.z;
+                    float deltaZ = localHandPos.z - currentZ;
+
+                    float targetZ = currentZ;
+                    if (deltaZ > pumpDeadzone)
+                    {
+                        targetZ = localHandPos.z - pumpDeadzone;
+                    }
+                    else if (deltaZ < -pumpDeadzone)
+                    {
+                        targetZ = localHandPos.z + pumpDeadzone;
+                    }
+
                     float minZ = Mathf.Min(pumpForwardZ, pumpBackZ);
                     float maxZ = Mathf.Max(pumpForwardZ, pumpBackZ);
-                    float clampedZ = Mathf.Clamp(localHandPos.z, minZ, maxZ);
+                    float clampedZ = Mathf.Clamp(targetZ, minZ, maxZ);
 
                     // Actually slide the pump object!
                     pumpSlideTransform.localPosition = new Vector3(

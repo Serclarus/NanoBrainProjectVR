@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 5385038405398665447}
   - component: {fileID: 8950571964405849419}
   - component: {fileID: 1994540194913447055}
+  - component: {fileID: 5250590927314513264}
   m_Layer: 0
   m_Name: ShotgunShell
-  m_TagString: Untagged
+  m_TagString: Shells
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -90,3 +91,26 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &5250590927314513264
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4398006138771892466}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.012500658
+  m_Height: 0.07514882
+  m_Direction: 1
+  m_Center: {x: 0, y: -0.000744462, z: 0.00053208787}

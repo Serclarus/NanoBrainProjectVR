@@ -22216,6 +22216,7 @@ MonoBehaviour:
   pumpSlideTransform: {fileID: 0}
   pumpForwardZ: 0.2
   pumpBackZ: 0
+  pumpDeadzone: 0.02
   OnPumpPulledBack:
     m_PersistentCalls:
       m_Calls: []
@@ -37555,8 +37556,78 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
         type: 3}
+      propertyPath: pumpBackZ
+      value: 0.1939
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: pumpForwardZ
+      value: 0.2988
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
       propertyPath: secondaryGrip
       value: 
+      objectReference: {fileID: 8322573433815726871}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: pumpSlideTransform
+      value: 
+      objectReference: {fileID: 8322573433815726866}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPulledBack.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 8322573433815726869}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 8322573433815726869}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPulledBack.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnPumpPulledBack
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnPumpPushedForward
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPulledBack.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: ShotgunController, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: ShotgunController, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPulledBack.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: OnPumpPushedForward.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 4848478900247891552, guid: 3e094add73c5817408883427e297cc37,
         type: 3}
@@ -37623,11 +37694,154 @@ PrefabInstance:
       propertyPath: currentRightHand
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 5396107945659233780, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      propertyPath: m_ExcludeLayers.m_Bits
+      value: 5888
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 649137652881584443, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8322573433815726871}
+    - targetCorrespondingSourceObject: {fileID: 3887300318774204356, guid: 3e094add73c5817408883427e297cc37,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8322573433815726870}
   m_SourcePrefab: {fileID: 100100000, guid: 3e094add73c5817408883427e297cc37, type: 3}
+--- !u!114 &8322573433815726865 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3555320572704528891, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  m_PrefabInstance: {fileID: 8322573433815726864}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49ec276529034a9409332b0c31ae6b71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TwoHandGrabInteractable
+--- !u!4 &8322573433815726866 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5378907427803451849, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  m_PrefabInstance: {fileID: 8322573433815726864}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8322573433815726867 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3887300318774204356, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  m_PrefabInstance: {fileID: 8322573433815726864}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8322573433815726868 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 649137652881584443, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  m_PrefabInstance: {fileID: 8322573433815726864}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8322573433815726869 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8545075428827789899, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  m_PrefabInstance: {fileID: 8322573433815726864}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f55068683447264fb9047288834c603, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShotgunController
+--- !u!114 &8322573433815726870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8322573433815726867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b53e6ee64a9b1794eaa3cc0eae13cc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShotgunLoadingPort
+  shotgun: {fileID: 8322573433815726869}
+  shellTag: Shells
+--- !u!114 &8322573433815726871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8322573433815726868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a35f6cfbfba9b548aaa00d52cfe8a50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable
+  m_InteractionManager: {fileID: 0}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 8322573433815726865}
 --- !u!1 &8392019495939409341
 GameObject:
   m_ObjectHideFlags: 0
