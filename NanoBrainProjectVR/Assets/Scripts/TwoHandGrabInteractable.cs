@@ -6,12 +6,31 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 [DisallowMultipleComponent]
 public class TwoHandGrabInteractable : XRGrabInteractable
 {
+    public enum TwoHandBehavior { Aimable, StabilizeOnly, PumpAction }
+
     [Header("Two-Handed Mechanics")]
+    [Tooltip("The behavior of the secondary hand. Aimable (Rifle), StabilizeOnly (Pistol), PumpAction (Shotgun)")]
+    public TwoHandBehavior twoHandBehavior = TwoHandBehavior.Aimable;
+
     [Tooltip("The XR Simple Interactable placed on the front grip of the weapon")]
     public XRSimpleInteractable secondaryGrip;
 
+    [Header("Pump Action Settings (Shotgun Only)")]
+    [Tooltip("The physical pump object that slides back and forth (Usually the parent of the secondary grip)")]
+    public Transform pumpSlideTransform;
+    [Tooltip("Local Z position of the pump when pushed all the way forward")]
+    public float pumpForwardZ = 0.2f;
+    [Tooltip("Local Z position of the pump when pulled all the way back")]
+    public float pumpBackZ = 0.0f;
+
+    public UnityEngine.Events.UnityEvent OnPumpPulledBack;
+    public UnityEngine.Events.UnityEvent OnPumpPushedForward;
+
     private IXRSelectInteractor secondaryInteractor;
     private MovementType originalMovementType;
+
+    private bool hasPumpedBack = false;
+    private bool hasPumpedForward = true; // Assume it starts forward!
 
     /// <summary>
     /// Checks if the object is currently held by both hands.
@@ -43,7 +62,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
     private void OnSecondaryGrab(SelectEnterEventArgs args)
     {
-        Debug.Log("=== SECONDARY GRAB DETECTED ===");
         secondaryInteractor = args.interactorObject;
         
         // Temporarily switch to instantaneous movement to stop physics fights
@@ -53,7 +71,6 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
     private void OnSecondaryRelease(SelectExitEventArgs args)
     {
-        Debug.Log("=== SECONDARY GRAB RELEASED ===");
         secondaryInteractor = null;
         
         // Restore original movement type
@@ -84,15 +101,50 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         {
             if (IsTwoHandedGrabbed)
             {
-                IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
-                Transform primaryAttach = GetAttachTransform(primaryInteractor);
-                
-                // Use the raw controller transform so we don't accidentally get a point that's snapped to the weapon
-                Transform secondaryController = secondaryInteractor.transform;
+                // --- PISTOL LOGIC ---
+                // If it is just stabilizing, we DO NOT override the rotation. Let the primary hand handle it!
+                if (twoHandBehavior == TwoHandBehavior.StabilizeOnly)
+                {
+                    return; 
+                }
 
-                // Pivot exactly around the raw primary controller to guarantee no translational "pulling"
+                IXRSelectInteractor primaryInteractor = interactorsSelecting[0];
+                Transform secondaryController = secondaryInteractor.transform;
                 Vector3 truePivot = primaryInteractor.transform.position;
 
+                // --- SHOTGUN PUMP LOGIC ---
+                if (twoHandBehavior == TwoHandBehavior.PumpAction && pumpSlideTransform != null)
+                {
+                    // Find where the player's front hand is along the local Z axis of the gun!
+                    Vector3 localHandPos = transform.InverseTransformPoint(secondaryController.position);
+                    
+                    float minZ = Mathf.Min(pumpForwardZ, pumpBackZ);
+                    float maxZ = Mathf.Max(pumpForwardZ, pumpBackZ);
+                    float clampedZ = Mathf.Clamp(localHandPos.z, minZ, maxZ);
+
+                    // Actually slide the pump object!
+                    pumpSlideTransform.localPosition = new Vector3(
+                        pumpSlideTransform.localPosition.x, 
+                        pumpSlideTransform.localPosition.y, 
+                        clampedZ
+                    );
+
+                    // Fire events when it hits the limits!
+                    if (Mathf.Abs(clampedZ - pumpBackZ) < 0.01f && !hasPumpedBack)
+                    {
+                        hasPumpedBack = true;
+                        hasPumpedForward = false;
+                        OnPumpPulledBack?.Invoke();
+                    }
+                    else if (Mathf.Abs(clampedZ - pumpForwardZ) < 0.01f && !hasPumpedForward)
+                    {
+                        hasPumpedForward = true;
+                        hasPumpedBack = false;
+                        OnPumpPushedForward?.Invoke();
+                    }
+                }
+
+                // --- AIMABLE LOGIC (RIFLES AND SHOTGUNS) ---
                 // The vector from the back hand (pivot) to the front grip on the weapon
                 Vector3 currentWeaponDir = secondaryGrip.transform.position - truePivot;
                 

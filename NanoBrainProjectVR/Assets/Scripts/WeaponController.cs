@@ -6,12 +6,58 @@ using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
 using Unity.Netcode; // Required for NGO
 
+[System.Serializable]
+public struct RecoilTier
+{
+    [Tooltip("Min and Max upward kick (Pitch)")]
+    public Vector2 pitchRange;
+    [Tooltip("Side to side wobble per shot (Yaw)")]
+    public Vector2 yawRange;
+    [Tooltip("Rotational twist per shot (Roll)")]
+    public Vector2 rollRange;
+    [Tooltip("How far the gun kicks back per shot")]
+    public float backwardKick;
+}
+
 [RequireComponent(typeof(TwoHandGrabInteractable))]
 public class WeaponController : NetworkBehaviour
 {
-    [Header("Weapon Profile")]
-    [Tooltip("The ScriptableObject containing all the combat stats (damage, fire rate, recoil, etc.)")]
-    public WeaponDataSO weaponData;
+    [Header("Fire Mode")]
+    [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
+    public bool fullAuto = true;
+    [Tooltip("Rounds per minute for full-auto fire")]
+    public float fireRate = 600f;
+    public float range = 100f;
+
+    [Header("Audio Settings")]
+    public AudioClip shootSound;
+    public AudioClip dryFireSound;
+    public Vector2 soundPitchRange = new Vector2(0.95f, 1.05f);
+    [Range(0f, 1f)] public float shootVolume = 1f;
+
+    [Header("Controller Haptics")]
+    [Range(0f, 1f)] public float hapticIntensity = 0.5f;
+    public float hapticDuration = 0.1f;
+
+    [Header("Shell Ejection")]
+    public GameObject shellPrefab;
+    public float shellEjectionForce = 3f;
+    public float shellTorque = 1f;
+
+    [Header("Recoil Tiers")]
+    public RecoilTier tier1_Shots1to3 = new RecoilTier { pitchRange = new Vector2(1.0f, 2.0f), yawRange = new Vector2(-0.3f, 0.3f), rollRange = new Vector2(-0.2f, 0.2f), backwardKick = 0.01f };
+    public RecoilTier tier2_Shots4to8 = new RecoilTier { pitchRange = new Vector2(2.0f, 4.0f), yawRange = new Vector2(-1.0f, 1.0f), rollRange = new Vector2(-0.5f, 0.5f), backwardKick = 0.025f };
+    public RecoilTier tier3_Shots9to17 = new RecoilTier { pitchRange = new Vector2(3.0f, 6.0f), yawRange = new Vector2(-2.0f, 2.0f), rollRange = new Vector2(-0.8f, 0.8f), backwardKick = 0.04f };
+    public RecoilTier tier4_Shots18plus = new RecoilTier { pitchRange = new Vector2(4.0f, 8.0f), yawRange = new Vector2(-3.0f, 3.0f), rollRange = new Vector2(-1.0f, 1.0f), backwardKick = 0.05f };
+
+    [Header("Recoil Dynamics")]
+    public float snappiness = 20f;
+    public float returnSpeed = 8f;
+    public float twoHandRecoilModifier = 0.4f;
+
+    [Header("Smart Ammo Pouch")]
+    [Tooltip("The magazine prefab that your Smart Vest Pouch will dispense when holding this weapon!")]
+    public GameObject magazinePrefab;
 
     private TwoHandGrabInteractable grabInteractable;
 
@@ -142,8 +188,21 @@ public class WeaponController : NetworkBehaviour
     private void OnWeaponGrabbed(SelectEnterEventArgs args)
     {
         isHeld = true;
+        IXRSelectInteractor interactor = args.interactorObject;
+
         // Cache the interactor so we can read its analog trigger value for trigger animation
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
+
+        // --- NEW: Smart Ammo Pouch Logic ---
+        // If the local player grabbed this weapon, tell their local Ammo Pouch to swap to this weapon's magazines!
+        if (IsOwner && magazinePrefab != null)
+        {
+            AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
+            if (localPouch != null)
+            {
+                localPouch.SetMagazinePrefab(magazinePrefab);
+            }
+        }
     }
 
     private void OnWeaponDropped(SelectExitEventArgs args)
@@ -171,19 +230,27 @@ public class WeaponController : NetworkBehaviour
     {
         isTriggerHeld = true;
         hasPlayedDryFire = false;
+        HandleTriggerPulled();
+    }
 
-        if (weaponData == null) return;
-
-        // For semi-auto, fire immediately on press
-        if (!weaponData.fullAuto)
+    private void HandleTriggerPulled()
+    {
+        if (!fullAuto)
         {
-            FireWeapon();
+            // Single shot logic
+            if (fireCooldownTimer <= 0f)
+            {
+                FireWeapon();
+            }
         }
         else
         {
-            // For full-auto, fire the first shot immediately and start cooldown
-            fireCooldownTimer = 60f / weaponData.fireRate;
-            FireWeapon();
+            // Full auto handled in Update, but trigger initiates it
+            if (fireCooldownTimer <= 0f)
+            {
+                fireCooldownTimer = 60f / fireRate;
+                FireWeapon();
+            }
         }
     }
 
@@ -228,7 +295,7 @@ public class WeaponController : NetworkBehaviour
             originalBoltPosition = boltTransform.localPosition;
         }
 
-        if (weaponData != null && weaponData.shellPrefab != null && shellEjectionPoint != null)
+        if (shellPrefab != null && shellEjectionPoint != null)
         {
             shellPool = new Queue<GameObject>();
             activeShellCoroutines = new Dictionary<GameObject, Coroutine>();
@@ -238,32 +305,67 @@ public class WeaponController : NetworkBehaviour
 
             for (int i = 0; i < shellPoolSize; i++)
             {
-                GameObject shell = Instantiate(weaponData.shellPrefab, poolParent);
+                GameObject shell = Instantiate(shellPrefab, poolParent);
                 shell.SetActive(false);
                 shellPool.Enqueue(shell);
             }
         }
     }
 
+    private void TriggerSlideRecoil()
+    {
+        if (shellPrefab != null && shellEjectionPoint != null)
+        {
+            // Start physical bolt slide animation
+            targetBoltOffset = boltTravelDistance;
+
+            // Spawn an ejected shell immediately
+            GameObject shellParent = GameObject.Find("ShellPool");
+            Transform poolParent = shellParent != null ? shellParent.transform : null;
+            
+            if (shellPool != null && shellPool.Count > 0)
+            {
+                GameObject shell = shellPool.Dequeue();
+                shellPool.Enqueue(shell);
+                shell.transform.position = shellEjectionPoint.position;
+                shell.transform.rotation = shellEjectionPoint.rotation;
+                EjectShellPhysics(shell);
+            }
+            else
+            {
+                GameObject shell = Instantiate(shellPrefab, poolParent);
+                shell.transform.position = shellEjectionPoint.position;
+                shell.transform.rotation = shellEjectionPoint.rotation;
+                EjectShellPhysics(shell);
+            }
+            hasEjectedShell = true;
+        }
+    }
+
     private void Update()
     {
+        // Handle fire rate cooldown timer
+        if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
+
+        // Auto-firing logic for when the trigger is held down over multiple frames
+        if (IsOwner)
+        {
+            if (fullAuto && isTriggerHeld && isHeld)
+            {
+                if (fireCooldownTimer <= 0f)
+                {
+                    fireCooldownTimer = 60f / fireRate; // Convert RPM to seconds between shots
+                    FireWeapon();
+                }
+            }
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.fKey.wasPressedThisFrame)
         {
             DebugRackSlide();
         }
 #endif
-
-        // ── Full-Auto Firing ──
-        if (weaponData != null && weaponData.fullAuto && isTriggerHeld && isHeld)
-        {
-            fireCooldownTimer -= Time.deltaTime;
-            if (fireCooldownTimer <= 0f)
-            {
-                fireCooldownTimer = 60f / weaponData.fireRate; // Convert RPM to seconds between shots
-                FireWeapon();
-            }
-        }
 
         // ── Trigger Animation ──
         if (triggerTransform != null)
@@ -278,18 +380,16 @@ public class WeaponController : NetworkBehaviour
             triggerTransform.localRotation = triggerOriginalRotation * Quaternion.AngleAxis(triggerInput * triggerMaxAngle, triggerRotateAxis);
         }
 
+        // ── Procedural Recoil (Spring Math) ──
         if (weaponModel != null)
         {
-            // 1. The target variables steadily recover back to zero (neutral state)
-            targetRotation = Vector3.Lerp(targetRotation, Vector3.zero, Time.deltaTime * (weaponData != null ? weaponData.returnSpeed : 8f));
-            targetPosition = Vector3.Lerp(targetPosition, Vector3.zero, Time.deltaTime * (weaponData != null ? weaponData.returnSpeed : 8f));
+            targetRotation = Vector3.Lerp(targetRotation, Vector3.zero, Time.deltaTime * returnSpeed);
+            targetPosition = Vector3.Lerp(targetPosition, Vector3.zero, Time.deltaTime * returnSpeed);
 
-            // 2. The current visible position snaps sharply towards the targets
-            currentRotation = Vector3.Slerp(currentRotation, targetRotation, Time.deltaTime * (weaponData != null ? weaponData.snappiness : 20f));
-            currentPosition = Vector3.Lerp(currentPosition, targetPosition, Time.deltaTime * (weaponData != null ? weaponData.snappiness : 20f));
+            currentRotation = Vector3.Slerp(currentRotation, targetRotation, Time.deltaTime * snappiness);
+            currentPosition = Vector3.Lerp(currentPosition, targetPosition, Time.deltaTime * snappiness);
 
-            // 3. Apply variations to the model
-            weaponModel.localEulerAngles = originalModelRotation + currentRotation;
+            weaponModel.localRotation = Quaternion.Euler(originalModelRotation + currentRotation);
             weaponModel.localPosition = originalModelPosition + currentPosition;
         }
 
@@ -316,12 +416,6 @@ public class WeaponController : NetworkBehaviour
     // Call this function when the VR player pulls the trigger
     public void FireWeapon()
     {
-        if (weaponData == null)
-        {
-            Debug.LogWarning("WeaponController: No WeaponDataSO assigned! Cannot fire.");
-            return;
-        }
-
         if (IsSpawned && !IsOwner) return; // Only owner calculates hits and ammo
 
         if (ShootingRangeManager.Instance != null && !ShootingRangeManager.Instance.isShootingAllowed)
@@ -372,12 +466,8 @@ public class WeaponController : NetworkBehaviour
         Vector3 hitNormal = Vector3.zero;
         SurfaceType hitType = SurfaceType.Default;
 
-        if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, weaponData.range, hitMask))
+        if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, range, hitMask))
         {
-            hitSomething = true;
-            hitPoint = hit.point;
-            hitNormal = hit.normal;
-
             // 4. Hit Logic (Highly Optimized: Single GetComponent call)
             HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
             
@@ -420,10 +510,42 @@ public class WeaponController : NetworkBehaviour
 
     private void PlayDryFireLocal()
     {
-        if (audioSource != null && weaponData != null && weaponData.dryFireSound != null)
+        PlayDryFireAudio();
+    }
+
+    private void PlayDryFireAudio()
+    {
+        if (audioSource != null && dryFireSound != null)
         {
-            audioSource.pitch = 1f;
-            audioSource.PlayOneShot(weaponData.dryFireSound, weaponData.shootVolume);
+            audioSource.PlayOneShot(dryFireSound, shootVolume);
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // EFFECTS & RECOIL
+    // ────────────────────────────────────────────────────────────────────────
+
+    private void PlayShootEffects()
+    {
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.Play();
+        }
+
+        if (audioSource != null && shootSound != null)
+        {
+            audioSource.pitch = Random.Range(soundPitchRange.x, soundPitchRange.y);
+            audioSource.PlayOneShot(shootSound, shootVolume);
+        }
+
+        // Haptics
+        if (currentHoldingInteractor != null)
+        {
+            var inputInteractor = currentHoldingInteractor as XRBaseInputInteractor;
+            if (inputInteractor != null)
+            {
+                inputInteractor.SendHapticImpulse(hapticIntensity, hapticDuration);
+            }
         }
     }
 
@@ -450,25 +572,7 @@ public class WeaponController : NetworkBehaviour
 
     private void PlayFireVisualsLocal(int shots)
     {
-        // 0. Audio: Play gunshot
-        if (audioSource != null && weaponData != null && weaponData.shootSound != null)
-        {
-            audioSource.pitch = Random.Range(weaponData.soundPitchRange.x, weaponData.soundPitchRange.y);
-            audioSource.PlayOneShot(weaponData.shootSound, weaponData.shootVolume);
-        }
-
-        // 0.5: Haptics: Send vibration to controller
-        if (isHeld && grabInteractable != null)
-        {
-            foreach (var interactor in grabInteractable.interactorsSelecting)
-            {
-                var inputInteractor = interactor as UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor;
-                if (inputInteractor != null && weaponData != null)
-                {
-                    inputInteractor.SendHapticImpulse(weaponData.hapticIntensity, weaponData.hapticDuration);
-                }
-            }
-        }
+        PlayShootEffects();
 
         // 1. Visuals: Play the attached Particle Systems for flash & trail
         if (muzzleFlash != null)
@@ -479,38 +583,7 @@ public class WeaponController : NetworkBehaviour
             muzzleFlash.Play(true);
         }
 
-        // 2. Procedural Recoil Integration: pick the correct tier based on consecutive shot count
-        if (weaponModel != null && weaponData != null)
-        {
-            // Select the recoil tier based on how many consecutive shots have been fired
-            RecoilTier tier;
-            if (shots <= 3)
-                tier = weaponData.tier1_Shots1to3;
-            else if (shots <= 8)
-                tier = weaponData.tier2_Shots4to8;
-            else if (shots <= 17)
-                tier = weaponData.tier3_Shots9to17;
-            else
-                tier = weaponData.tier4_Shots18plus;
-
-            float pitch = Random.Range(tier.pitchRange.x, tier.pitchRange.y);
-            float yaw = Random.Range(tier.yawRange.x, tier.yawRange.y);
-            float roll = Random.Range(tier.rollRange.x, tier.rollRange.y);
-            float kick = tier.backwardKick;
-
-            if (grabInteractable != null && grabInteractable.IsTwoHandedGrabbed)
-            {
-                pitch *= weaponData.twoHandRecoilModifier;
-                yaw *= weaponData.twoHandRecoilModifier;
-                roll *= weaponData.twoHandRecoilModifier;
-                kick *= weaponData.twoHandRecoilModifier;
-            }
-
-            // Add onto the current recoil target for stacking
-            // -pitch pitches UP on a standard Unity object (+Z forward)
-            targetRotation += new Vector3(-pitch, yaw, roll);
-            targetPosition += new Vector3(0, 0, -kick);
-        }
+        ApplyProceduralRecoil();
 
         if (boltTransform != null)
         {
@@ -519,62 +592,82 @@ public class WeaponController : NetworkBehaviour
         }
     }
 
+    private void ApplyProceduralRecoil()
+    {
+        if (weaponModel != null)
+        {
+            RecoilTier tier;
+            
+            if (consecutiveShots <= 3)
+                tier = tier1_Shots1to3;
+            else if (consecutiveShots <= 8)
+                tier = tier2_Shots4to8;
+            else if (consecutiveShots <= 17)
+                tier = tier3_Shots9to17;
+            else
+                tier = tier4_Shots18plus;
+
+            float pitch = Random.Range(tier.pitchRange.x, tier.pitchRange.y);
+            float yaw = Random.Range(tier.yawRange.x, tier.yawRange.y);
+            float roll = Random.Range(tier.rollRange.x, tier.rollRange.y);
+            float kick = tier.backwardKick;
+
+            if (grabInteractable != null && grabInteractable.IsTwoHandedGrabbed)
+            {
+                pitch *= twoHandRecoilModifier;
+                yaw *= twoHandRecoilModifier;
+                roll *= twoHandRecoilModifier;
+                kick *= twoHandRecoilModifier;
+            }
+
+            targetRotation += new Vector3(-pitch, yaw, roll);
+            targetPosition -= new Vector3(0, 0, kick);
+        }
+    }
+
     private void EjectShell()
     {
-        if (weaponData == null || shellEjectionPoint == null || weaponData.shellPrefab == null || shellPool == null || shellPool.Count == 0)
-        {
-            Debug.LogWarning("WeaponController: Cannot eject shell! Ensure 'WeaponData' and 'Shell Ejection Point' are assigned.");
-            return;
-        }
+        if (shellEjectionPoint == null || shellPrefab == null || shellPool == null || shellPool.Count == 0) return;
 
         // Dequeue oldest shell (cyclic buffer format)
         GameObject shell = shellPool.Dequeue();
 
-        if (activeShellCoroutines.TryGetValue(shell, out Coroutine existingCoroutine) && existingCoroutine != null)
-        {
-            StopCoroutine(existingCoroutine);
-        }
-
-        shell.SetActive(false);
-        shell.transform.position = shellEjectionPoint.position;
-        shell.transform.rotation = shellEjectionPoint.rotation;
-
-        Rigidbody shellRb = shell.GetComponent<Rigidbody>();
-        if (shellRb != null)
-        {
-            // Reset velocity physics so it doesn't fly crazy if recycled while moving
-            #if UNITY_6000_0_OR_NEWER
-            shellRb.linearVelocity = Vector3.zero;
-            #else
-            shellRb.velocity = Vector3.zero;
-            #endif
-            shellRb.angularVelocity = Vector3.zero;
-        }
-
-        shell.SetActive(true);
-
-        if (shellRb != null)
-        {
-            // Eject to the right and slightly up, relative to the ejection point
-            Vector3 ejectDirection = shellEjectionPoint.right + (shellEjectionPoint.up * 0.3f);
-            shellRb.AddForce(ejectDirection.normalized * weaponData.shellEjectionForce, ForceMode.Impulse);
-            
-            // Add some random spin
-            shellRb.AddTorque(new Vector3(Random.Range(-weaponData.shellTorque, weaponData.shellTorque), Random.Range(-weaponData.shellTorque, weaponData.shellTorque), Random.Range(-weaponData.shellTorque, weaponData.shellTorque)), ForceMode.Impulse);
-        }
-        
-        // Add a slight variance to rotation for visuals
-        shell.transform.Rotate(new Vector3(0, Random.Range(-30f, 30f), 0));
-
-        // Start despawn timer for recycling
-        Coroutine newCoroutine = StartCoroutine(DisableShellAfterTime(shell, shellLifeTime));
-        activeShellCoroutines[shell] = newCoroutine;
+        EjectShellPhysics(shell);
 
         // Requeue to end
         shellPool.Enqueue(shell);
     }
 
-    private IEnumerator DisableShellAfterTime(GameObject shell, float time)
+    private void EjectShellPhysics(GameObject shell)
+    {
+        if (shellEjectionPoint == null || shellPrefab == null || shellPool == null || shellPool.Count == 0) return;
+
+        shell.SetActive(true);
+
+        Rigidbody shellRb = shell.GetComponent<Rigidbody>();
+        if (shellRb != null)
+        {
+            shellRb.linearVelocity = Vector3.zero;
+            shellRb.angularVelocity = Vector3.zero;
+
+            Vector3 ejectDirection = shellEjectionPoint.right + (shellEjectionPoint.up * Random.Range(0.2f, 0.5f));
+            
+            shellRb.AddForce(ejectDirection.normalized * shellEjectionForce, ForceMode.Impulse);
+
+            shellRb.AddTorque(new Vector3(Random.Range(-shellTorque, shellTorque), Random.Range(-shellTorque, shellTorque), Random.Range(-shellTorque, shellTorque)), ForceMode.Impulse);
+        }
+
+        if (activeShellCoroutines.TryGetValue(shell, out Coroutine existingCoroutine))
+        {
+            if (existingCoroutine != null) StopCoroutine(existingCoroutine);
+            activeShellCoroutines.Remove(shell);
+        }
+
+        Coroutine newCoroutine = StartCoroutine(ReturnShellToPool(shell, shellLifeTime));
+        activeShellCoroutines.Add(shell, newCoroutine);
+    }
+
+    private IEnumerator ReturnShellToPool(GameObject shell, float time)
     {
         yield return new WaitForSeconds(time);
         if (shell != null)

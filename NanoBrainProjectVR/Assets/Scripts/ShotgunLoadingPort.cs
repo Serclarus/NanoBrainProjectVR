@@ -1,0 +1,47 @@
+using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
+
+[RequireComponent(typeof(BoxCollider))]
+public class ShotgunLoadingPort : MonoBehaviour
+{
+    [Tooltip("The main ShotgunController script on the weapon")]
+    public ShotgunController shotgun;
+    
+    [Tooltip("The tag assigned to your physical Shotgun Shell prefabs")]
+    public string shellTag = "Ammo";
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (shotgun == null || !shotgun.IsOwner) return;
+
+        // Ensure the object touching the port is actually a shotgun shell
+        if (other.CompareTag(shellTag))
+        {
+            // Ensure the tube isn't already full
+            if (shotgun.currentAmmo.Value < shotgun.maxAmmoCapacity)
+            {
+                // 1. Force the player's hand to let go of the shell to prevent XR warnings
+                XRGrabInteractable grabItem = other.GetComponentInParent<XRGrabInteractable>();
+                if (grabItem != null && grabItem.isSelected)
+                {
+                    grabItem.interactionManager.SelectCancel(grabItem.firstInteractorSelecting, grabItem);
+                }
+
+                // 2. Destroy the physical shell
+                Destroy(other.gameObject);
+
+                // 3. Add the digital ammo (QoL: 1 physical shell = X digital shells)
+                int newAmmo = shotgun.currentAmmo.Value + shotgun.ammoPerShellReloaded;
+                shotgun.currentAmmo.Value = Mathf.Min(newAmmo, shotgun.maxAmmoCapacity);
+
+                // 4. Play a satisfying click sound
+                if (shotgun.audioSource != null && shotgun.pumpForwardSound != null)
+                {
+                    shotgun.audioSource.PlayOneShot(shotgun.pumpForwardSound, 0.5f);
+                }
+
+                Debug.Log($"Shotgun Loaded! Current Ammo: {shotgun.currentAmmo.Value} / {shotgun.maxAmmoCapacity}");
+            }
+        }
+    }
+}

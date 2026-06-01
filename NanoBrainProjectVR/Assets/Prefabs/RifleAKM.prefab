@@ -6152,7 +6152,17 @@ MonoBehaviour:
   m_LimitAngularVelocity: 0
   m_MaxLinearVelocityDelta: 10
   m_MaxAngularVelocityDelta: 20
+  twoHandBehavior: 0
   secondaryGrip: {fileID: 6902359730074602650}
+  pumpSlideTransform: {fileID: 0}
+  pumpForwardZ: 0.2
+  pumpBackZ: 0
+  OnPumpPulledBack:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPumpPushedForward:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &2908588147146295675
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6191,7 +6201,42 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponController
   ShowTopMostFoldoutHeaderGroup: 1
-  weaponData: {fileID: 11400000, guid: 9802a096f286e094c93a17084cc39d58, type: 2}
+  fullAuto: 1
+  fireRate: 600
+  range: 100
+  shootSound: {fileID: 0}
+  dryFireSound: {fileID: 0}
+  soundPitchRange: {x: 0.95, y: 1.05}
+  shootVolume: 1
+  hapticIntensity: 0.5
+  hapticDuration: 0.1
+  shellPrefab: {fileID: 0}
+  shellEjectionForce: 3
+  shellTorque: 1
+  tier1_Shots1to3:
+    pitchRange: {x: 1, y: 2}
+    yawRange: {x: -0.3, y: 0.3}
+    rollRange: {x: -0.2, y: 0.2}
+    backwardKick: 0.01
+  tier2_Shots4to8:
+    pitchRange: {x: 2, y: 4}
+    yawRange: {x: -1, y: 1}
+    rollRange: {x: -0.5, y: 0.5}
+    backwardKick: 0.025
+  tier3_Shots9to17:
+    pitchRange: {x: 3, y: 6}
+    yawRange: {x: -2, y: 2}
+    rollRange: {x: -0.8, y: 0.8}
+    backwardKick: 0.04
+  tier4_Shots18plus:
+    pitchRange: {x: 4, y: 8}
+    yawRange: {x: -3, y: 3}
+    rollRange: {x: -1, y: 1}
+    backwardKick: 0.05
+  snappiness: 20
+  returnSpeed: 8
+  twoHandRecoilModifier: 0.4
+  magazinePrefab: {fileID: 0}
   hitMask:
     serializedVersion: 2
     m_Bits: 2231
