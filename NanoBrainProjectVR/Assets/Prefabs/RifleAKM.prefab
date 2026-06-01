@@ -5248,6 +5248,10 @@ MonoBehaviour:
   weapon: {fileID: 8699559900671002707}
   rackDistance: 0.061
   pullAxis: {x: 0, y: 0, z: -1}
+  audioSource: {fileID: 0}
+  slideBackSound: {fileID: 8300000, guid: cd36b3338213736489f4d0948690110a, type: 3}
+  slideForwardSound: {fileID: 8300000, guid: d69c57dd80272774a9212acbbdff05a0, type: 3}
+  volume: 0.723
 --- !u!65 &4059965037710819467
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6245,6 +6249,9 @@ MonoBehaviour:
   triggerMaxAngle: 4
   triggerRotateAxis: {x: 1, y: 0, z: 0}
   magazineSocket: {fileID: 292264695700268188}
+  hasSlideLockOnEmpty: 0
+  isSlideLockedBack:
+    m_InternalValue: 0
   isChambered:
     m_InternalValue: 0
   muzzleFlash: {fileID: 6624403946828552227}

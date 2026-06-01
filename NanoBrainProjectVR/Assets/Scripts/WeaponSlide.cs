@@ -14,6 +14,13 @@ public class WeaponSlide : MonoBehaviour
     [Tooltip("Usually the local Z axis is standard (0,0,-1) or (0,0,1) depending on model orientation.")]
     public Vector3 pullAxis = new Vector3(0, 0, 1);
 
+    [Header("Audio (Optional)")]
+    [Tooltip("Leave empty to automatically use the WeaponController's AudioSource")]
+    public AudioSource audioSource;
+    public AudioClip slideBackSound;
+    public AudioClip slideForwardSound;
+    [Range(0f, 1f)] public float volume = 1f;
+
     private XRSimpleInteractable interactable;
     private UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor currentInteractor;
     
@@ -59,6 +66,28 @@ public class WeaponSlide : MonoBehaviour
         {
             weapon.isSlideGrabbed = false;
             // Target offset will snap back to 0 procedurally in WeaponController
+
+            // If we had successfully racked it this pull, play the forward snap sound!
+            if (hasRackedThisPull)
+            {
+                PlaySound(slideForwardSound);
+            }
+        }
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip == null) return;
+
+        AudioSource sourceToUse = audioSource;
+        if (sourceToUse == null && weapon != null)
+        {
+            sourceToUse = weapon.audioSource;
+        }
+
+        if (sourceToUse != null)
+        {
+            sourceToUse.PlayOneShot(clip, volume);
         }
     }
 
@@ -86,6 +115,8 @@ public class WeaponSlide : MonoBehaviour
             {
                 hasRackedThisPull = true;
                 weapon.RackSlide();
+
+                PlaySound(slideBackSound);
 
                 // Force release the hand so it doesn't hold the bolt forever
                 if (interactable.interactionManager != null && currentInteractor != null)

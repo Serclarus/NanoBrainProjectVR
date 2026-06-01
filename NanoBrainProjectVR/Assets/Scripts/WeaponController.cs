@@ -87,6 +87,10 @@ public class WeaponController : NetworkBehaviour
     [Tooltip("The socket interactor that holds the magazine")]
     public XRSocketInteractor magazineSocket;
     
+    [Tooltip("If true, the slide locks backwards when the magazine is empty (used for Pistols, disable for Rifles)")]
+    public bool hasSlideLockOnEmpty = true;
+    public NetworkVariable<bool> isSlideLockedBack = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    
     private Magazine currentMagazine;
     public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -397,7 +401,8 @@ public class WeaponController : NetworkBehaviour
         {
             if (!isSlideGrabbed)
             {
-                targetBoltOffset = Mathf.Lerp(targetBoltOffset, 0f, Time.deltaTime * boltReturnSpeed);
+                float targetOffset = isSlideLockedBack.Value ? boltTravelDistance : 0f;
+                targetBoltOffset = Mathf.Lerp(targetBoltOffset, targetOffset, Time.deltaTime * boltReturnSpeed);
                 currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
             }
 
@@ -458,6 +463,10 @@ public class WeaponController : NetworkBehaviour
         {
             currentMagazine.ConsumeAmmo();
             isChambered.Value = true;
+        }
+        else if (hasSlideLockOnEmpty)
+        {
+            isSlideLockedBack.Value = true;
         }
 
         // 3. Logic: Raycast Hit Detection
@@ -697,6 +706,9 @@ public class WeaponController : NetworkBehaviour
     public void RackSlide()
     {
         if (IsSpawned && !IsOwner) return; // Only owner initiates mechanical actions
+        
+        // Release the slide lock if it was locked back
+        isSlideLockedBack.Value = false;
         
         bool ejectRound = false;
         
