@@ -7705,8 +7705,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38436ffc5b4fa6a4fa8aa84439e52c09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VRSceneFader
-  sceneFadeDuration: 1
-  blinkDuration: 0.15
+  fadeToBlackDuration: 1
+  fadeToClearDuration: 1.5
+  blinkToBlackDuration: 0.15
+  blinkToClearDuration: 0.25
   fadeColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!114 &8537513404922650695 stripped
 MonoBehaviour:

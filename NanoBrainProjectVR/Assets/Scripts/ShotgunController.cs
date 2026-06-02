@@ -125,7 +125,7 @@ public class ShotgunController : NetworkBehaviour
     {
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
-        if (IsOwner && magazinePrefab != null)
+        if ((!IsSpawned || IsOwner) && magazinePrefab != null)
         {
             AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
             if (localPouch != null)
@@ -137,22 +137,30 @@ public class ShotgunController : NetworkBehaviour
 
     private void OnTriggerPulled(ActivateEventArgs args)
     {
-        if (!IsOwner) return;
-        FireWeaponServerRpc();
+        if (IsSpawned && !IsOwner) return;
+        
+        if (IsSpawned) FireWeaponServerRpc();
+        else FireWeaponLocal();
     }
 
     [ServerRpc]
     private void FireWeaponServerRpc()
     {
+        FireWeaponLocal();
+    }
+
+    private void FireWeaponLocal()
+    {
         if (chamberState.Value != ChamberState.LiveRound)
         {
-            PlayDryFireClientRpc();
+            if (IsSpawned) PlayDryFireClientRpc();
+            else PlayDryFireLocal();
             return;
         }
 
         chamberState.Value = ChamberState.SpentShell;
 
-        // Perform Raycasts on the server for authority
+        // Perform Raycasts on the server for authority (or locally if offline)
         for (int i = 0; i < pelletCount; i++)
         {
             Vector3 spreadDirection = barrelPoint.forward;
@@ -163,22 +171,44 @@ public class ShotgunController : NetworkBehaviour
 
             if (Physics.Raycast(barrelPoint.position, spreadDirection, out RaycastHit hit, range, hitMask))
             {
+                SurfaceType hitType = SurfaceType.Default;
                 HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
-                if (hittable != null) hittable.OnHit(hit);
+                if (hittable != null)
+                {
+                    hitType = hittable.surfaceType;
+                    hittable.OnHit(hit);
+                }
+                
+                SpawnDecalLocal(hit.point, hit.normal, hitType, hit.collider.transform);
+                if (IsSpawned) SpawnDecalRpc(hit.point, hit.normal, hitType);
             }
         }
 
-        PlayShootEffectsClientRpc();
+        if (IsSpawned) PlayShootEffectsClientRpc();
+        else PlayShootEffectsLocal();
     }
 
-    [ClientRpc]
-    private void SpawnDecalClientRpc(Vector3 point, Vector3 normal)
+    [Rpc(SendTo.NotOwner)]
+    private void SpawnDecalRpc(Vector3 point, Vector3 normal, SurfaceType type)
     {
-        // TODO: Implement Object Pooled Decals here later!
+        SpawnDecalLocal(point, normal, type, null);
+    }
+
+    private void SpawnDecalLocal(Vector3 point, Vector3 normal, SurfaceType type, Transform parentTransform)
+    {
+        if (HitEffectPoolManager.Instance != null)
+        {
+            HitEffectPoolManager.Instance.SpawnHitEffect(point, normal, type, parentTransform);
+        }
     }
 
     [ClientRpc]
     private void PlayDryFireClientRpc()
+    {
+        PlayDryFireLocal();
+    }
+
+    private void PlayDryFireLocal()
     {
         if (audioSource != null && dryFireSound != null)
             audioSource.PlayOneShot(dryFireSound, shootVolume);
@@ -186,6 +216,11 @@ public class ShotgunController : NetworkBehaviour
 
     [ClientRpc]
     private void PlayShootEffectsClientRpc()
+    {
+        PlayShootEffectsLocal();
+    }
+
+    private void PlayShootEffectsLocal()
     {
         if (muzzleFlash != null) muzzleFlash.Play(true);
         if (audioSource != null && shootSound != null)
@@ -209,21 +244,24 @@ public class ShotgunController : NetworkBehaviour
     // Call this via UnityEvent on the TwoHandGrabInteractable!
     public void OnPumpPulledBack()
     {
-        if (!IsOwner) return;
+        if (IsSpawned && !IsOwner) return;
 
         if (chamberState.Value == ChamberState.SpentShell || chamberState.Value == ChamberState.LiveRound)
         {
-            EjectShellServerRpc();
+            if (IsSpawned) EjectShellServerRpc();
+            else EjectShellLocal();
         }
 
         chamberState.Value = ChamberState.Empty;
-        PlaySoundClientRpc(true);
+        
+        if (IsSpawned) PlaySoundClientRpc(true);
+        else PlaySoundLocal(true);
     }
 
     // Call this via UnityEvent on the TwoHandGrabInteractable!
     public void OnPumpPushedForward()
     {
-        if (!IsOwner) return;
+        if (IsSpawned && !IsOwner) return;
 
         if (chamberState.Value == ChamberState.Empty && currentAmmo.Value > 0)
         {
@@ -231,7 +269,8 @@ public class ShotgunController : NetworkBehaviour
             chamberState.Value = ChamberState.LiveRound;
         }
 
-        PlaySoundClientRpc(false);
+        if (IsSpawned) PlaySoundClientRpc(false);
+        else PlaySoundLocal(false);
     }
 
     [ServerRpc]
@@ -242,6 +281,11 @@ public class ShotgunController : NetworkBehaviour
 
     [ClientRpc]
     private void EjectShellClientRpc()
+    {
+        EjectShellLocal();
+    }
+
+    private void EjectShellLocal()
     {
         if (shellEjectionPoint == null || shellPrefab == null || shellPool == null || shellPool.Count == 0) return;
 
@@ -282,6 +326,11 @@ public class ShotgunController : NetworkBehaviour
     [ClientRpc]
     private void PlaySoundClientRpc(bool isPullBack)
     {
+        PlaySoundLocal(isPullBack);
+    }
+
+    private void PlaySoundLocal(bool isPullBack)
+    {
         if (audioSource == null) return;
 
         if (isPullBack && pumpBackSound != null)
@@ -307,6 +356,27 @@ public class ShotgunController : NetworkBehaviour
             weaponModel.localRotation = Quaternion.Euler(originalModelRotation + currentRotation);
             weaponModel.localPosition = originalModelPosition + currentPosition;
         }
+
+        // Check for F key using the New Input System
+        if ((!IsSpawned || IsOwner) && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.fKey.wasPressedThisFrame)
+        {
+            if (grabInteractable != null && grabInteractable.isSelected)
+            {
+                DebugPumpAction();
+            }
+        }
+    }
+
+    public void DebugPumpAction()
+    {
+        OnPumpPulledBack();
+        StartCoroutine(DebugPumpForwardDelay());
+    }
+
+    private IEnumerator DebugPumpForwardDelay()
+    {
+        yield return new WaitForSeconds(0.15f);
+        OnPumpPushedForward();
     }
 
     private void ApplyProceduralRecoil()

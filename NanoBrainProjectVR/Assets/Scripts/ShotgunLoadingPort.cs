@@ -12,10 +12,11 @@ public class ShotgunLoadingPort : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (shotgun == null || !shotgun.IsOwner) return;
+        if (shotgun == null || (shotgun.IsSpawned && !shotgun.IsOwner)) return;
 
-        // Ensure the object touching the port is actually a shotgun shell
-        if (other.CompareTag(shellTag))
+        // Ensure the object touching the port (or its parent) is actually a shotgun shell
+        bool isShell = other.CompareTag(shellTag) || (other.attachedRigidbody != null && other.attachedRigidbody.CompareTag(shellTag));
+        if (isShell)
         {
             // Ensure the tube isn't already full
             if (shotgun.currentAmmo.Value < shotgun.maxAmmoCapacity)

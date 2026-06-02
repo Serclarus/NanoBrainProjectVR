@@ -89,6 +89,8 @@ public class WeaponController : NetworkBehaviour
     
     [Tooltip("If true, the slide locks backwards when the magazine is empty (used for Pistols, disable for Rifles)")]
     public bool hasSlideLockOnEmpty = true;
+    [Tooltip("How far back the slide goes when locked back on empty. Usually smaller than boltTravelDistance.")]
+    public float slideLockDistance = 0.03f;
     public NetworkVariable<bool> isSlideLockedBack = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     private Magazine currentMagazine;
@@ -401,7 +403,7 @@ public class WeaponController : NetworkBehaviour
         {
             if (!isSlideGrabbed)
             {
-                float targetOffset = isSlideLockedBack.Value ? boltTravelDistance : 0f;
+                float targetOffset = isSlideLockedBack.Value ? slideLockDistance : 0f;
                 targetBoltOffset = Mathf.Lerp(targetBoltOffset, targetOffset, Time.deltaTime * boltReturnSpeed);
                 currentBoltOffset = Mathf.Lerp(currentBoltOffset, targetBoltOffset, Time.deltaTime * boltSnappiness);
             }
