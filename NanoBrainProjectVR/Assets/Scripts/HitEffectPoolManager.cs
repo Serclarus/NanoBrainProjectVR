@@ -18,7 +18,7 @@ public class HitEffectPoolManager : MonoBehaviour
     public List<HitEffectSetup> hitEffectSetups;
     
     [Tooltip("How many of EACH effect type should exist in memory?")]
-    public int poolSizePerType = 20;
+    public int poolSizePerType = 100;
     
     public float effectDuration = 7f; 
 
@@ -50,8 +50,13 @@ public class HitEffectPoolManager : MonoBehaviour
 
             for (int i = 0; i < poolSizePerType; i++)
             {
-                GameObject effect = Instantiate(setup.effectPrefab, transform);
+                // Spawn far away to avoid 1-frame flashes on screen during warmup
+                GameObject effect = Instantiate(setup.effectPrefab, new Vector3(0, -9999, 0), Quaternion.identity, transform);
+                
+                // Force the object to activate for a split second to force URP to load the shaders and materials into GPU memory!
+                effect.SetActive(true);
                 effect.SetActive(false);
+                
                 objectPool.Enqueue(effect);
             }
 

@@ -41,7 +41,10 @@ public class HittableSurface : MonoBehaviour
 
     [Tooltip("Map each color on the score map to a point value. Use pure, distinct colors (no gradients).")]
     public ScoreColorMapping[] colorMappings;
-    
+    [Header("Custom Events")]
+    [Tooltip("Fire off any custom logic when this target is shot (e.g. falling backwards)")]
+    public UnityEngine.Events.UnityEvent onHitEvent;
+
     // Pre-cached Color32 versions of mapping colors for fast byte comparison
     private Color32[] cachedColors;
 
@@ -66,6 +69,8 @@ public class HittableSurface : MonoBehaviour
     /// </summary>
     public void OnHit()
     {
+        onHitEvent?.Invoke();
+
         if (pointsAwarded > 0)
         {
             if (ScoreManager.Instance != null)
