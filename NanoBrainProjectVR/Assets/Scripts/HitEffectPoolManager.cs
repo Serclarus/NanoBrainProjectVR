@@ -50,12 +50,9 @@ public class HitEffectPoolManager : MonoBehaviour
 
             for (int i = 0; i < poolSizePerType; i++)
             {
-                // Spawn far away to avoid 1-frame flashes on screen during warmup
-                GameObject effect = Instantiate(setup.effectPrefab, new Vector3(0, -9999, 0), Quaternion.identity, transform);
-                
-                // Force the object to activate for a split second to force URP to load the shaders and materials into GPU memory!
-                effect.SetActive(true);
-                effect.SetActive(false);
+                // Spawn at the pool manager's location.
+                GameObject effect = Instantiate(setup.effectPrefab, transform.position, Quaternion.identity, transform);
+                effect.SetActive(false); // Just keep it disabled until needed
                 
                 objectPool.Enqueue(effect);
             }
@@ -66,50 +63,46 @@ public class HitEffectPoolManager : MonoBehaviour
 
     public void SpawnHitEffect(Vector3 position, Vector3 normal, SurfaceType type, Transform parent = null)
     {
-        // If we shoot something that has no effect set up, fallback to Default
         if (!poolDictionary.ContainsKey(type))
         {
             if (poolDictionary.ContainsKey(SurfaceType.Default))
                 type = SurfaceType.Default;
             else
-                return; // Nothing to spawn
+                return; 
         }
 
-        // Dequeue the oldest effect, no matter if it's currently active or not
         if (poolDictionary[type].Count > 0)
         {
             GameObject effect = poolDictionary[type].Dequeue();
             
-            // Stop the previous disable coroutine if one is running
             if (activeCoroutines.TryGetValue(effect, out Coroutine existingCoroutine) && existingCoroutine != null)
             {
                 StopCoroutine(existingCoroutine);
             }
             
-            // Disable it to properly reset particle systems or trail renderers before moving
             effect.SetActive(false);
+            effect.transform.SetParent(parent != null ? parent : transform, true);
             
-            if (parent != null)
+            // Pull out by 0.01f to prevent z-fighting
+            effect.transform.position = position + (normal * 0.01f);
+            effect.transform.rotation = Quaternion.LookRotation(normal);
+
+            ParticleSystem[] allParticles = effect.GetComponentsInChildren<ParticleSystem>(true);
+            foreach (var p in allParticles)
             {
-                effect.transform.SetParent(parent, true);
-            }
-            else
-            {
-                effect.transform.SetParent(transform, true);
+                p.Clear(true);
             }
 
-            effect.transform.position = position;
-            effect.transform.rotation = Quaternion.LookRotation(normal);
             effect.SetActive(true);
 
-            ParticleSystem ps = effect.GetComponent<ParticleSystem>();
-            if (ps != null) ps.Play();
+            foreach (var p in allParticles)
+            {
+                p.Play(true);
+            }
 
-            // Start a new coroutine to clear the effect eventually and track it
             Coroutine newCoroutine = StartCoroutine(ReturnToPoolAfterTime(effect, effectDuration));
             activeCoroutines[effect] = newCoroutine;
             
-            // Re-queue the effect to the back so it can be reused once all other effects have been cycled
             poolDictionary[type].Enqueue(effect);
         }
     }

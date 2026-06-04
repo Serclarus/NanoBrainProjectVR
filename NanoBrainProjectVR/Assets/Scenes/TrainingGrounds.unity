@@ -28106,9 +28106,6 @@ MonoBehaviour:
   - surfaceType: 4
     effectPrefab: {fileID: 7384050000351149955, guid: 8f8c16e59ad0d184cbf6c7ce6e1cb80c,
       type: 3}
-  - surfaceType: 0
-    effectPrefab: {fileID: 7384050000351149955, guid: 8f8c16e59ad0d184cbf6c7ce6e1cb80c,
-      type: 3}
   poolSizePerType: 20
   effectDuration: 10
 --- !u!4 &333055961
@@ -70204,50 +70201,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 270295034}
     m_Modifications:
-    - target: {fileID: 299724370734424795, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: knockdownAngle
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 838116423}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: Knockdown
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: KnockdownTarget, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 7305610355864253221, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-        type: 3}
-      propertyPath: onHitEvent.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
-      objectReference: {fileID: 0}
     - target: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -10.51
+      value: -6.09
       objectReference: {fileID: 0}
     - target: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
         type: 3}
@@ -70257,7 +70214,7 @@ PrefabInstance:
     - target: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.53
+      value: 6.54
       objectReference: {fileID: 0}
     - target: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
         type: 3}
@@ -70309,18 +70266,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7577461c3de0a8b498ef3cf486ce0c5b, type: 3}
---- !u!114 &838116423 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 299724370734424795, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-    type: 3}
-  m_PrefabInstance: {fileID: 838116419}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ddd72b8deaadae4e9b63a7acf3edec5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KnockdownTarget
 --- !u!4 &838426823 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5905851704517267710, guid: 08d0b0b88e868324dbf0109b80353d41,
@@ -107545,37 +107490,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7267030154355303787, guid: ae9bdec03ce030844ac6673f86dcd6fa,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1306460758}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ae9bdec03ce030844ac6673f86dcd6fa, type: 3}
---- !u!1 &1306460757 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7267030154355303787, guid: ae9bdec03ce030844ac6673f86dcd6fa,
-    type: 3}
-  m_PrefabInstance: {fileID: 1306460756}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1306460758
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1306460757}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1001 &1306711551
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -110582,37 +110498,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8640398164484277845, guid: 509347f9ce43f884896e6b1f72062dd8,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1345080093}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 509347f9ce43f884896e6b1f72062dd8, type: 3}
---- !u!1 &1345080092 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8640398164484277845, guid: 509347f9ce43f884896e6b1f72062dd8,
-    type: 3}
-  m_PrefabInstance: {fileID: 1345080091}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1345080093
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1345080092}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1001 &1346251190
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -112944,37 +112831,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6041450121510860557, guid: fd394c2f7b5274e4d8bcdb493dbc3f00,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1362566164}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fd394c2f7b5274e4d8bcdb493dbc3f00, type: 3}
---- !u!1 &1362566163 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6041450121510860557, guid: fd394c2f7b5274e4d8bcdb493dbc3f00,
-    type: 3}
-  m_PrefabInstance: {fileID: 1362566162}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1362566164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1362566163}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1 &1363773288
 GameObject:
   m_ObjectHideFlags: 0
@@ -143549,37 +143407,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7967928406210689246, guid: 82dbc0e79916c6e43bc32225e8f458df,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1691660414}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 82dbc0e79916c6e43bc32225e8f458df, type: 3}
---- !u!1 &1691660413 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7967928406210689246, guid: 82dbc0e79916c6e43bc32225e8f458df,
-    type: 3}
-  m_PrefabInstance: {fileID: 1691660412}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1691660414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1691660413}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!4 &1693828643 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2297063178803071626, guid: 48bd19e373dd28d47b3a7331d66ff584,
@@ -149289,11 +149118,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8640398164484277845, guid: 509347f9ce43f884896e6b1f72062dd8,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1762805204}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 509347f9ce43f884896e6b1f72062dd8, type: 3}
 --- !u!4 &1762805202 stripped
 Transform:
@@ -149301,31 +149126,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1762805201}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1762805203 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8640398164484277845, guid: 509347f9ce43f884896e6b1f72062dd8,
-    type: 3}
-  m_PrefabInstance: {fileID: 1762805201}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1762805204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762805203}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1 &1763571045
 GameObject:
   m_ObjectHideFlags: 0
@@ -158211,22 +158011,22 @@ PrefabInstance:
     - target: {fileID: 2230283035191038720, guid: 40026228b3ed869448972aa39a48f134,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071073
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2230283035191038720, guid: 40026228b3ed869448972aa39a48f134,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2230283035191038720, guid: 40026228b3ed869448972aa39a48f134,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.7071063
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2230283035191038720, guid: 40026228b3ed869448972aa39a48f134,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2230283035191038720, guid: 40026228b3ed869448972aa39a48f134,
         type: 3}
@@ -178595,11 +178395,7 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 112537040}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5847823694237188310, guid: 9b3399c8e6176ae42849c95f92aaf9e5,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2081100067}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9b3399c8e6176ae42849c95f92aaf9e5, type: 3}
 --- !u!4 &2081100065 stripped
 Transform:
@@ -178607,31 +178403,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 2081100064}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2081100066 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5847823694237188310, guid: 9b3399c8e6176ae42849c95f92aaf9e5,
-    type: 3}
-  m_PrefabInstance: {fileID: 2081100064}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2081100067
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2081100066}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!4 &2081534544 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3255234286201356626, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
@@ -184573,37 +184344,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4014644969674912721, guid: 4a2cc6cfe46684549bd664a42bdd35e7,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2140422862}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4a2cc6cfe46684549bd664a42bdd35e7, type: 3}
---- !u!1 &2140422861 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4014644969674912721, guid: 4a2cc6cfe46684549bd664a42bdd35e7,
-    type: 3}
-  m_PrefabInstance: {fileID: 2140422860}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2140422862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2140422861}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
-  surfaceType: 0
-  pointsAwarded: 0
-  scoreMap: {fileID: 0}
-  colorMappings: []
-  onHitEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1001 &2140671505
 PrefabInstance:
   m_ObjectHideFlags: 0
