@@ -88,6 +88,8 @@ public class HittableSurface : MonoBehaviour
     /// </summary>
     public void OnHit(RaycastHit hit)
     {
+        onHitEvent?.Invoke();
+
         // If no score map is set up, fall back to the flat value
         if (scoreMap == null || cachedColors == null || cachedColors.Length == 0)
         {
