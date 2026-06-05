@@ -5613,12 +5613,12 @@ Transform:
   m_GameObject: {fileID: 5666970300986484425}
   serializedVersion: 2
   m_LocalRotation: {x: -0.017458236, y: -0.018013265, z: 0.00031457972, w: 0.9996853}
-  m_LocalPosition: {x: 0.0024, y: -0.0232, z: 0.135}
+  m_LocalPosition: {x: 0.002400361, y: -0.023200035, z: 0.13500094}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3674137242698780635}
-  m_Father: {fileID: 3571701202094694108}
+  m_Father: {fileID: 9210565571938336921}
   m_LocalEulerAnglesHint: {x: -2, y: -2.066, z: 0.072}
 --- !u!65 &3822601357179746664
 BoxCollider:
@@ -5996,7 +5996,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9210565571938336921}
-  - {fileID: 9018961728451665937}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &1866944337604239615
@@ -6161,6 +6160,7 @@ MonoBehaviour:
   pumpSlideTransform: {fileID: 0}
   pumpForwardZ: 0.2
   pumpBackZ: 0
+  pumpDeadzone: 0.02
   OnPumpPulledBack:
     m_PersistentCalls:
       m_Calls: []
@@ -6208,13 +6208,14 @@ MonoBehaviour:
   fullAuto: 1
   fireRate: 600
   range: 100
-  shootSound: {fileID: 0}
-  dryFireSound: {fileID: 0}
+  shootSound: {fileID: 8300000, guid: fee771365867fd84faa5d2074301755a, type: 3}
+  dryFireSound: {fileID: 8300000, guid: 2657336e2d1b402479fe00091199cc93, type: 3}
   soundPitchRange: {x: 0.95, y: 1.05}
   shootVolume: 1
-  hapticIntensity: 0.5
+  hapticIntensity: 0.75
   hapticDuration: 0.1
-  shellPrefab: {fileID: 0}
+  shellPrefab: {fileID: 7925052412386491711, guid: b56f3933a244bd2489c759c6329157ff,
+    type: 3}
   shellEjectionForce: 3
   shellTorque: 1
   tier1_Shots1to3:
@@ -6240,7 +6241,8 @@ MonoBehaviour:
   snappiness: 20
   returnSpeed: 8
   twoHandRecoilModifier: 0.4
-  magazinePrefab: {fileID: 0}
+  magazinePrefab: {fileID: 8379116125295102877, guid: bb973221d90de9c4ba307fbda03e2019,
+    type: 3}
   hitMask:
     serializedVersion: 2
     m_Bits: 2231
@@ -6250,6 +6252,7 @@ MonoBehaviour:
   triggerRotateAxis: {x: 1, y: 0, z: 0}
   magazineSocket: {fileID: 292264695700268188}
   hasSlideLockOnEmpty: 0
+  slideLockDistance: 0.03
   isSlideLockedBack:
     m_InternalValue: 0
   isChambered:
@@ -6572,6 +6575,7 @@ Transform:
   - {fileID: 1537252579095675873}
   - {fileID: 8136008307787540733}
   - {fileID: 8129628212668937248}
+  - {fileID: 9018961728451665937}
   m_Father: {fileID: 3571701202094694108}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7881709168821592690

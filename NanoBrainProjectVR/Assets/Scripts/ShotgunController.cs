@@ -73,6 +73,16 @@ public class ShotgunController : NetworkBehaviour
     [Header("Visual Effects")]
     public ParticleSystem muzzleFlash;
 
+    [Header("Trigger Animation")]
+    [Tooltip("The trigger bone/transform on the weapon model")]
+    public Transform triggerTransform;
+    [Tooltip("Maximum rotation angle when the trigger is fully pulled (degrees). Positive = rotates on local X since the asset is backwards.")]
+    public float triggerMaxAngle = 15f;
+    [Tooltip("The axis around which the trigger rotates locally")]
+    public Vector3 triggerRotateAxis = Vector3.right;
+    private Quaternion triggerOriginalRotation;
+    private bool isHeld = false;
+
     private TwoHandGrabInteractable grabInteractable;
     private XRBaseInputInteractor currentHoldingInteractor;
 
@@ -83,6 +93,11 @@ public class ShotgunController : NetworkBehaviour
         {
             originalModelRotation = weaponModel.localEulerAngles;
             originalModelPosition = weaponModel.localPosition;
+        }
+
+        if (triggerTransform != null)
+        {
+            triggerOriginalRotation = triggerTransform.localRotation;
         }
     }
 
@@ -108,6 +123,7 @@ public class ShotgunController : NetworkBehaviour
         if (grabInteractable != null)
         {
             grabInteractable.selectEntered.AddListener(OnWeaponGrabbed);
+            grabInteractable.selectExited.AddListener(OnWeaponReleased);
             grabInteractable.activated.AddListener(OnTriggerPulled);
         }
     }
@@ -117,12 +133,14 @@ public class ShotgunController : NetworkBehaviour
         if (grabInteractable != null)
         {
             grabInteractable.selectEntered.RemoveListener(OnWeaponGrabbed);
+            grabInteractable.selectExited.RemoveListener(OnWeaponReleased);
             grabInteractable.activated.RemoveListener(OnTriggerPulled);
         }
     }
 
     private void OnWeaponGrabbed(SelectEnterEventArgs args)
     {
+        isHeld = true;
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
         if ((!IsSpawned || IsOwner) && magazinePrefab != null)
@@ -133,6 +151,12 @@ public class ShotgunController : NetworkBehaviour
                 localPouch.SetMagazinePrefab(magazinePrefab);
             }
         }
+    }
+
+    private void OnWeaponReleased(SelectExitEventArgs args)
+    {
+        isHeld = false;
+        currentHoldingInteractor = null;
     }
 
     private void OnTriggerPulled(ActivateEventArgs args)
@@ -364,6 +388,21 @@ public class ShotgunController : NetworkBehaviour
             {
                 DebugPumpAction();
             }
+        }
+
+        // ── Trigger Animation ──
+        if (triggerTransform != null)
+        {
+            float triggerInput = 0f;
+            
+            if (isHeld && currentHoldingInteractor != null)
+            {
+                // Read the analog trigger value directly from whichever hand is holding the weapon
+                triggerInput = currentHoldingInteractor.activateInput.ReadValue();
+            }
+
+            // Rotate trigger based on analog input. Positive angle because the asset is backwards.
+            triggerTransform.localRotation = triggerOriginalRotation * Quaternion.AngleAxis(triggerInput * triggerMaxAngle, triggerRotateAxis);
         }
     }
 
