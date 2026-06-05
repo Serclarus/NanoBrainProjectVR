@@ -71,7 +71,7 @@ public class ShotgunController : NetworkBehaviour
     public GameObject magazinePrefab;
 
     [Header("Visual Effects")]
-    public ParticleSystem muzzleFlash;
+    public GameObject muzzleFlash;
 
     [Header("Trigger Animation")]
     [Tooltip("The trigger bone/transform on the weapon model")]
@@ -246,7 +246,18 @@ public class ShotgunController : NetworkBehaviour
 
     private void PlayShootEffectsLocal()
     {
-        if (muzzleFlash != null) muzzleFlash.Play(true);
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.SetActive(false);
+            muzzleFlash.SetActive(true);
+            ParticleSystem[] pSystems = muzzleFlash.GetComponentsInChildren<ParticleSystem>();
+            foreach (ParticleSystem p in pSystems)
+            {
+                p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                p.Play(true);
+            }
+        }
+        
         if (audioSource != null && shootSound != null)
         {
             audioSource.pitch = Random.Range(soundPitchRange.x, soundPitchRange.y);

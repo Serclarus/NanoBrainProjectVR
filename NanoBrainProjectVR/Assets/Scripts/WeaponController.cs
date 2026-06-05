@@ -97,8 +97,8 @@ public class WeaponController : NetworkBehaviour
     public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Visual Effects")]
-    [Tooltip("Assign the generic muzzle flash particle system here")]
-    public ParticleSystem muzzleFlash; 
+    [Tooltip("Assign the Muzzle Flash GameObject here (it should be a child of the weapon). All Particle Systems on this object and its children will be played.")]
+    public GameObject muzzleFlash; 
 
     [Header("Audio Settings")]
     [Tooltip("The AudioSource component used to play the sound")]
@@ -540,7 +540,14 @@ public class WeaponController : NetworkBehaviour
     {
         if (muzzleFlash != null)
         {
-            muzzleFlash.Play();
+            muzzleFlash.SetActive(false);
+            muzzleFlash.SetActive(true);
+            ParticleSystem[] pSystems = muzzleFlash.GetComponentsInChildren<ParticleSystem>();
+            foreach (ParticleSystem p in pSystems)
+            {
+                p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                p.Play(true);
+            }
         }
 
         if (audioSource != null && shootSound != null)
@@ -584,15 +591,6 @@ public class WeaponController : NetworkBehaviour
     private void PlayFireVisualsLocal(int shots)
     {
         PlayShootEffects();
-
-        // 1. Visuals: Play the attached Particle Systems for flash & trail
-        if (muzzleFlash != null)
-        {
-            muzzleFlash.gameObject.SetActive(true);
-            // Stop and clear forces the burst emitter to fire again immediately!
-            muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            muzzleFlash.Play(true);
-        }
 
         ApplyProceduralRecoil();
 
