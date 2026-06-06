@@ -15,6 +15,8 @@ public class KnockdownTarget : NetworkBehaviour
     public float fallSpeed = 10f;
     [Tooltip("How many seconds the target stays down before popping back up.")]
     public float timeToStandUp = 3f;
+    [Tooltip("If true, the target automatically pops back up. If false, it stays down forever!")]
+    public bool autoRestore = true;
     [Tooltip("How fast the target pops back up.")]
     public float restoreSpeed = 5f;
 
@@ -24,7 +26,7 @@ public class KnockdownTarget : NetworkBehaviour
     public AudioClip restoreSound;
 
     // Network variable to sync the down state automatically across all players!
-    private NetworkVariable<bool> isDown = new NetworkVariable<bool>(false);
+    public NetworkVariable<bool> isDown = new NetworkVariable<bool>(false);
 
     private Quaternion originalRotation;
     private Quaternion knockedRotation;
@@ -56,10 +58,15 @@ public class KnockdownTarget : NetworkBehaviour
         isDown.OnValueChanged -= OnTargetStateChanged;
     }
 
+    // Global event for the Training Grounds Manager to track score
+    public static event System.Action OnTargetKnockedDown;
+
     // Call this method from your HittableSurface script's Unity Event!
     public void Knockdown()
     {
         if (isDown.Value) return; // Already down
+        
+        OnTargetKnockedDown?.Invoke();
 
         // If we are playing offline without a server, just do it locally
         if (!IsSpawned)
@@ -87,15 +94,25 @@ public class KnockdownTarget : NetworkBehaviour
     private IEnumerator ServerRestoreTimer()
     {
         yield return new WaitForSeconds(timeToStandUp);
-        isDown.Value = false; // Syncs to all clients again to stand up
+        if (autoRestore)
+        {
+            isDown.Value = false; // Syncs to all clients again to stand up
+        }
     }
 
     // This handles the fallback if the game is completely offline
+    public bool isLocallyDown = false;
+
     private IEnumerator OfflineSequence()
     {
+        isLocallyDown = true;
         OnTargetStateChanged(false, true);
         yield return new WaitForSeconds(timeToStandUp);
-        OnTargetStateChanged(true, false);
+        if (autoRestore)
+        {
+            OnTargetStateChanged(true, false);
+        }
+        isLocallyDown = false;
     }
 
     private void OnTargetStateChanged(bool previousValue, bool newValue)

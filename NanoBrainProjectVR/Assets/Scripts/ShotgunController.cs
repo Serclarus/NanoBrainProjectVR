@@ -20,8 +20,11 @@ public class ShotgunController : NetworkBehaviour
     public NetworkVariable<ChamberState> chamberState = new NetworkVariable<ChamberState>(ChamberState.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Pellet Spread")]
-    public float damagePerPellet = 5f;
+    public float damagePerPellet = 34f;
     public int pelletCount = 8;
+
+    // Events for Training Grounds
+    public static event System.Action<int> OnProjectilesFired;
     [Tooltip("The cone angle in degrees for the spread")]
     public float spreadAngle = 4f;
     public float range = 50f;
@@ -184,6 +187,12 @@ public class ShotgunController : NetworkBehaviour
 
         chamberState.Value = ChamberState.SpentShell;
 
+        // Report to Training Grounds Manager
+        OnProjectilesFired?.Invoke(pelletCount);
+
+        // Pre-allocate buffer for RaycastNonAlloc to avoid GC spikes
+        RaycastHit[] hitBuffer = new RaycastHit[20];
+
         // Perform Raycasts on the server for authority (or locally if offline)
         for (int i = 0; i < pelletCount; i++)
         {
@@ -193,18 +202,54 @@ public class ShotgunController : NetworkBehaviour
             Vector3 randomPoint = Random.insideUnitSphere;
             spreadDirection = Quaternion.AngleAxis(Random.Range(0f, spreadAngle), randomPoint) * spreadDirection;
 
-            if (Physics.Raycast(barrelPoint.position, spreadDirection, out RaycastHit hit, range, hitMask))
+            int hitCount = Physics.RaycastNonAlloc(barrelPoint.position, spreadDirection, hitBuffer, range, hitMask, QueryTriggerInteraction.Collide);
+
+            RaycastHit closestSolidHit = new RaycastHit();
+            float closestSolidDist = float.MaxValue;
+            HittableSurface closestHittable = null;
+
+            // Track damage zones so we apply damage AFTER placing the decal
+            System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
+
+            for (int j = 0; j < hitCount; j++)
             {
-                SurfaceType hitType = SurfaceType.Default;
-                HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
-                if (hittable != null)
+                RaycastHit currentHit = hitBuffer[j];
+
+                // 1. Check for Damage Zones
+                TargetDamageZone damageZone = currentHit.collider.GetComponentInParent<TargetDamageZone>();
+                if (damageZone != null)
                 {
-                    hitType = hittable.surfaceType;
-                    hittable.OnHit(hit);
+                    if (!zonesToDamage.Contains(damageZone))
+                        zonesToDamage.Add(damageZone);
                 }
+
+                // 2. Check for solid surface for Decal
+                if (!currentHit.collider.isTrigger)
+                {
+                    HittableSurface hittable = currentHit.collider.GetComponentInParent<HittableSurface>();
+                    if (hittable != null && currentHit.distance < closestSolidDist)
+                    {
+                        closestSolidDist = currentHit.distance;
+                        closestSolidHit = currentHit;
+                        closestHittable = hittable;
+                    }
+                }
+            }
+
+            // Spawn Decal if we hit a solid mesh
+            if (closestHittable != null)
+            {
+                SurfaceType hitType = closestHittable.surfaceType;
+                closestHittable.OnHit(closestSolidHit);
                 
-                SpawnDecalLocal(hit.point, hit.normal, hitType, hit.collider.transform);
-                if (IsSpawned) SpawnDecalRpc(hit.point, hit.normal, hitType);
+                SpawnDecalLocal(closestSolidHit.point, closestSolidHit.normal, hitType, closestSolidHit.collider.transform);
+                if (IsSpawned) SpawnDecalRpc(closestSolidHit.point, closestSolidHit.normal, hitType);
+            }
+
+            // 4. NOW apply the damage (so the target doesn't rotate BEFORE the decal is parented!)
+            foreach (var zone in zonesToDamage)
+            {
+                zone.ApplyDamage(damagePerPellet);
             }
         }
 

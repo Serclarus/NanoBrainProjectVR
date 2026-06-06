@@ -67,6 +67,12 @@ public class WeaponController : NetworkBehaviour
     [Tooltip("The point where the raycast bullet originates")]
     public Transform barrelPoint;
 
+    // Events for Training Grounds
+    public static event System.Action<int> OnProjectilesFired;
+
+    [Header("Damage Settings")]
+    public float weaponDamage = 50f;
+
     [Header("Fire Mode")]
     private float fireCooldownTimer = 0f;
     private bool isTriggerHeld = false;
@@ -460,6 +466,9 @@ public class WeaponController : NetworkBehaviour
         isChambered.Value = false; // Spend the chambered round
         consecutiveShots++;
 
+        // Report to the Training Grounds Manager that 1 projectile was fired
+        OnProjectilesFired?.Invoke(1);
+
         // After firing, the semi-auto gun attempts to chamber a new round
         if (currentMagazine != null && currentMagazine.HasAmmo())
         {
@@ -471,30 +480,62 @@ public class WeaponController : NetworkBehaviour
             isSlideLockedBack.Value = true;
         }
 
-        // 3. Logic: Raycast Hit Detection
+        // 3. Logic: Raycast Hit Detection (Using NonAlloc to pierce triggers for Headshots)
         bool hitSomething = false;
         Vector3 hitPoint = Vector3.zero;
         Vector3 hitNormal = Vector3.zero;
         SurfaceType hitType = SurfaceType.Default;
 
-        if (Physics.Raycast(barrelPoint.position, barrelPoint.forward, out RaycastHit hit, range, hitMask))
+        RaycastHit[] hitBuffer = new RaycastHit[20];
+        int hitCount = Physics.RaycastNonAlloc(barrelPoint.position, barrelPoint.forward, hitBuffer, range, hitMask, QueryTriggerInteraction.Collide);
+
+        RaycastHit closestSolidHit = new RaycastHit();
+        float closestSolidDist = float.MaxValue;
+        HittableSurface closestHittable = null;
+
+        // Keep track of damage zones so we can apply damage AFTER the decal is spawned
+        System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
+
+        for (int i = 0; i < hitCount; i++)
         {
-            // 4. Hit Logic (Highly Optimized: Single GetComponent call)
-            HittableSurface hittable = hit.collider.GetComponentInParent<HittableSurface>();
-            
-            if (hittable != null)
+            RaycastHit currentHit = hitBuffer[i];
+
+            // 1. Check if we hit a Damage Zone (Head or Body trigger)
+            TargetDamageZone damageZone = currentHit.collider.GetComponentInParent<TargetDamageZone>();
+            if (damageZone != null)
             {
-                // Read the material type for the particles
-                hitType = hittable.surfaceType;
-                
-                // Trigger the damage/score logic
-                hittable.OnHit(hit);
+                if (!zonesToDamage.Contains(damageZone))
+                    zonesToDamage.Add(damageZone);
             }
 
-            // Spawn hit effect from the pool precisely on the surface locally with parent
+            // 2. Check if it's a solid surface for the Decal (Ignore triggers so bullet holes don't float)
+            if (!currentHit.collider.isTrigger)
+            {
+                HittableSurface hittable = currentHit.collider.GetComponentInParent<HittableSurface>();
+                if (hittable != null && currentHit.distance < closestSolidDist)
+                {
+                    closestSolidDist = currentHit.distance;
+                    closestSolidHit = currentHit;
+                    closestHittable = hittable;
+                }
+            }
+        }
+
+        // If we found a solid surface, prepare to spawn the decal and trigger legacy hit events
+        if (closestHittable != null)
+        {
+            hitSomething = true;
+            hitPoint = closestSolidHit.point;
+            hitNormal = closestSolidHit.normal;
+            hitType = closestHittable.surfaceType;
+            
+            // Trigger the old generic hit event
+            closestHittable.OnHit(closestSolidHit);
+
+            // Spawn hit effect locally with parent for the shooter
             if (HitEffectPoolManager.Instance != null)
             {
-                HitEffectPoolManager.Instance.SpawnHitEffect(hit.point, hit.normal, hitType, hit.collider.transform);
+                HitEffectPoolManager.Instance.SpawnHitEffect(hitPoint, hitNormal, hitType, closestSolidHit.collider.transform);
             }
         }
 
@@ -504,12 +545,15 @@ public class WeaponController : NetworkBehaviour
         else
             PlayFireVisualsLocal(consecutiveShots);
         
-        if (hitSomething)
+        if (hitSomething && IsSpawned)
         {
-            if (IsSpawned)
-                SpawnHitEffectRpc(hitPoint, hitNormal, hitType);
-            else
-                SpawnHitEffectLocal(hitPoint, hitNormal, hitType);
+            SpawnHitEffectRpc(hitPoint, hitNormal, hitType);
+        }
+
+        // 4. NOW apply the damage (so the target doesn't rotate BEFORE the decal is parented!)
+        foreach (var zone in zonesToDamage)
+        {
+            zone.ApplyDamage(weaponDamage);
         }
     }
 
