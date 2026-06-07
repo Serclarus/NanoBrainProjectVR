@@ -21,6 +21,8 @@ public class ShotgunController : NetworkBehaviour
 
     [Header("Pellet Spread")]
     public float damagePerPellet = 34f;
+    [Tooltip("How far (in meters) the pellet can penetrate into targets before stopping.")]
+    public float penetrationDepth = 0.5f;
     public int pelletCount = 8;
 
     // Events for Training Grounds
@@ -210,17 +212,52 @@ public class ShotgunController : NetworkBehaviour
 
             // Track damage zones so we apply damage AFTER placing the decal
             System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
+            System.Collections.Generic.List<AnimalDamageZone> animalZonesToDamage = new System.Collections.Generic.List<AnimalDamageZone>();
+
+            // Sort hits by distance to correctly calculate pellet penetration
+            for (int k = 0; k < hitCount - 1; k++) {
+                for (int m = k + 1; m < hitCount; m++) {
+                    if (hitBuffer[k].distance > hitBuffer[m].distance) {
+                        RaycastHit temp = hitBuffer[k];
+                        hitBuffer[k] = hitBuffer[m];
+                        hitBuffer[m] = temp;
+                    }
+                }
+            }
+
+            float entryDistance = -1f;
 
             for (int j = 0; j < hitCount; j++)
             {
                 RaycastHit currentHit = hitBuffer[j];
 
-                // 1. Check for Damage Zones
+                // 1. Mark our entry point into a solid object (e.g. skin, tree, wall)
+                if (entryDistance < 0f && !currentHit.collider.isTrigger)
+                {
+                    entryDistance = currentHit.distance;
+                }
+
+                // 2. Check if the pellet ran out of penetration power
+                if (entryDistance >= 0f && (currentHit.distance - entryDistance) > penetrationDepth)
+                {
+                    // The pellet stopped inside the object!
+                    break;
+                }
+
+                // 1a. Check for Standard Target Damage Zones
                 TargetDamageZone damageZone = currentHit.collider.GetComponentInParent<TargetDamageZone>();
                 if (damageZone != null)
                 {
                     if (!zonesToDamage.Contains(damageZone))
                         zonesToDamage.Add(damageZone);
+                }
+
+                // 1b. Check for Animal Damage Zones
+                AnimalDamageZone animalZone = currentHit.collider.GetComponentInParent<AnimalDamageZone>();
+                if (animalZone != null)
+                {
+                    if (!animalZonesToDamage.Contains(animalZone))
+                        animalZonesToDamage.Add(animalZone);
                 }
 
                 // 2. Check for solid surface for Decal
@@ -236,7 +273,6 @@ public class ShotgunController : NetworkBehaviour
                 }
             }
 
-            // Spawn Decal if we hit a solid mesh
             if (closestHittable != null)
             {
                 SurfaceType hitType = closestHittable.surfaceType;
@@ -250,6 +286,11 @@ public class ShotgunController : NetworkBehaviour
             foreach (var zone in zonesToDamage)
             {
                 zone.ApplyDamage(damagePerPellet);
+            }
+
+            foreach (var animalZone in animalZonesToDamage)
+            {
+                animalZone.ApplyDamage(damagePerPellet);
             }
         }
 

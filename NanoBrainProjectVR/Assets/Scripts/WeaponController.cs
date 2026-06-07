@@ -72,6 +72,8 @@ public class WeaponController : NetworkBehaviour
 
     [Header("Damage Settings")]
     public float weaponDamage = 50f;
+    [Tooltip("How far (in meters) the bullet can penetrate into targets before stopping.")]
+    public float penetrationDepth = 0.5f;
 
     [Header("Fire Mode")]
     private float fireCooldownTimer = 0f;
@@ -495,19 +497,54 @@ public class WeaponController : NetworkBehaviour
 
         // Keep track of damage zones so we can apply damage AFTER the decal is spawned
         System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
+        System.Collections.Generic.List<AnimalDamageZone> animalZonesToDamage = new System.Collections.Generic.List<AnimalDamageZone>();
+
+        // Sort hits by distance to correctly calculate bullet penetration
+        for (int i = 0; i < hitCount - 1; i++) {
+            for (int j = i + 1; j < hitCount; j++) {
+                if (hitBuffer[i].distance > hitBuffer[j].distance) {
+                    RaycastHit temp = hitBuffer[i];
+                    hitBuffer[i] = hitBuffer[j];
+                    hitBuffer[j] = temp;
+                }
+            }
+        }
+
+        float entryDistance = -1f;
 
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit currentHit = hitBuffer[i];
 
-            // 1. Check if we hit a Damage Zone (Head or Body trigger)
+            // 1. Mark our entry point into a solid object (e.g. skin, tree, wall)
+            if (entryDistance < 0f && !currentHit.collider.isTrigger)
+            {
+                entryDistance = currentHit.distance;
+            }
+
+            // 2. Check if the bullet ran out of penetration power
+            if (entryDistance >= 0f && (currentHit.distance - entryDistance) > penetrationDepth)
+            {
+                // The bullet stopped inside the object! It cannot hit any more organs behind this depth.
+                break;
+            }
+
+            // 1a. Check if we hit a Standard Target Damage Zone
             TargetDamageZone damageZone = currentHit.collider.GetComponentInParent<TargetDamageZone>();
             if (damageZone != null)
             {
                 if (!zonesToDamage.Contains(damageZone))
                     zonesToDamage.Add(damageZone);
             }
-
+            
+            // 1b. Check if we hit an Animal Damage Zone (e.g., Boar)
+            AnimalDamageZone animalZone = currentHit.collider.GetComponentInParent<AnimalDamageZone>();
+            if (animalZone != null)
+            {
+                if (!animalZonesToDamage.Contains(animalZone))
+                    animalZonesToDamage.Add(animalZone);
+            }
+            
             // 2. Check if it's a solid surface for the Decal (Ignore triggers so bullet holes don't float)
             if (!currentHit.collider.isTrigger)
             {
@@ -528,7 +565,7 @@ public class WeaponController : NetworkBehaviour
             hitPoint = closestSolidHit.point;
             hitNormal = closestSolidHit.normal;
             hitType = closestHittable.surfaceType;
-            
+
             // Trigger the old generic hit event
             closestHittable.OnHit(closestSolidHit);
 
@@ -554,6 +591,11 @@ public class WeaponController : NetworkBehaviour
         foreach (var zone in zonesToDamage)
         {
             zone.ApplyDamage(weaponDamage);
+        }
+
+        foreach (var animalZone in animalZonesToDamage)
+        {
+            animalZone.ApplyDamage(weaponDamage);
         }
     }
 
