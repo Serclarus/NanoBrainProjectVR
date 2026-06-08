@@ -241,7 +241,6 @@ public class WeaponController : NetworkBehaviour
             SetSubInteractablesState(true);
 
             // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
-            // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
             var interactorsSelecting = grabInteractable.interactorsSelecting;
             for (int i = interactorsSelecting.Count - 1; i >= 0; i--)
             {
@@ -252,27 +251,36 @@ public class WeaponController : NetworkBehaviour
             }
 
             // GUARANTEE PHYSICS ARE ACTIVE:
-            // If the Socket failed to restore the physics state during the steal, the weapon will be permanently stuck in mid-air (isKinematic = true).
-            // We force it back to standard physics so the hand can actually move it!
             Rigidbody rb = GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.isKinematic = false;
             }
+
+            // --- NEW: Smart Ammo Pouch Logic ---
+            // If the local player grabbed this weapon WITH A HAND, swap the Ammo Pouch to this weapon's magazines!
+            if (!IsSpawned || IsOwner)
+            {
+                if (magazinePrefab != null)
+                {
+                    if (AmmoPouch.Instance != null)
+                    {
+                        AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"<color=yellow>[WeaponController]</color> {gameObject.name} tried to update the Ammo Pouch, but AmmoPouch.Instance was NULL!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=red>[WeaponController]</color> {gameObject.name} grabbed, but its Magazine Prefab is MISSING in the Inspector!");
+                }
+            }
         }
 
         // Cache the interactor so we can read its analog trigger value for trigger animation
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
-
-        // --- NEW: Smart Ammo Pouch Logic ---
-        // If the local player grabbed this weapon, tell their local Ammo Pouch to swap to this weapon's magazines!
-        if ((!IsSpawned || IsOwner) && magazinePrefab != null)
-        {
-            if (AmmoPouch.Instance != null)
-            {
-                AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
-            }
-        }
     }
 
     private System.Collections.IEnumerator ForceSocketReleaseRoutine(XRSocketInteractor socket, UnityEngine.XR.Interaction.Toolkit.XRInteractionManager manager)

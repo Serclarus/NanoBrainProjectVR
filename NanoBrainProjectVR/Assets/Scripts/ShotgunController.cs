@@ -167,18 +167,17 @@ public class ShotgunController : NetworkBehaviour
         isHeld = true;
         
         IXRSelectInteractor interactor = args.interactorObject;
+        // Only activate sub-interactables if grabbed by a HAND (Direct/Ray interactor), NOT a Socket!
         if (!(interactor is XRSocketInteractor))
         {
             SetSubInteractablesState(true);
 
-            // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
             // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
             var interactorsSelecting = grabInteractable.interactorsSelecting;
             for (int i = interactorsSelecting.Count - 1; i >= 0; i--)
             {
                 if (interactorsSelecting[i] is XRSocketInteractor socket)
                 {
-                    Debug.Log($"<color=yellow>[ShotgunController]</color> Forcing {socket.name} to release the weapon safely!");
                     StartCoroutine(ForceSocketReleaseRoutine(socket, args.manager));
                 }
             }
@@ -189,17 +188,30 @@ public class ShotgunController : NetworkBehaviour
             {
                 rb.isKinematic = false;
             }
+
+            // --- NEW: Smart Ammo Pouch Logic ---
+            // If the local player grabbed this weapon WITH A HAND, swap the Ammo Pouch to this weapon's magazines!
+            if (!IsSpawned || IsOwner)
+            {
+                if (magazinePrefab != null)
+                {
+                    if (AmmoPouch.Instance != null)
+                    {
+                        AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"<color=yellow>[ShotgunController]</color> {gameObject.name} tried to update the Ammo Pouch, but AmmoPouch.Instance was NULL!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=red>[ShotgunController]</color> {gameObject.name} grabbed, but its Magazine Prefab is MISSING in the Inspector!");
+                }
+            }
         }
 
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
-
-        if ((!IsSpawned || IsOwner) && magazinePrefab != null)
-        {
-            if (AmmoPouch.Instance != null)
-            {
-                AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
-            }
-        }
     }
 
     private System.Collections.IEnumerator ForceSocketReleaseRoutine(XRSocketInteractor socket, UnityEngine.XR.Interaction.Toolkit.XRInteractionManager manager)

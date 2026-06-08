@@ -3,7 +3,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-[RequireComponent(typeof(XRSocketInteractor))]
+[RequireComponent(typeof(Collider))]
 public class AmmoPouch : MonoBehaviour
 {
     // Singleton so weapons ALWAYS find the active, real pouch instead of hidden duplicates!
@@ -12,8 +12,8 @@ public class AmmoPouch : MonoBehaviour
     [Tooltip("The Magazine prefab that this pouch will currently dispense. This is updated dynamically by the WeaponController!")]
     public GameObject magazinePrefab;
     
-    private XRSocketInteractor socketInteractor;
-    private bool isRefilling = false;
+    private GameObject currentSpawnedMag;
+    private IXRSelectInteractable currentMagInteractable;
 
     private void Awake()
     {
@@ -25,79 +25,70 @@ public class AmmoPouch : MonoBehaviour
             return;
         }
         Instance = this;
-
-        socketInteractor = GetComponent<XRSocketInteractor>();
-        socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
     }
 
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
-
-        if (socketInteractor != null)
-        {
-            socketInteractor.selectExited.RemoveListener(OnItemRemovedFromSocket);
-        }
     }
 
     // Called dynamically by ShotgunController/WeaponController whenever you grab a new weapon!
     public void SetMagazinePrefab(GameObject newMagazinePrefab)
     {
-        if (newMagazinePrefab != null && newMagazinePrefab != magazinePrefab)
+        if (newMagazinePrefab != null)
         {
             magazinePrefab = newMagazinePrefab;
             Debug.Log($"<color=cyan>[AmmoPouch]</color> Updated to dispense: {newMagazinePrefab.name}");
-            
-            RefillSocket();
-        }
-        else if (newMagazinePrefab != null && !socketInteractor.hasSelection)
-        {
-            RefillSocket();
         }
     }
 
-    private void OnItemRemovedFromSocket(SelectExitEventArgs args)
+    private void OnTriggerEnter(Collider other)
     {
-        RefillSocket();
+        // Check if the object entering the pouch is a VR Hand
+        XRDirectInteractor hand = other.GetComponentInParent<XRDirectInteractor>();
+        
+        if (hand != null && magazinePrefab != null && currentSpawnedMag == null)
+        {
+            // Spawn a fresh magazine right inside the pouch, exactly where the hand is!
+            currentSpawnedMag = Instantiate(magazinePrefab, transform.position, transform.rotation);
+            currentMagInteractable = currentSpawnedMag.GetComponentInChildren<IXRSelectInteractable>();
+
+            // Listen for when the player actually grabs it
+            if (currentMagInteractable != null)
+            {
+                currentMagInteractable.selectEntered.AddListener(OnMagazineGrabbed);
+                Debug.Log($"<color=cyan>[AmmoPouch]</color> Spawned invisible {magazinePrefab.name} for the hand to natively grab!");
+            }
+        }
     }
 
-    private void RefillSocket()
+    private void OnTriggerExit(Collider other)
     {
-        StartCoroutine(RefillSocketRoutine());
+        XRDirectInteractor hand = other.GetComponentInParent<XRDirectInteractor>();
+        
+        if (hand != null && currentSpawnedMag != null)
+        {
+            // If the hand leaves the pouch, but didn't grab the magazine, destroy it to keep the vest clean!
+            if (currentMagInteractable != null && !currentMagInteractable.isSelected)
+            {
+                currentMagInteractable.selectEntered.RemoveListener(OnMagazineGrabbed);
+                Destroy(currentSpawnedMag);
+                currentSpawnedMag = null;
+                currentMagInteractable = null;
+            }
+        }
     }
 
-    private System.Collections.IEnumerator RefillSocketRoutine()
+    private void OnMagazineGrabbed(SelectEnterEventArgs args)
     {
-        if (isRefilling) yield break;
-        isRefilling = true;
-
-        yield return new WaitForSeconds(0.1f);
-
-        if (magazinePrefab == null)
+        // The player grabbed the magazine out of the pouch!
+        // We clean up our reference so the pouch is ready to spawn a new one next time.
+        if (currentMagInteractable != null)
         {
-            isRefilling = false;
-            yield break;
+            currentMagInteractable.selectEntered.RemoveListener(OnMagazineGrabbed);
         }
 
-        // Destroy the old ammo if we just swapped weapons
-        if (socketInteractor.hasSelection)
-        {
-            IXRSelectInteractable oldItem = socketInteractor.interactablesSelected[0];
-            socketInteractor.interactionManager.SelectCancel((IXRSelectInteractor)socketInteractor, oldItem);
-            Destroy(oldItem.transform.gameObject);
-            
-            yield return new WaitForEndOfFrame(); 
-        }
-
-        // Spawn the new ammo!
-        GameObject newAmmo = Instantiate(magazinePrefab, transform.position, transform.rotation);
-        IXRSelectInteractable ammoInteractable = newAmmo.GetComponentInChildren<IXRSelectInteractable>();
-
-        if (ammoInteractable != null && socketInteractor.interactionManager != null)
-        {
-            socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, ammoInteractable);
-        }
-
-        isRefilling = false;
+        currentSpawnedMag = null;
+        currentMagInteractable = null;
     }
 }
