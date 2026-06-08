@@ -20,7 +20,7 @@ public class MainMenuController : MonoBehaviour
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
-    private Color originalTextColor = Color.white;
+    private Color originalFaceColor = Color.white;
     private string originalTextString = "";
     
     // Track the currently active 3D map so we can turn it off
@@ -54,7 +54,8 @@ public class MainMenuController : MonoBehaviour
             if (buttonTextComponent != null) 
             {
                 buttonTextComponent.text = "Loading...";
-                buttonTextComponent.color = loadingButtonColor;
+                buttonTextComponent.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, loadingButtonColor);
+                buttonTextComponent.UpdateMeshPadding();
             }
 
             // Use the smooth fade if it exists!
@@ -70,7 +71,8 @@ public class MainMenuController : MonoBehaviour
         if (selectedButtonText != null)
         {
             selectedButtonText.text = originalTextString; // Revert text
-            selectedButtonText.color = originalTextColor; // Revert color
+            selectedButtonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, originalFaceColor);
+            selectedButtonText.UpdateMeshPadding();
         }
 
         // If VRSceneFader exists, do a quick Blink transition!
@@ -101,7 +103,7 @@ public class MainMenuController : MonoBehaviour
         
         if (selectedButtonText != null)
         {
-            originalTextColor = selectedButtonText.color;
+            originalFaceColor = selectedButtonText.fontMaterial.GetColor(ShaderUtilities.ID_FaceColor);
             originalTextString = selectedButtonText.text;
         }
 
@@ -113,7 +115,8 @@ public class MainMenuController : MonoBehaviour
         if (selectedButtonText != null)
         {
             selectedButtonText.text = "Start";
-            selectedButtonText.color = startButtonColor;
+            selectedButtonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, startButtonColor);
+            selectedButtonText.UpdateMeshPadding();
         }
     }
 

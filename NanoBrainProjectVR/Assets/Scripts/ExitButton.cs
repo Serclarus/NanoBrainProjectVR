@@ -30,12 +30,18 @@ public class ExitButton : MonoBehaviour
     private bool isLoading = false;
     private Coroutine cancelCoroutine;
 
+    private Color originalFaceColor;
+
     // A tiny cooldown so they don't double-touch it instantly
     private float lastTouchTime = 0f;
     private float touchCooldown = 0.5f; // Half a second before they can confirm
 
     private void Start()
     {
+        if (buttonText != null)
+        {
+            originalFaceColor = buttonText.fontMaterial.GetColor(ShaderUtilities.ID_FaceColor);
+        }
         ResetButton();
     }
 
@@ -62,7 +68,8 @@ public class ExitButton : MonoBehaviour
             if (buttonText != null)
             {
                 buttonText.text = "Sure?";
-                buttonText.color = confirmColor;
+                buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, confirmColor);
+                buttonText.UpdateMeshPadding();
             }
 
             // Start the 3-second timer
@@ -78,7 +85,8 @@ public class ExitButton : MonoBehaviour
             if (buttonText != null)
             {
                 buttonText.text = "Loading...";
-                buttonText.color = loadingColor;
+                buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, loadingColor);
+                buttonText.UpdateMeshPadding();
             }
 
             Debug.Log($"Exit Button confirmed! Disconnecting and returning to {mainMenuSceneName}...");
@@ -117,7 +125,8 @@ public class ExitButton : MonoBehaviour
         if (buttonText != null)
         {
             buttonText.text = "Exit";
-            buttonText.color = defaultColor;
+            buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, defaultColor);
+            buttonText.UpdateMeshPadding();
         }
     }
 }

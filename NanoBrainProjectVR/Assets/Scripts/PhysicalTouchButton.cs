@@ -30,7 +30,7 @@ public class PhysicalTouchButton : MonoBehaviour
     [Header("Visual Feedback (Optional)")]
     [Tooltip("Assign a TextMeshPro component (3D or UI) to change its color during connection")]
     public TMP_Text buttonText;
-    private Color originalColor;
+    private Color originalFaceColor;
     private bool wasTouched = false;
 
     private float lastPressTime = 0f;
@@ -39,7 +39,8 @@ public class PhysicalTouchButton : MonoBehaviour
     {
         if (buttonText != null)
         {
-            originalColor = buttonText.color;
+            // Save the original Face Color of the material, not the vertex color!
+            originalFaceColor = buttonText.fontMaterial.GetColor(ShaderUtilities.ID_FaceColor);
             
             // Subscribe to the network manager's state changes so we know when it connects
             XRINetworkGameManager.CurrentConnectionState.Subscribe(OnConnectionStateChanged);
@@ -64,20 +65,23 @@ public class PhysicalTouchButton : MonoBehaviour
         if (state == XRINetworkGameManager.ConnectionState.Connecting || 
             state == XRINetworkGameManager.ConnectionState.Authenticating)
         {
-            Debug.Log("[ColorDebug] Changing color to Connecting (Blue)!");
-            buttonText.color = connectingColor;
+            Debug.Log("[ColorDebug] Changing FaceColor to Connecting!");
+            buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, connectingColor);
+            buttonText.UpdateMeshPadding(); // Force TMP to update its material properties
         }
         else if (state == XRINetworkGameManager.ConnectionState.Connected)
         {
-            Debug.Log("[ColorDebug] Changing color to Connected (Green)!");
-            buttonText.color = connectedColor;
+            Debug.Log("[ColorDebug] Changing FaceColor to Connected!");
+            buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, connectedColor);
+            buttonText.UpdateMeshPadding();
         }
         else if (state == XRINetworkGameManager.ConnectionState.None || 
                  state == XRINetworkGameManager.ConnectionState.Authenticated)
         {
-            Debug.Log("[ColorDebug] Resetting color (Idle state)!");
+            Debug.Log("[ColorDebug] Resetting FaceColor (Idle state)!");
             // If the connection failed or was disconnected, reset the button back to default
-            buttonText.color = originalColor;
+            buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, originalFaceColor);
+            buttonText.UpdateMeshPadding();
             wasTouched = false;
         }
     }
@@ -99,8 +103,9 @@ public class PhysicalTouchButton : MonoBehaviour
                (XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None || 
                 XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.Authenticated))
             {
-                Debug.Log("[ColorDebug] Preemptively turning Connecting Color!");
-                buttonText.color = connectingColor;
+                Debug.Log("[ColorDebug] Preemptively turning FaceColor to Connecting!");
+                buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, connectingColor);
+                buttonText.UpdateMeshPadding();
             }
 
             onButtonTouch.Invoke();
