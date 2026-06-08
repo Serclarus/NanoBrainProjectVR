@@ -8,6 +8,15 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("The blank skybox (or generic room) when nothing is selected")]
     public Material defaultSkybox;
 
+    [Header("Colors (HDR Supported)")]
+    [Tooltip("The color the button turns when selected. Turn up intensity for Bloom/Post-Processing!")]
+    [ColorUsage(true, true)]
+    public Color startButtonColor = new Color(0f, 2f, 0f, 1f); // HDR Green
+    
+    [Tooltip("The color the button turns when loading.")]
+    [ColorUsage(true, true)]
+    public Color loadingButtonColor = new Color(2f, 2f, 0f, 1f); // HDR Yellow
+
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
@@ -45,7 +54,7 @@ public class MainMenuController : MonoBehaviour
             if (buttonTextComponent != null) 
             {
                 buttonTextComponent.text = "Loading...";
-                buttonTextComponent.color = Color.yellow;
+                buttonTextComponent.color = loadingButtonColor;
             }
 
             // Use the smooth fade if it exists!
@@ -104,7 +113,7 @@ public class MainMenuController : MonoBehaviour
         if (selectedButtonText != null)
         {
             selectedButtonText.text = "Start";
-            selectedButtonText.color = Color.green;
+            selectedButtonText.color = startButtonColor;
         }
     }
 

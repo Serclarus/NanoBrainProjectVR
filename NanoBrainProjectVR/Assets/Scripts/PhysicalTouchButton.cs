@@ -18,6 +18,15 @@ public class PhysicalTouchButton : MonoBehaviour
     [Tooltip("Duration of the vibration in seconds")]
     public float hapticDuration = 0.1f;
 
+    [Header("Colors (HDR Supported)")]
+    [Tooltip("Color while trying to connect. Turn up intensity for Bloom!")]
+    [ColorUsage(true, true)]
+    public Color connectingColor = new Color(0f, 0f, 2f, 1f); // HDR Blue
+
+    [Tooltip("Color when successfully connected.")]
+    [ColorUsage(true, true)]
+    public Color connectedColor = new Color(0f, 2f, 0f, 1f); // HDR Green
+
     [Header("Visual Feedback (Optional)")]
     [Tooltip("Assign a TextMeshPro component (3D or UI) to change its color during connection")]
     public TMP_Text buttonText;
@@ -55,13 +64,13 @@ public class PhysicalTouchButton : MonoBehaviour
         if (state == XRINetworkGameManager.ConnectionState.Connecting || 
             state == XRINetworkGameManager.ConnectionState.Authenticating)
         {
-            Debug.Log("[ColorDebug] Changing color to Blue!");
-            buttonText.color = Color.blue;
+            Debug.Log("[ColorDebug] Changing color to Connecting (Blue)!");
+            buttonText.color = connectingColor;
         }
         else if (state == XRINetworkGameManager.ConnectionState.Connected)
         {
-            Debug.Log("[ColorDebug] Changing color to Green!");
-            buttonText.color = Color.green;
+            Debug.Log("[ColorDebug] Changing color to Connected (Green)!");
+            buttonText.color = connectedColor;
         }
         else if (state == XRINetworkGameManager.ConnectionState.None)
         {
@@ -87,8 +96,8 @@ public class PhysicalTouchButton : MonoBehaviour
             // If the state is currently 'None', pre-emptively turn it blue so it reacts instantly to the touch
             if (buttonText != null && XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None)
             {
-                Debug.Log("[ColorDebug] Preemptively turning Blue!");
-                buttonText.color = Color.blue;
+                Debug.Log("[ColorDebug] Preemptively turning Connecting Color!");
+                buttonText.color = connectingColor;
             }
 
             onButtonTouch.Invoke();

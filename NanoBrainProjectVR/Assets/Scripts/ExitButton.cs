@@ -13,9 +13,18 @@ public class ExitButton : MonoBehaviour
     [Tooltip("The exact name of the Main Menu scene to load")]
     public string mainMenuSceneName = "MainMenu";
     
-    [Header("Colors")]
+    [Header("Colors (HDR Supported)")]
+    [Tooltip("The default color of the text.")]
+    [ColorUsage(true, true)]
     public Color defaultColor = Color.white;
-    public Color confirmColor = Color.blue;
+    
+    [Tooltip("The color when asking 'Sure?'. Turn up intensity for Bloom!")]
+    [ColorUsage(true, true)]
+    public Color confirmColor = new Color(0f, 0f, 2f, 1f); // HDR Blue
+
+    [Tooltip("The color when 'Loading...'.")]
+    [ColorUsage(true, true)]
+    public Color loadingColor = new Color(2f, 2f, 0f, 1f); // HDR Yellow
 
     private bool isConfirming = false;
     private bool isLoading = false;
@@ -69,7 +78,7 @@ public class ExitButton : MonoBehaviour
             if (buttonText != null)
             {
                 buttonText.text = "Loading...";
-                buttonText.color = Color.yellow;
+                buttonText.color = loadingColor;
             }
 
             Debug.Log($"Exit Button confirmed! Disconnecting and returning to {mainMenuSceneName}...");
