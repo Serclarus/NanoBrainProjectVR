@@ -268,10 +268,9 @@ public class WeaponController : NetworkBehaviour
         // If the local player grabbed this weapon, tell their local Ammo Pouch to swap to this weapon's magazines!
         if ((!IsSpawned || IsOwner) && magazinePrefab != null)
         {
-            AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
-            if (localPouch != null)
+            if (AmmoPouch.Instance != null)
             {
-                localPouch.SetMagazinePrefab(magazinePrefab);
+                AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
             }
         }
     }

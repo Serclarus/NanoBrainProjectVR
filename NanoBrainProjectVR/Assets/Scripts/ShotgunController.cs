@@ -195,10 +195,9 @@ public class ShotgunController : NetworkBehaviour
 
         if ((!IsSpawned || IsOwner) && magazinePrefab != null)
         {
-            AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
-            if (localPouch != null)
+            if (AmmoPouch.Instance != null)
             {
-                localPouch.SetMagazinePrefab(magazinePrefab);
+                AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
             }
         }
     }
