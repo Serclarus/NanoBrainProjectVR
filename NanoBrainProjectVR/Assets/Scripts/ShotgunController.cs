@@ -193,12 +193,12 @@ public class ShotgunController : NetworkBehaviour
 
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
-        if ((!IsSpawned || IsOwner) && shellPrefab != null)
+        if ((!IsSpawned || IsOwner) && magazinePrefab != null)
         {
             AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
             if (localPouch != null)
             {
-                localPouch.SetMagazinePrefab(shellPrefab);
+                localPouch.SetMagazinePrefab(magazinePrefab);
             }
         }
     }
