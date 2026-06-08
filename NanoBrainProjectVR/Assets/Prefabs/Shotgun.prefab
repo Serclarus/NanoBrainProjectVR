@@ -475,6 +475,7 @@ GameObject:
   - component: {fileID: 6941521994041063632}
   - component: {fileID: 6768497408331919791}
   - component: {fileID: 8048494363746975141}
+  - component: {fileID: 4343671709570822857}
   m_Layer: 8
   m_Name: Shotgun
   m_TagString: Untagged
@@ -538,7 +539,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2898780337
+  GlobalObjectIdHash: 760525879
   InScenePlacedSourceGlobalObjectIdHash: 2898780337
   DeferredDespawnTick: 0
   Ownership: 1
@@ -571,6 +572,7 @@ MonoBehaviour:
   chamberState:
     m_InternalValue: 0
   damagePerPellet: 5
+  penetrationDepth: 0.5
   pelletCount: 8
   spreadAngle: 4
   range: 50
@@ -1039,6 +1041,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.045524318, y: 0.1592151, z: 1.0285101}
   m_Center: {x: -0.0048892573, y: -0.070694506, z: 0.082419395}
+--- !u!114 &4343671709570822857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2528653204977119491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6d45993299261549aa99a869204cbea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponAutoReturn
+  ShowTopMostFoldoutHeaderGroup: 1
+  slotType: 1
+  returnDelay: 3
 --- !u!1 &2929825075879975088
 GameObject:
   m_ObjectHideFlags: 0
@@ -1625,6 +1642,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6587620340355597725, guid: 9192e08d2f3857b468cb7452ab4bbdb9,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 0.427451
+      objectReference: {fileID: 0}
+    - target: {fileID: 6587620340355597725, guid: 9192e08d2f3857b468cb7452ab4bbdb9,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 0.72503316
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

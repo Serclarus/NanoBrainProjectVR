@@ -56,6 +56,10 @@ public class ShotgunController : NetworkBehaviour
     private Queue<GameObject> shellPool;
     private Dictionary<GameObject, Coroutine> activeShellCoroutines;
 
+    [Header("Interactables Group")]
+    [Tooltip("Assign the parent GameObject that holds all sub-interactables (Pump, Loading Port). It will be disabled when the weapon is dropped to prevent accidental grabs.")]
+    public GameObject subInteractablesGroup;
+
     [Header("Procedural Recoil")]
     public Transform weaponModel;
     public Vector2 pitchRange = new Vector2(5.0f, 8.0f);
@@ -93,6 +97,8 @@ public class ShotgunController : NetworkBehaviour
 
     private void Awake()
     {
+        if (subInteractablesGroup != null) subInteractablesGroup.SetActive(false);
+
         grabInteractable = GetComponent<TwoHandGrabInteractable>();
         if (weaponModel != null)
         {
@@ -146,6 +152,13 @@ public class ShotgunController : NetworkBehaviour
     private void OnWeaponGrabbed(SelectEnterEventArgs args)
     {
         isHeld = true;
+        
+        IXRSelectInteractor interactor = args.interactorObject;
+        if (subInteractablesGroup != null && !(interactor is XRSocketInteractor))
+        {
+            subInteractablesGroup.SetActive(true);
+        }
+
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
         if ((!IsSpawned || IsOwner) && magazinePrefab != null)
@@ -161,6 +174,12 @@ public class ShotgunController : NetworkBehaviour
     private void OnWeaponReleased(SelectExitEventArgs args)
     {
         isHeld = false;
+
+        if (subInteractablesGroup != null)
+        {
+            subInteractablesGroup.SetActive(false);
+        }
+
         currentHoldingInteractor = null;
     }
 

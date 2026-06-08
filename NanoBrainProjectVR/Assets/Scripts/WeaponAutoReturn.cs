@@ -43,24 +43,49 @@ public class WeaponAutoReturn : NetworkBehaviour
         }
     }
 
+    private void Start()
+    {
+        // If we are testing offline in singleplayer (network is not running), slot immediately!
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Offline mode detected! Slotting {gameObject.name} immediately.");
+            TryFindSocketAndSlot();
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
-        // When the weapon spawns on the client, find its home socket!
+        Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> OnNetworkSpawn called for {gameObject.name}. IsOwner: {IsOwner}");
+        
+        // When spawned online, only slot it for the owner!
         if (IsOwner)
         {
-            PlayerHolsterSystem holsters = FindObjectOfType<PlayerHolsterSystem>();
-            if (holsters != null)
-            {
-                if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
-                else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
-                else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
+            TryFindSocketAndSlot();
+        }
+    }
 
-                if (homeSocket != null)
-                {
-                    // Snap it in perfectly!
-                    StartCoroutine(ForceSlotWeaponRoutine());
-                }
+    private void TryFindSocketAndSlot()
+    {
+        PlayerHolsterSystem holsters = FindObjectOfType<PlayerHolsterSystem>();
+        if (holsters != null)
+        {
+            if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
+            else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
+            else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
+
+            if (homeSocket != null)
+            {
+                Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Found home socket for {gameObject.name}. Forcing slot routine...");
+                StartCoroutine(ForceSlotWeaponRoutine());
             }
+            else
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> PlayerHolsterSystem was found, but the {slotType} socket was NULL!");
+            }
+        }
+        else
+        {
+            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> Could not find PlayerHolsterSystem in the scene!");
         }
     }
 
@@ -69,10 +94,17 @@ public class WeaponAutoReturn : NetworkBehaviour
         // Wait 1 frame so XR Toolkit can initialize the socket properly
         yield return new WaitForEndOfFrame();
         
+        if (homeSocket.interactionManager == null)
+        {
+            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> The home socket has NO Interaction Manager assigned! XRI requires an Interaction Manager.");
+            yield break;
+        }
+
         transform.position = homeSocket.transform.position;
         transform.rotation = homeSocket.transform.rotation;
         
-        homeSocket.interactionManager.SelectEnter((IXRSelectInteractor)homeSocket, grabInteractable);
+        Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
+        homeSocket.interactionManager.SelectEnter((IXRSelectInteractor)homeSocket, (IXRSelectInteractable)grabInteractable);
     }
 
     private void OnGrabbed(SelectEnterEventArgs args)

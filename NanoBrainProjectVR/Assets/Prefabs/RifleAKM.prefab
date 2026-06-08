@@ -95,6 +95,39 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7437818360217493075}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2252211860159236505
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4959877235443103410}
+  m_Layer: 8
+  m_Name: Interactables
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4959877235443103410
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2252211860159236505}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1003450165151893295}
+  - {fileID: 3398695907390129914}
+  m_Father: {fileID: 9210565571938336921}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2971709454038370103
 GameObject:
   m_ObjectHideFlags: 0
@@ -188,13 +221,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3270321106993537022}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0.0059399796, y: 0.03564418, z: 0.0444}
+  m_LocalRotation: {x: -0.70710677, y: -0, z: -0, w: 0.70710677}
+  m_LocalPosition: {x: 0.0059405547, y: 0.035644174, z: 0.04440105}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7437818360217493075}
-  m_Father: {fileID: 9210565571938336921}
+  m_Father: {fileID: 4959877235443103410}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7667837555037745981
 MeshFilter:
@@ -604,12 +637,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5364941774885705187}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.70710653, y: -0.000010358768, z: 0.000015933409, w: 0.7071071}
-  m_LocalPosition: {x: -0.0048, y: -0.0835, z: 0.0267}
+  m_LocalRotation: {x: -0.7071065, y: -0.0000103712055, z: 0.000015914437, w: 0.7071071}
+  m_LocalPosition: {x: -0.0047983555, y: -0.08350003, z: 0.026701992}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 9210565571938336921}
+  m_Father: {fileID: 4959877235443103410}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &292264695700268188
 MonoBehaviour:
@@ -1070,6 +1103,7 @@ GameObject:
   - component: {fileID: 3144038195845386442}
   - component: {fileID: 7599575759986319009}
   - component: {fileID: 397748246730711265}
+  - component: {fileID: 6965306771421435060}
   m_Layer: 8
   m_Name: RifleAKM
   m_TagString: Untagged
@@ -1343,6 +1377,7 @@ MonoBehaviour:
     m_Bits: 6327
   barrelPoint: {fileID: 8129628212668937248}
   weaponDamage: 50
+  penetrationDepth: 0.5
   triggerTransform: {fileID: 7950030294718878253}
   triggerMaxAngle: 4
   triggerRotateAxis: {x: 1, y: 0, z: 0}
@@ -1366,6 +1401,7 @@ MonoBehaviour:
   currentBoltOffset: 0
   targetBoltOffset: 0
   isSlideGrabbed: 0
+  subInteractablesGroup: {fileID: 0}
   weaponModel: {fileID: 9210565571938336921}
 --- !u!114 &6873159382571050872
 MonoBehaviour:
@@ -1633,6 +1669,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.045524318, y: 0.164307, z: 0.8833686}
   m_Center: {x: -0.0048892573, y: -0.024313986, z: 0.017767921}
+--- !u!114 &6965306771421435060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7121643266348946437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6d45993299261549aa99a869204cbea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponAutoReturn
+  ShowTopMostFoldoutHeaderGroup: 1
+  slotType: 0
+  returnDelay: 3
 --- !u!1 &7517676517083344163
 GameObject:
   m_ObjectHideFlags: 0
@@ -1663,14 +1714,13 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 541513578881812698}
-  - {fileID: 1003450165151893295}
   - {fileID: 5185452865836885415}
   - {fileID: 5744750027151156272}
   - {fileID: 7950030294718878253}
-  - {fileID: 3398695907390129914}
   - {fileID: 1537252579095675873}
   - {fileID: 8129628212668937248}
   - {fileID: 9018961728451665937}
+  - {fileID: 4959877235443103410}
   m_Father: {fileID: 3571701202094694108}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7881709168821592690

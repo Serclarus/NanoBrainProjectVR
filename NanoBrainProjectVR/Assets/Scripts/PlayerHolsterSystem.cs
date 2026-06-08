@@ -2,65 +2,45 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
+[Tooltip("Attach this to your Vest/BodyFollower object!")]
 public class PlayerHolsterSystem : MonoBehaviour
 {
-    [Tooltip("Drag your Main Camera here")]
-    public Transform cameraTransform;
-
     [Header("Holster Sockets")]
+    [Tooltip("Drag your manually positioned Left Shoulder socket here")]
     public XRSocketInteractor leftShoulderSocket;
+    
+    [Tooltip("Drag your manually positioned Right Shoulder socket here")]
     public XRSocketInteractor rightShoulderSocket;
+    
+    [Tooltip("Drag your manually positioned Right Belt socket here")]
     public XRSocketInteractor rightBeltSocket;
 
-    [Header("Holster Offsets")]
-    public Vector3 leftShoulderOffset = new Vector3(-0.2f, -0.2f, -0.1f);
-    public Vector3 rightShoulderOffset = new Vector3(0.2f, -0.2f, -0.1f);
-    public Vector3 rightBeltOffset = new Vector3(0.25f, -0.6f, 0.1f);
-
-    private void Start()
-    {
-        if (cameraTransform == null)
-        {
-            cameraTransform = Camera.main.transform;
-        }
-    }
+    [Header("Debugging")]
+    public bool printDebugLogs = true;
+    private float debugTimer = 0f;
 
     private void Update()
     {
-        if (cameraTransform == null) return;
+        // We no longer forcefully calculate socket positions here! 
+        // We assume the Sockets are children of your Vest (BodyFollower) and you positioned them manually.
 
-        // Calculate a perfectly flat body rotation (so holsters don't tilt up when you look at the sky)
-        Vector3 forwardFlat = cameraTransform.forward;
-        forwardFlat.y = 0;
-        if (forwardFlat.sqrMagnitude > 0.001f)
+        if (printDebugLogs)
         {
-            forwardFlat.Normalize();
+            debugTimer -= Time.deltaTime;
+            if (debugTimer <= 0f)
+            {
+                debugTimer = 3f; // Print every 3 seconds
+                LogSocketContents();
+            }
         }
-        else
-        {
-            forwardFlat = Vector3.forward;
-        }
-        
-        Quaternion bodyRotation = Quaternion.LookRotation(forwardFlat);
+    }
 
-        // Update Shoulder positions (shoulders tilt slightly with the head)
-        if (leftShoulderSocket != null)
-        {
-            leftShoulderSocket.transform.position = cameraTransform.TransformPoint(leftShoulderOffset);
-            leftShoulderSocket.transform.rotation = cameraTransform.rotation;
-        }
+    private void LogSocketContents()
+    {
+        string left = (leftShoulderSocket != null && leftShoulderSocket.hasSelection) ? leftShoulderSocket.interactablesSelected[0].transform.name : "Empty";
+        string right = (rightShoulderSocket != null && rightShoulderSocket.hasSelection) ? rightShoulderSocket.interactablesSelected[0].transform.name : "Empty";
+        string belt = (rightBeltSocket != null && rightBeltSocket.hasSelection) ? rightBeltSocket.interactablesSelected[0].transform.name : "Empty";
 
-        if (rightShoulderSocket != null)
-        {
-            rightShoulderSocket.transform.position = cameraTransform.TransformPoint(rightShoulderOffset);
-            rightShoulderSocket.transform.rotation = cameraTransform.rotation;
-        }
-
-        // Update Belt position (belt stays perfectly flat on your waist)
-        if (rightBeltSocket != null)
-        {
-            rightBeltSocket.transform.position = cameraTransform.position + (bodyRotation * rightBeltOffset);
-            rightBeltSocket.transform.rotation = bodyRotation;
-        }
+        Debug.Log($"<color=cyan>[Holster System]</color> Left Shoulder: <b>{left}</b> | Right Shoulder: <b>{right}</b> | Belt: <b>{belt}</b>");
     }
 }

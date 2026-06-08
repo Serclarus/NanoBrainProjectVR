@@ -138,6 +138,10 @@ public class WeaponController : NetworkBehaviour
     private Queue<GameObject> shellPool;
     private Dictionary<GameObject, Coroutine> activeShellCoroutines;
 
+    [Header("Interactables Group")]
+    [Tooltip("Assign the parent GameObject that holds all sub-interactables (Slide, Magazine Socket, etc.). It will be disabled when the weapon is dropped to prevent accidental grabs.")]
+    public GameObject subInteractablesGroup;
+
     [Header("Procedural Recoil Settings")]
     [Tooltip("Assign the visual model wrapper of the gun here. Rotating the root will conflict with VR Tracking!")]
     public Transform weaponModel;
@@ -155,6 +159,8 @@ public class WeaponController : NetworkBehaviour
 
     private void Awake()
     {
+        if (subInteractablesGroup != null) subInteractablesGroup.SetActive(false);
+
         grabInteractable = GetComponent<TwoHandGrabInteractable>();
         
         if (grabInteractable != null)
@@ -204,6 +210,12 @@ public class WeaponController : NetworkBehaviour
         isHeld = true;
         IXRSelectInteractor interactor = args.interactorObject;
 
+        // Only activate sub-interactables if grabbed by a HAND (Direct/Ray interactor), NOT a Socket!
+        if (subInteractablesGroup != null && !(interactor is XRSocketInteractor))
+        {
+            subInteractablesGroup.SetActive(true);
+        }
+
         // Cache the interactor so we can read its analog trigger value for trigger animation
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
@@ -224,6 +236,11 @@ public class WeaponController : NetworkBehaviour
         isHeld = false;
         isTriggerHeld = false;
         currentHoldingInteractor = null;
+
+        if (subInteractablesGroup != null)
+        {
+            subInteractablesGroup.SetActive(false);
+        }
     }
 
     private void OnMagazineInserted(SelectEnterEventArgs args)
