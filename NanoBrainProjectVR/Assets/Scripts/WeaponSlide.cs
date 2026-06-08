@@ -43,6 +43,8 @@ public class WeaponSlide : MonoBehaviour
         interactable.selectExited.RemoveListener(OnRelease);
     }
 
+    private float initialBoltOffset = 0f;
+
     private void OnGrab(SelectEnterEventArgs args)
     {
         isGrabbed = true;
@@ -52,6 +54,9 @@ public class WeaponSlide : MonoBehaviour
         if (weapon != null)
         {
             weapon.isSlideGrabbed = true;
+            // Record the current visual offset of the bolt so we don't snap to 0!
+            initialBoltOffset = weapon.currentBoltOffset;
+            
             // Record the hand's local position relative to the weapon when first grabbed
             grabStartLocalPos = weapon.transform.InverseTransformPoint(currentInteractor.transform.position);
         }
@@ -98,30 +103,56 @@ public class WeaponSlide : MonoBehaviour
             // Calculate where the hand is now in the weapon's local space
             Vector3 currentHandLocalPos = weapon.transform.InverseTransformPoint(currentInteractor.transform.position);
             
-            // The difference along the specified axis
             // Project the hand movement onto the pull axis
             Vector3 handMovement = currentHandLocalPos - grabStartLocalPos;
             float movementAmount = Vector3.Dot(handMovement, pullAxis.normalized);
 
-            // Clamp between 0 (resting) and rackDistance (fully pulled)
-            float clampedPull = Mathf.Clamp(movementAmount, 0f, rackDistance);
+            // Add the hand movement to whatever position the bolt was already at!
+            float newBoltOffset = initialBoltOffset + movementAmount;
 
-            // Directly drive the WeaponController's procedural variables!
-            weapon.targetBoltOffset = clampedPull;
-            weapon.currentBoltOffset = clampedPull;
+            // Clamp between 0 (resting) and slightly past rackDistance (to allow unlocking)
+            float clampedPull = Mathf.Clamp(newBoltOffset, 0f, rackDistance * 1.05f);
 
-            // If we pull it more than 90% of the way, rack the gun!
-            if (!hasRackedThisPull && clampedPull >= rackDistance * 0.9f)
+            // Directly drive the WeaponController's procedural variables (visually capped at max rack)
+            weapon.targetBoltOffset = Mathf.Min(clampedPull, rackDistance);
+            weapon.currentBoltOffset = Mathf.Min(clampedPull, rackDistance);
+
+            // Logic changes depending on whether the slide was locked back!
+            if (weapon.isSlideLockedBack.Value)
             {
-                hasRackedThisPull = true;
-                weapon.RackSlide();
-
-                PlaySound(slideBackSound);
-
-                // Force release the hand so it doesn't hold the bolt forever
-                if (interactable.interactionManager != null && currentInteractor != null)
+                // If the slide is locked back, they only need to pull it slightly further backwards to unlock it!
+                float unlockThreshold = weapon.slideLockDistance + 0.005f; 
+                
+                if (!hasRackedThisPull && clampedPull >= unlockThreshold)
                 {
-                    interactable.interactionManager.SelectCancel(currentInteractor, interactable);
+                    hasRackedThisPull = true;
+                    weapon.isSlideLockedBack.Value = false; // Unlock it!
+                    weapon.RackSlide(); // Racking it when unlocked will chamber a new round if magazine has ammo
+
+                    PlaySound(slideBackSound);
+
+                    // Force release the hand so it doesn't hold the bolt forever
+                    if (interactable.interactionManager != null && currentInteractor != null)
+                    {
+                        interactable.interactionManager.SelectCancel(currentInteractor, interactable);
+                    }
+                }
+            }
+            else
+            {
+                // If it's NOT locked back, they must pull it almost all the way to rack it!
+                if (!hasRackedThisPull && clampedPull >= rackDistance * 0.9f)
+                {
+                    hasRackedThisPull = true;
+                    weapon.RackSlide();
+
+                    PlaySound(slideBackSound);
+
+                    // Force release the hand so it doesn't hold the bolt forever
+                    if (interactable.interactionManager != null && currentInteractor != null)
+                    {
+                        interactable.interactionManager.SelectCancel(currentInteractor, interactable);
+                    }
                 }
             }
         }
