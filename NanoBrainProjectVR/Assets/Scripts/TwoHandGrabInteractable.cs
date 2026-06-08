@@ -27,6 +27,12 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     [Tooltip("If true, the hand will automatically let go of the pump grip as soon as the pump action is completed.")]
     public bool autoReleasePumpOnComplete = true;
 
+    [Tooltip("Optional: The physical bolt object. Unparent it from the pump so they are siblings!")]
+    public Transform boltTransform;
+    [Tooltip("Multiplier for how much the bolt moves compared to the pump (e.g. 0.5 moves half as much).")]
+    public float boltMovementMultiplier = 0.5f;
+    private float initialBoltZ;
+
     public UnityEngine.Events.UnityEvent OnPumpPulledBack;
     public UnityEngine.Events.UnityEvent OnPumpPushedForward;
 
@@ -50,6 +56,11 @@ public class TwoHandGrabInteractable : XRGrabInteractable
         {
             secondaryGrip.selectEntered.AddListener(OnSecondaryGrab);
             secondaryGrip.selectExited.AddListener(OnSecondaryRelease);
+        }
+
+        if (boltTransform != null)
+        {
+            initialBoltZ = boltTransform.localPosition.z;
         }
     }
 
@@ -145,6 +156,19 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         pumpSlideTransform.localPosition.y, 
                         clampedZ
                     );
+
+                    // Move the bolt proportionally!
+                    if (boltTransform != null)
+                    {
+                        float pumpTravelDistance = clampedZ - pumpForwardZ;
+                        float scaledBoltTravel = pumpTravelDistance * boltMovementMultiplier;
+
+                        boltTransform.localPosition = new Vector3(
+                            boltTransform.localPosition.x,
+                            boltTransform.localPosition.y,
+                            initialBoltZ + scaledBoltTravel
+                        );
+                    }
 
                     // Fire events when it hits the limits!
                     if (Mathf.Abs(clampedZ - pumpBackZ) < 0.01f && !hasPumpedBack)
