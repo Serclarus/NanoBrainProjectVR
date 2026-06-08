@@ -15,11 +15,13 @@ public class AmmoPouch : MonoBehaviour
     {
         simpleInteractable = GetComponent<XRSimpleInteractable>();
         simpleInteractable.selectEntered.AddListener(OnPouchGrabbed);
+        simpleInteractable.hoverEntered.AddListener(OnPouchHovered);
     }
 
     private void OnDestroy()
     {
         simpleInteractable.selectEntered.RemoveListener(OnPouchGrabbed);
+        simpleInteractable.hoverEntered.RemoveListener(OnPouchHovered);
     }
 
     // Called dynamically by WeaponController.cs whenever you grab a new weapon!
@@ -32,11 +34,27 @@ public class AmmoPouch : MonoBehaviour
         }
     }
 
+    private void OnPouchHovered(HoverEnterEventArgs args)
+    {
+        Debug.Log($"<color=cyan>[AmmoPouch]</color> SUCCESS: Hand {args.interactorObject.transform.name} hovered over the pouch!");
+    }
+
+    // Fallback native physics checks to see if Unity is completely ignoring it
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.GetComponentInParent<XRDirectInteractor>() != null)
+        {
+            Debug.Log($"<color=yellow>[AmmoPouch]</color> NATIVE PHYSICS: A hand entered the pouch collider, but XRI might not be registering it!");
+        }
+    }
+
     private void OnPouchGrabbed(SelectEnterEventArgs args)
     {
+        Debug.Log($"<color=green>[AmmoPouch]</color> Pouch Grabbed by {args.interactorObject.transform.name}!");
+
         if (magazinePrefab == null)
         {
-            Debug.LogWarning("AmmoPouch: No magazine prefab assigned to spawn!");
+            Debug.LogWarning("AmmoPouch: No magazine prefab assigned to spawn! (You must grab a gun first)");
             return;
         }
 
@@ -48,11 +66,24 @@ public class AmmoPouch : MonoBehaviour
 
         if (magInteractable != null && handInteractor != null)
         {
+            // Safely swap the grab on the next frame to prevent locking the XR Interaction Manager
+            StartCoroutine(ForceGrabRoutine(handInteractor, magInteractable));
+        }
+    }
+
+    private System.Collections.IEnumerator ForceGrabRoutine(IXRSelectInteractor hand, IXRSelectInteractable mag)
+    {
+        // Wait for the interaction manager to finish processing the Pouch's current grab event!
+        yield return new WaitForEndOfFrame();
+        
+        if (simpleInteractable.interactionManager != null)
+        {
             // Force the hand to let go of the invisible vest pouch...
-            simpleInteractable.interactionManager.SelectCancel(handInteractor, simpleInteractable);
+            simpleInteractable.interactionManager.SelectCancel(hand, simpleInteractable);
             
             // ...and instantly grab the brand new magazine we just spawned!
-            simpleInteractable.interactionManager.SelectEnter(handInteractor, magInteractable);
+            simpleInteractable.interactionManager.SelectEnter(hand, mag);
+            Debug.Log($"<color=green>[AmmoPouch]</color> Successfully spawned and handed {mag.transform.name} to the player!");
         }
     }
 }
