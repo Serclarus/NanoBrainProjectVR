@@ -8,19 +8,10 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("The blank skybox (or generic room) when nothing is selected")]
     public Material defaultSkybox;
 
-    [Header("Colors (HDR Supported)")]
-    [Tooltip("The color the button turns when selected. Turn up intensity for Bloom/Post-Processing!")]
-    [ColorUsage(true, true)]
-    public Color startButtonColor = new Color(0f, 2f, 0f, 1f); // HDR Green
-    
-    [Tooltip("The color the button turns when loading.")]
-    [ColorUsage(true, true)]
-    public Color loadingButtonColor = new Color(2f, 2f, 0f, 1f); // HDR Yellow
-
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
-    private Color originalFaceColor = Color.white;
+    private Color originalTextColor = Color.white;
     private string originalTextString = "";
     
     // Track the currently active 3D map so we can turn it off
@@ -54,8 +45,7 @@ public class MainMenuController : MonoBehaviour
             if (buttonTextComponent != null) 
             {
                 buttonTextComponent.text = "Loading...";
-                buttonTextComponent.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, loadingButtonColor);
-                buttonTextComponent.UpdateMeshPadding();
+                buttonTextComponent.color = Color.yellow;
             }
 
             // Use the smooth fade if it exists!
@@ -71,8 +61,7 @@ public class MainMenuController : MonoBehaviour
         if (selectedButtonText != null)
         {
             selectedButtonText.text = originalTextString; // Revert text
-            selectedButtonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, originalFaceColor);
-            selectedButtonText.UpdateMeshPadding();
+            selectedButtonText.color = originalTextColor; // Revert color
         }
 
         // If VRSceneFader exists, do a quick Blink transition!
@@ -103,7 +92,7 @@ public class MainMenuController : MonoBehaviour
         
         if (selectedButtonText != null)
         {
-            originalFaceColor = selectedButtonText.fontMaterial.GetColor(ShaderUtilities.ID_FaceColor);
+            originalTextColor = selectedButtonText.color;
             originalTextString = selectedButtonText.text;
         }
 
@@ -115,8 +104,7 @@ public class MainMenuController : MonoBehaviour
         if (selectedButtonText != null)
         {
             selectedButtonText.text = "Start";
-            selectedButtonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, startButtonColor);
-            selectedButtonText.UpdateMeshPadding();
+            selectedButtonText.color = Color.green;
         }
     }
 
