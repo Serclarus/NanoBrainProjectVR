@@ -5035,6 +5035,39 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5100166617530316339}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1280844455510899564
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2780305357344535976}
+  m_Layer: 0
+  m_Name: GrabAttachPoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2780305357344535976
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1280844455510899564}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 0.99999976, z: 0.99999976}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4213164338665986038}
+  - {fileID: 3562813130016796245}
+  m_Father: {fileID: 8368745034676660332}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1507130703177553571
 GameObject:
   m_ObjectHideFlags: 0
@@ -10860,6 +10893,37 @@ MonoBehaviour:
   m_StartingInteractionStrengthFilters: []
   m_AutoFindParentInteractableInHierarchy: 0
   m_ParentInteractableObject: {fileID: 5734337492031588043}
+--- !u!1 &5012347966231541293
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4213164338665986038}
+  m_Layer: 0
+  m_Name: LeftHandAttach
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4213164338665986038
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5012347966231541293}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.051433943, y: 0.34113744, z: 0.17558692, w: 0.9220353}
+  m_LocalPosition: {x: -0.05110113, y: 0.038799964, z: -0.026700025}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2780305357344535976}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5145668294443252440
 GameObject:
   m_ObjectHideFlags: 0
@@ -11472,6 +11536,9 @@ MonoBehaviour:
   pumpForwardZ: 0.2
   pumpBackZ: 0
   pumpDeadzone: 0.02
+  autoReleasePumpOnComplete: 1
+  boltTransform: {fileID: 0}
+  boltMovementMultiplier: 0.5
   OnPumpPulledBack:
     m_PersistentCalls:
       m_Calls: []
@@ -11552,8 +11619,7 @@ MonoBehaviour:
   snappiness: 20
   returnSpeed: 8
   twoHandRecoilModifier: 0.4
-  magazinePrefab: {fileID: 5442367406811080251, guid: 1e4c023fb21792b4ca7cc01c420e8b2d,
-    type: 3}
+  magazinePrefab: {fileID: 0}
   hitMask:
     serializedVersion: 2
     m_Bits: 6327
@@ -21958,6 +22024,37 @@ MonoBehaviour:
   timeTillDestroy: 0.1
   destroyAfterFrame: 0
   startTimerOnAwake: 1
+--- !u!1 &8415338168305813840
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3562813130016796245}
+  m_Layer: 0
+  m_Name: RightHandAttach
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3562813130016796245
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8415338168305813840}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.051434033, y: 0.3411375, z: 0.17558692, w: -0.92203534}
+  m_LocalPosition: {x: 0.051098865, y: 0.03879991, z: -0.026700025}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2780305357344535976}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8732194908939918108
 GameObject:
   m_ObjectHideFlags: 0
@@ -21972,6 +22069,7 @@ GameObject:
   - component: {fileID: 5244853631095268534}
   - component: {fileID: 4383858520690182850}
   - component: {fileID: 914354400352225551}
+  - component: {fileID: 9206704746730862512}
   m_Layer: 0
   m_Name: WPN_P350_slide
   m_TagString: Untagged
@@ -21987,14 +22085,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8732194908939918108}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0.000049591064, y: 0.05364144, z: 0.008200169}
+  m_LocalRotation: {x: -0.70710605, y: -0.0010357632, z: -0.001035763, w: 0.70710605}
+  m_LocalPosition: {x: 0.000049591064, y: 0.05364144, z: 0.008187294}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8145965371023618119}
+  - {fileID: 2780305357344535976}
   m_Father: {fileID: 4814974805029442238}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: -0.168}
 --- !u!33 &8178330689409462054
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -22140,7 +22239,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSlide
   weapon: {fileID: 5497520948825985137}
   rackDistance: 0.02753
-  pullAxis: {x: 0, y: 0, z: 1}
+  pullAxis: {x: 0, y: 0, z: -1}
   audioSource: {fileID: 0}
   slideBackSound: {fileID: 8300000, guid: 4fb3cc59855fe5944acd7f9db3f75755, type: 3}
   slideForwardSound: {fileID: 8300000, guid: afa3a5571d212214bb57529a7fd97851, type: 3}
@@ -22166,6 +22265,33 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.030047156, y: 0.18327911, z: 0.028871637}
   m_Center: {x: 0, y: 1.4902168e-17, z: 0.008861145}
+--- !u!114 &9206704746730862512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8732194908939918108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18ad55086cb948e4da109d5c7dd7daca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MikeNspired.XRIStarterKit.XRHandPoser
+  leftHandPose: {fileID: 11400000, guid: 49c954e6bccc21043bd37cbbe3bdf942, type: 2}
+  rightHandPose: {fileID: 11400000, guid: 49c954e6bccc21043bd37cbbe3bdf942, type: 2}
+  LeftHandAnimationPose: {fileID: 0}
+  RightHandAnimationPose: {fileID: 0}
+  leftHandAttach: {fileID: 4213164338665986038}
+  rightHandAttach: {fileID: 3562813130016796245}
+  hasAnimationPose: 0
+  currentLeftHand: {fileID: 0}
+  currentRightHand: {fileID: 0}
+  grabAttachPoints: {fileID: 2780305357344535976}
+  interactable: {fileID: 5244853631095268534}
+  MaintainHandOnObject: 1
+  WaitTillEaseInTimeToMaintainPosition: 1
+  overrideEaseTime: 0
+  easeInTimeOverride: 0
 --- !u!1 &9151489782079008982
 GameObject:
   m_ObjectHideFlags: 0

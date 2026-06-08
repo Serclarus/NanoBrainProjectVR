@@ -1291,6 +1291,9 @@ MonoBehaviour:
   pumpForwardZ: 0.2
   pumpBackZ: 0
   pumpDeadzone: 0.02
+  autoReleasePumpOnComplete: 1
+  boltTransform: {fileID: 0}
+  boltMovementMultiplier: 0.5
   OnPumpPulledBack:
     m_PersistentCalls:
       m_Calls: []
@@ -1371,8 +1374,7 @@ MonoBehaviour:
   snappiness: 20
   returnSpeed: 8
   twoHandRecoilModifier: 0.4
-  magazinePrefab: {fileID: 8379116125295102877, guid: bb973221d90de9c4ba307fbda03e2019,
-    type: 3}
+  magazinePrefab: {fileID: 0}
   hitMask:
     serializedVersion: 2
     m_Bits: 6327
