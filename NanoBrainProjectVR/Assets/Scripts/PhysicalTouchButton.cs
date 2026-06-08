@@ -72,10 +72,11 @@ public class PhysicalTouchButton : MonoBehaviour
             Debug.Log("[ColorDebug] Changing color to Connected (Green)!");
             buttonText.color = connectedColor;
         }
-        else if (state == XRINetworkGameManager.ConnectionState.None)
+        else if (state == XRINetworkGameManager.ConnectionState.None || 
+                 state == XRINetworkGameManager.ConnectionState.Authenticated)
         {
-            Debug.Log("[ColorDebug] Resetting color!");
-            // If disconnected, reset the button
+            Debug.Log("[ColorDebug] Resetting color (Idle state)!");
+            // If the connection failed or was disconnected, reset the button back to default
             buttonText.color = originalColor;
             wasTouched = false;
         }
@@ -93,8 +94,10 @@ public class PhysicalTouchButton : MonoBehaviour
             lastPressTime = Time.time;
             wasTouched = true; // Mark this specific button as the one that was pressed
             
-            // If the state is currently 'None', pre-emptively turn it blue so it reacts instantly to the touch
-            if (buttonText != null && XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None)
+            // If the state is currently 'None' or 'Authenticated' (idle), pre-emptively turn it to the connecting color so it reacts instantly to the touch
+            if (buttonText != null && 
+               (XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None || 
+                XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.Authenticated))
             {
                 Debug.Log("[ColorDebug] Preemptively turning Connecting Color!");
                 buttonText.color = connectingColor;
