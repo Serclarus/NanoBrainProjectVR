@@ -97,7 +97,7 @@ public class ShotgunController : NetworkBehaviour
 
     private void Awake()
     {
-        if (subInteractablesGroup != null) subInteractablesGroup.SetActive(false);
+        SetSubInteractablesState(false);
 
         grabInteractable = GetComponent<TwoHandGrabInteractable>();
         if (weaponModel != null)
@@ -109,6 +109,19 @@ public class ShotgunController : NetworkBehaviour
         if (triggerTransform != null)
         {
             triggerOriginalRotation = triggerTransform.localRotation;
+        }
+    }
+
+    private void SetSubInteractablesState(bool state)
+    {
+        if (subInteractablesGroup != null)
+        {
+            var interactables = subInteractablesGroup.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true);
+            foreach (var interactable in interactables)
+            {
+                if (interactable == grabInteractable) continue;
+                interactable.enabled = state;
+            }
         }
     }
 
@@ -154,20 +167,63 @@ public class ShotgunController : NetworkBehaviour
         isHeld = true;
         
         IXRSelectInteractor interactor = args.interactorObject;
-        if (subInteractablesGroup != null && !(interactor is XRSocketInteractor))
+        if (!(interactor is XRSocketInteractor))
         {
-            subInteractablesGroup.SetActive(true);
+            SetSubInteractablesState(true);
+
+            // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
+            // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
+            var interactorsSelecting = grabInteractable.interactorsSelecting;
+            for (int i = interactorsSelecting.Count - 1; i >= 0; i--)
+            {
+                if (interactorsSelecting[i] is XRSocketInteractor socket)
+                {
+                    Debug.Log($"<color=yellow>[ShotgunController]</color> Forcing {socket.name} to release the weapon safely!");
+                    StartCoroutine(ForceSocketReleaseRoutine(socket, args.manager));
+                }
+            }
+
+            // GUARANTEE PHYSICS ARE ACTIVE:
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+            }
         }
 
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
 
-        if ((!IsSpawned || IsOwner) && magazinePrefab != null)
+        if ((!IsSpawned || IsOwner) && shellPrefab != null)
         {
             AmmoPouch localPouch = FindObjectOfType<AmmoPouch>();
             if (localPouch != null)
             {
-                localPouch.SetMagazinePrefab(magazinePrefab);
+                localPouch.SetMagazinePrefab(shellPrefab);
             }
+        }
+    }
+
+    private System.Collections.IEnumerator ForceSocketReleaseRoutine(XRSocketInteractor socket, UnityEngine.XR.Interaction.Toolkit.XRInteractionManager manager)
+    {
+        // Wait 1 frame to completely escape the Interaction Manager's event lock!
+        yield return new WaitForEndOfFrame();
+        
+        if (socket != null && grabInteractable != null)
+        {
+            // Explicitly force the socket to drop the weapon now that the event loop is safe
+            manager.SelectCancel((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)socket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+            
+            // Turn the socket completely off so it doesn't instantly snatch the weapon right back!
+            socket.socketActive = false;
+        }
+
+        // Wait for 1.5 seconds so the player has time to pull the weapon away
+        yield return new WaitForSeconds(1.5f);
+        
+        // Turn it back on so it can catch weapons again
+        if (socket != null)
+        {
+            socket.socketActive = true;
         }
     }
 
@@ -175,10 +231,7 @@ public class ShotgunController : NetworkBehaviour
     {
         isHeld = false;
 
-        if (subInteractablesGroup != null)
-        {
-            subInteractablesGroup.SetActive(false);
-        }
+        SetSubInteractablesState(false);
 
         currentHoldingInteractor = null;
     }

@@ -91,20 +91,34 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private IEnumerator ForceSlotWeaponRoutine()
     {
-        // Wait 1 frame so XR Toolkit can initialize the socket properly
-        yield return new WaitForEndOfFrame();
+        // Wait briefly for the network and physics to initialize
+        yield return new WaitForSeconds(0.25f);
         
-        if (homeSocket.interactionManager == null)
+        if (homeSocket != null)
         {
-            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> The home socket has NO Interaction Manager assigned! XRI requires an Interaction Manager.");
-            yield break;
-        }
+            if (homeSocket.interactionManager == null)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> The home socket has NO Interaction Manager assigned! XRI requires an Interaction Manager.");
+                yield break;
+            }
 
-        transform.position = homeSocket.transform.position;
-        transform.rotation = homeSocket.transform.rotation;
-        
-        Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
-        homeSocket.interactionManager.SelectEnter((IXRSelectInteractor)homeSocket, (IXRSelectInteractable)grabInteractable);
+            // Reset velocity
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            // Teleport the weapon directly to the socket
+            transform.position = homeSocket.transform.position;
+            transform.rotation = homeSocket.transform.rotation;
+
+            Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
+            
+            // Force the Interaction Manager to link them
+            homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+        }
     }
 
     private void OnGrabbed(SelectEnterEventArgs args)
@@ -115,7 +129,7 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void OnDropped(SelectExitEventArgs args)
     {
-        if (!IsOwner) return;
+        if (IsSpawned && !IsOwner) return;
 
         // If it was dropped on the ground (NOT put into another socket)
         if (!(args.interactorObject is XRSocketInteractor))

@@ -126,6 +126,7 @@ Transform:
   m_Children:
   - {fileID: 1003450165151893295}
   - {fileID: 3398695907390129914}
+  - {fileID: 9018961728451665937}
   m_Father: {fileID: 9210565571938336921}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2971709454038370103
@@ -746,7 +747,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3674137242698780635}
-  m_Father: {fileID: 9210565571938336921}
+  m_Father: {fileID: 4959877235443103410}
   m_LocalEulerAnglesHint: {x: -2, y: -2.066, z: 0.072}
 --- !u!65 &3822601357179746664
 BoxCollider:
@@ -1170,7 +1171,7 @@ MonoBehaviour:
   m_Colliders:
   - {fileID: 7599575759986319009}
   m_InteractionLayers:
-    m_Bits: 1
+    m_Bits: 15
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
@@ -1401,7 +1402,7 @@ MonoBehaviour:
   currentBoltOffset: 0
   targetBoltOffset: 0
   isSlideGrabbed: 0
-  subInteractablesGroup: {fileID: 0}
+  subInteractablesGroup: {fileID: 2252211860159236505}
   weaponModel: {fileID: 9210565571938336921}
 --- !u!114 &6873159382571050872
 MonoBehaviour:
@@ -1719,7 +1720,6 @@ Transform:
   - {fileID: 7950030294718878253}
   - {fileID: 1537252579095675873}
   - {fileID: 8129628212668937248}
-  - {fileID: 9018961728451665937}
   - {fileID: 4959877235443103410}
   m_Father: {fileID: 3571701202094694108}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
