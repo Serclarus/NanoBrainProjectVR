@@ -24,6 +24,8 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     public float pumpBackZ = 0.0f;
     [Tooltip("Deadzone distance. The hand must move this far before the pump slides, preventing jitter while aiming.")]
     public float pumpDeadzone = 0.02f;
+    [Tooltip("If true, the hand will automatically let go of the pump grip as soon as the pump action is completed.")]
+    public bool autoReleasePumpOnComplete = true;
 
     public UnityEngine.Events.UnityEvent OnPumpPulledBack;
     public UnityEngine.Events.UnityEvent OnPumpPushedForward;
@@ -156,6 +158,12 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         hasPumpedForward = true;
                         hasPumpedBack = false;
                         OnPumpPushedForward?.Invoke();
+
+                        // Automatically force the player to let go of the pump grip if enabled
+                        if (autoReleasePumpOnComplete && secondaryInteractor != null && secondaryGrip != null)
+                        {
+                            interactionManager.SelectCancel(secondaryInteractor, secondaryGrip);
+                        }
                     }
                 }
 
