@@ -92,6 +92,9 @@ public class WeaponController : NetworkBehaviour
     private XRBaseInputInteractor currentHoldingInteractor;
 
     [Header("Ammo & Reloading Setup")]
+    [Tooltip("If true, the weapon will automatically spawn a magazine inside its socket when the game starts.")]
+    public bool spawnWithMagazine = true;
+
     [Tooltip("The socket interactor that holds the magazine")]
     public XRSocketInteractor magazineSocket;
     
@@ -371,12 +374,65 @@ public class WeaponController : NetworkBehaviour
         consecutiveShots = 0; // Reset burst counter when trigger is released
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsServer && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        {
+            StartCoroutine(SpawnInitialMagazineRoutine());
+        }
+    }
+
+    private IEnumerator SpawnInitialMagazineRoutine()
+    {
+        // Wait briefly for XRI and Network to stabilize
+        yield return new WaitForSeconds(0.3f);
+
+        if (currentMagazine != null || magazineSocket.hasSelection) yield break;
+
+        GameObject newMag = Instantiate(magazinePrefab, magazineSocket.transform.position, magazineSocket.transform.rotation);
+        
+        NetworkObject netObj = newMag.GetComponent<NetworkObject>();
+        bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
+        
+        if (!isOffline && netObj != null)
+        {
+            netObj.SpawnWithOwnership(OwnerClientId);
+            yield return new WaitForEndOfFrame(); // Wait for network sync
+        }
+
+        var grabInteractable = newMag.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+        if (grabInteractable != null)
+        {
+            // Lock it into the socket
+            if (grabInteractable.interactionManager != magazineSocket.interactionManager)
+            {
+                grabInteractable.interactionManager = magazineSocket.interactionManager;
+                magazineSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
+            }
+            
+            magazineSocket.interactionManager.SelectEnter(
+                (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
+                (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
+            );
+        }
+    }
+
     private void Start()
     {
-        // Safety check to ensure magazine is registered if it spawned attached to the socket
+        // If testing offline, spawn it immediately
+        if (spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            {
+                StartCoroutine(SpawnInitialMagazineRoutine());
+            }
+        }
+
+        // Safety check to ensure magazine is registered if it spawned attached to the socket (e.g. via Editor)
         if (magazineSocket != null && currentMagazine == null)
         {
-            // Specifically checking if there is a starting selected interactable that might have bypassed Awake() events
             UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable attachedObj = magazineSocket.firstInteractableSelected;
             if (attachedObj != null)
             {
