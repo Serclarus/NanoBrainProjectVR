@@ -188,6 +188,7 @@ GameObject:
   - component: {fileID: 2774749189569015071}
   - component: {fileID: 6802479029079758408}
   - component: {fileID: 7017391579255024080}
+  - component: {fileID: 6806972000985569530}
   m_Layer: 2
   m_Name: LeftShoulderSocket
   m_TagString: Untagged
@@ -279,6 +280,19 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.1271452
   m_Center: {x: 0.14199372, y: -0.052083034, z: 0.12185195}
+--- !u!114 &6806972000985569530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 221413371833925919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e766981da8dcca64f9b24e48af8e1d34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSocketFilter
+  allowedWeaponType: 1
 --- !u!1 &407723672068775312
 GameObject:
   m_ObjectHideFlags: 0
@@ -1797,6 +1811,7 @@ GameObject:
   - component: {fileID: 5657409850439079649}
   - component: {fileID: 1976220903814992374}
   - component: {fileID: 6777558882552556635}
+  - component: {fileID: 9107711844834889944}
   m_Layer: 2
   m_Name: RightShoulderSocket
   m_TagString: Untagged
@@ -1833,7 +1848,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor
   m_InteractionManager: {fileID: 0}
   m_InteractionLayers:
-    m_Bits: 8
+    m_Bits: 14
   m_Handedness: 0
   m_AttachTransform: {fileID: 0}
   m_KeepSelectedTargetValid: 1
@@ -1888,6 +1903,19 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.13278008
   m_Center: {x: -0.044871837, y: -0.029797196, z: 0.14388815}
+--- !u!114 &9107711844834889944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5712266690303456892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e766981da8dcca64f9b24e48af8e1d34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSocketFilter
+  allowedWeaponType: 0
 --- !u!1 &5812951092503698316
 GameObject:
   m_ObjectHideFlags: 0
@@ -2511,7 +2539,7 @@ MonoBehaviour:
   leftShoulderSocket: {fileID: 6802479029079758408}
   rightShoulderSocket: {fileID: 1976220903814992374}
   rightBeltSocket: {fileID: 8659542674238097428}
-  printDebugLogs: 1
+  printDebugLogs: 0
 --- !u!1 &8329743954401422840
 GameObject:
   m_ObjectHideFlags: 0
@@ -2645,6 +2673,7 @@ GameObject:
   - component: {fileID: 1792950052107720097}
   - component: {fileID: 8659542674238097428}
   - component: {fileID: 76360159581900724}
+  - component: {fileID: 7734678753115540800}
   m_Layer: 2
   m_Name: RightBeltSocket
   m_TagString: Untagged
@@ -2736,6 +2765,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.07044983, y: 0.12756994, z: 0.14627743}
   m_Center: {x: 0.012435913, y: 0.012360409, z: -0.036019802}
+--- !u!114 &7734678753115540800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8851026316205195399}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e766981da8dcca64f9b24e48af8e1d34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSocketFilter
+  allowedWeaponType: 2
 --- !u!1 &8915662986694125274
 GameObject:
   m_ObjectHideFlags: 0
@@ -7576,7 +7618,7 @@ PrefabInstance:
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.039
+      value: 0.584
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
@@ -8044,6 +8086,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3162837999534115201}
+    - targetCorrespondingSourceObject: {fileID: 2218496723442559054, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 663644275459024770}
+    - targetCorrespondingSourceObject: {fileID: 2218496723442559054, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6160959132375932362}
     - targetCorrespondingSourceObject: {fileID: 657184242118504722, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       insertIndex: -1
@@ -8171,6 +8221,50 @@ MonoBehaviour:
   m_ResetDistance: 75
   offlinePosition: {x: 0, y: 0, z: -12}
   onlinePosition: {x: 0, y: 0.15, z: 0}
+--- !u!114 &663644275459024770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7174019212652907435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 869626628
+  InScenePlacedSourceGlobalObjectIdHash: 2321653341
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &6160959132375932362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7174019212652907435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c70652328c401c540b7ed4cdbe695700, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponSpawner
+  ShowTopMostFoldoutHeaderGroup: 1
+  riflePrefab: {fileID: 7121643266348946437, guid: 81908e6265049a24da238898ce99a90c,
+    type: 3}
+  shotgunPrefab: {fileID: 2528653204977119491, guid: 3e094add73c5817408883427e297cc37,
+    type: 3}
+  pistolPrefab: {fileID: 6339974444091640610, guid: 13de1b9a3e01863499714541a05ec5e3,
+    type: 3}
 --- !u!4 &7648409842563483903 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1684926014057179930, guid: d6878e1999eb4b44a9f5a263af86c185,
