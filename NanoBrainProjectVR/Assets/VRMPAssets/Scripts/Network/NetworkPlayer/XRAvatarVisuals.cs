@@ -95,18 +95,21 @@ namespace XRMultiplayer
 
         public virtual void SetPlayerColor(Color newColor)
         {
-            m_headRend.materials[2].SetColor("_BaseColor", newColor);
+            if (m_headRend != null && m_headRend.materials.Length > 2)
+            {
+                m_headRend.materials[2].SetColor("_BaseColor", newColor);
+            }
         }
 
         public virtual void HostUpdated(ulong newHostId)
         {
-            m_HostVisuals.SetActive(m_ShowHostVisuals && m_NetworkPlayer.NetworkObject.OwnerClientId == newHostId);
+            if (m_HostVisuals != null)
+                m_HostVisuals.SetActive(m_ShowHostVisuals && m_NetworkPlayer.NetworkObject.OwnerClientId == newHostId);
         }
     }
 }
 
 [Serializable]
-
 /// <summary>
 /// Helper class for swapping the local player to standard materials from the dithering materials.
 /// </summary>
@@ -121,16 +124,18 @@ public class LocalPlayerMaterialSwap
     public Material hostMaterial;
     public Material handMaterial;
 
-
     public void SwapMaterials()
     {
-        for (int i = 0; i < hands.Length; i++)
+        if (hands != null)
         {
-            hands[i].material = handMaterial;
+            for (int i = 0; i < hands.Length; i++)
+            {
+                if (hands[i] != null) hands[i].material = handMaterial;
+            }
         }
 
-        hmdRend.materials = hmdMaterials;
-        headRend.materials = headMaterials;
-        hostRend.material = hostMaterial;
+        if (hmdRend != null && hmdMaterials != null) hmdRend.materials = hmdMaterials;
+        if (headRend != null && headMaterials != null) headRend.materials = headMaterials;
+        if (hostRend != null && hostMaterial != null) hostRend.material = hostMaterial;
     }
 }
