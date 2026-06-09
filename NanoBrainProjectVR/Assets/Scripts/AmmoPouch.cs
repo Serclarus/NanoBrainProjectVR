@@ -68,13 +68,19 @@ public class AmmoPouch : MonoBehaviour
 
     private System.Collections.IEnumerator RefillSocketRoutine()
     {
-        if (isRefilling) yield break;
+        Debug.Log($"<color=white>[AmmoPouch]</color> Refill Routine Started!");
+        if (isRefilling) 
+        {
+            Debug.Log($"<color=white>[AmmoPouch]</color> Aborted: Already refilling.");
+            yield break;
+        }
         isRefilling = true;
 
         yield return new WaitForSeconds(0.1f);
 
         if (magazinePrefab == null)
         {
+            Debug.Log($"<color=white>[AmmoPouch]</color> Aborted: magazinePrefab is completely null!");
             isRefilling = false;
             yield break;
         }
@@ -82,6 +88,7 @@ public class AmmoPouch : MonoBehaviour
         // Destroy the old ammo if we just swapped weapons
         if (socketInteractor.hasSelection)
         {
+            Debug.Log($"<color=white>[AmmoPouch]</color> Destroying old item in socket...");
             IXRSelectInteractable oldItem = socketInteractor.interactablesSelected[0];
             socketInteractor.interactionManager.SelectCancel((IXRSelectInteractor)socketInteractor, oldItem);
             Destroy(oldItem.transform.gameObject);
@@ -89,6 +96,7 @@ public class AmmoPouch : MonoBehaviour
             yield return new WaitForEndOfFrame(); 
         }
 
+        Debug.Log($"<color=white>[AmmoPouch]</color> Instantiating new {magazinePrefab.name}...");
         // Spawn the new ammo!
         GameObject newAmmo = Instantiate(magazinePrefab, transform.position, transform.rotation);
         
@@ -97,6 +105,7 @@ public class AmmoPouch : MonoBehaviour
 
         XRBaseInteractable ammoInteractable = newAmmo.GetComponentInChildren<XRBaseInteractable>(true);
 
+        Debug.Log($"<color=white>[AmmoPouch]</color> Waiting for XR Interaction Toolkit to register...");
         // Wait 1 frame to guarantee that XR Interaction Toolkit has fully registered the new object!
         yield return new WaitForEndOfFrame();
 
@@ -118,6 +127,7 @@ public class AmmoPouch : MonoBehaviour
         }
 
         isRefilling = false;
+        Debug.Log($"<color=white>[AmmoPouch]</color> Refill Routine Finished!");
     }
 
     private void SetObjectVisibility(GameObject obj, bool isVisible)
