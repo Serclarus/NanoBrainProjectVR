@@ -34,10 +34,10 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired for {gameObject.name}! IsOwner: {IsOwner}, IsServer: {IsServer}");
 
         // The network just connected! 
-        // We MUST destroy the temporary offline weapons to prevent duplicate networking bugs!
-        if (offlineRifle != null) Destroy(offlineRifle);
-        if (offlineShotgun != null) Destroy(offlineShotgun);
-        if (offlinePistol != null) Destroy(offlinePistol);
+        // We MUST destroy the temporary offline weapons. If NGO auto-spawned them, we must use Despawn!
+        DestroyOfflineWeapon(offlineRifle);
+        DestroyOfflineWeapon(offlineShotgun);
+        DestroyOfflineWeapon(offlinePistol);
 
         // We only want the OWNER of this specific player body to request weapons!
         if (IsOwner)
@@ -69,6 +69,22 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         SpawnWeapon(riflePrefab, false, callerId);
         SpawnWeapon(shotgunPrefab, false, callerId);
         SpawnWeapon(pistolPrefab, false, callerId);
+    }
+
+    private void DestroyOfflineWeapon(GameObject offlineWeapon)
+    {
+        if (offlineWeapon != null)
+        {
+            NetworkObject no = offlineWeapon.GetComponent<NetworkObject>();
+            if (no != null && no.IsSpawned)
+            {
+                no.Despawn();
+            }
+            else
+            {
+                Destroy(offlineWeapon);
+            }
+        }
     }
 
     private GameObject SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
