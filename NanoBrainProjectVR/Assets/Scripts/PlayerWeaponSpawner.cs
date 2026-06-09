@@ -66,12 +66,13 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         Vector3 spawnPos = transform.position;
         Quaternion spawnRot = transform.rotation;
 
-        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
+        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>(true);
         if (holsters != null)
         {
             WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
             if (autoReturn != null)
             {
+                Debug.Log($"<color=magenta>[PlayerWeaponSpawner]</color> Preparing to spawn {prefab.name}. Detected SlotType: {autoReturn.slotType}");
                 if (autoReturn.slotType == WeaponSlotType.Rifle && holsters.rightShoulderSocket != null)
                 {
                     spawnPos = holsters.rightShoulderSocket.transform.position;
@@ -88,8 +89,17 @@ public class PlayerWeaponSpawner : NetworkBehaviour
                     spawnRot = holsters.rightBeltSocket.transform.rotation;
                 }
             }
+            else
+            {
+                Debug.LogWarning($"<color=magenta>[PlayerWeaponSpawner]</color> Prefab {prefab.name} is missing the WeaponAutoReturn script!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"<color=magenta>[PlayerWeaponSpawner]</color> Could not find PlayerHolsterSystem on this player rig! Spawning at root.");
         }
 
+        Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Instantiating {prefab.name} at World Position: {spawnPos}");
         // Spawn the weapon into the world exactly at the socket position!
         GameObject spawnedWeapon = Instantiate(prefab, spawnPos, spawnRot);
         
