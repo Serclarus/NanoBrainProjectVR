@@ -39,36 +39,16 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         DestroyOfflineWeapon(offlineShotgun);
         DestroyOfflineWeapon(offlinePistol);
 
-        // We only want the OWNER of this specific player body to request weapons!
-        if (IsOwner)
+        // NGO BUG FIX: Clients cannot reliably send RPCs during their initial connection sweep!
+        // Instead of the Client asking for weapons, the SERVER must automatically issue weapons
+        // to EVERY player the instant their player rig officially spawns on the server!
+        if (IsServer)
         {
-            if (IsServer)
-            {
-                Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> We are the Host! Spawning Networked Weapons directly...");
-                SpawnWeapon(riflePrefab, false);
-                SpawnWeapon(shotgunPrefab, false);
-                SpawnWeapon(pistolPrefab, false);
-            }
-            else
-            {
-                Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> We are the Client! Asking Server to spawn our weapons via RPC...");
-                SpawnWeaponsServerRpc();
-            }
+            Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> SERVER: Automatically generating networked weapons for Player {OwnerClientId}...");
+            SpawnWeapon(riflePrefab, false, OwnerClientId);
+            SpawnWeapon(shotgunPrefab, false, OwnerClientId);
+            SpawnWeapon(pistolPrefab, false, OwnerClientId);
         }
-        else
-        {
-            Debug.Log($"<color=orange>[PlayerWeaponSpawner]</color> Skipping spawn because IsOwner is FALSE. This is correct for other players' bodies.");
-        }
-    }
-
-    [ServerRpc]
-    private void SpawnWeaponsServerRpc(ServerRpcParams rpcParams = default)
-    {
-        ulong callerId = rpcParams.Receive.SenderClientId;
-        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> Server received RPC from Client {callerId} to spawn weapons!");
-        SpawnWeapon(riflePrefab, false, callerId);
-        SpawnWeapon(shotgunPrefab, false, callerId);
-        SpawnWeapon(pistolPrefab, false, callerId);
     }
 
     private void DestroyOfflineWeapon(GameObject offlineWeapon)
@@ -78,7 +58,15 @@ public class PlayerWeaponSpawner : NetworkBehaviour
             NetworkObject no = offlineWeapon.GetComponent<NetworkObject>();
             if (no != null && no.IsSpawned)
             {
-                no.Despawn();
+                if (IsServer)
+                {
+                    no.Despawn();
+                }
+                else
+                {
+                    // Clients cannot despawn network objects! We just hide/disable them locally so they don't interfere.
+                    offlineWeapon.SetActive(false);
+                }
             }
             else
             {
