@@ -6,9 +6,6 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 [RequireComponent(typeof(XRSocketInteractor))]
 public class AmmoPouch : MonoBehaviour
 {
-    // Singleton so weapons ALWAYS find the active, real pouch!
-    public static AmmoPouch Instance;
-
     [Tooltip("The Magazine prefab that this pouch will currently dispense. This is updated dynamically by the WeaponController!")]
     public GameObject magazinePrefab;
     
@@ -17,21 +14,15 @@ public class AmmoPouch : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-
         socketInteractor = GetComponent<XRSocketInteractor>();
-        socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
+        if (socketInteractor != null)
+        {
+            socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
+        }
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
-
         if (socketInteractor != null)
         {
             socketInteractor.selectExited.RemoveListener(OnItemRemovedFromSocket);
