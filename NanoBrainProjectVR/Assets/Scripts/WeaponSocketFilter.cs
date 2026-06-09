@@ -51,8 +51,25 @@ public class WeaponSocketFilter : MonoBehaviour, IXRHoverFilter, IXRSelectFilter
         // Try to find the WeaponAutoReturn script on the object trying to enter the socket
         if (interactable.transform.TryGetComponent<WeaponAutoReturn>(out var weapon))
         {
-            // Only allow it if the slot types match perfectly!
-            return weapon.slotType == allowedWeaponType;
+            // 1. Only allow it if the slot types match perfectly!
+            if (weapon.slotType != allowedWeaponType) return false;
+
+            // 2. MULTIPLAYER THEFT PROTECTION:
+            // Prevent another player's holster from stealing this weapon if they stand too close!
+            // The weapon's Network Owner must exactly match the Holster's Network Owner.
+            Unity.Netcode.NetworkObject weaponNetObj = weapon.GetComponent<Unity.Netcode.NetworkObject>();
+            Unity.Netcode.NetworkObject holsterNetObj = GetComponentInParent<Unity.Netcode.NetworkObject>();
+            
+            if (weaponNetObj != null && holsterNetObj != null)
+            {
+                if (weaponNetObj.OwnerClientId != holsterNetObj.OwnerClientId)
+                {
+                    // This weapon belongs to another player! Reject it!
+                    return false;
+                }
+            }
+
+            return true;
         }
         
         // If the object doesn't even have a WeaponAutoReturn script (e.g. ammo, magazines), reject it!

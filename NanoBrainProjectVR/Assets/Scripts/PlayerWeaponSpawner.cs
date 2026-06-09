@@ -111,7 +111,11 @@ public class PlayerWeaponSpawner : NetworkBehaviour
                 // Give ownership of this weapon strictly to the client who called the RPC!
                 ulong finalOwnerId = IsServer && specificOwnerId == 0 ? OwnerClientId : specificOwnerId;
                 netObj.SpawnWithOwnership(finalOwnerId);
-                Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Spawned {prefab.name} and gave ownership to Client ID {finalOwnerId}");
+                
+                // RENAME THE WEAPON IN THE HIERARCHY SO WE CAN SEE EXACTLY WHO OWNS IT!
+                spawnedWeapon.name = $"{prefab.name}_Player_{finalOwnerId}";
+                
+                Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Spawned {spawnedWeapon.name} and gave ownership to Client ID {finalOwnerId}");
             }
             else
             {
