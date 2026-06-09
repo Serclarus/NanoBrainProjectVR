@@ -168,8 +168,15 @@ public class WeaponAutoReturn : NetworkBehaviour
 
             Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Teleporting {gameObject.name} to {homeSocket.name} at World Position: {homeSocket.transform.position}. Forcing SelectEnter...");
             
-            // Force the Interaction Manager to link them
-            homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+            try
+            {
+                // Force the Interaction Manager to link them
+                homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn] CRASH!</color> Exception thrown during SelectEnter for {gameObject.name}: {e.Message}\n{e.StackTrace}");
+            }
 
             // VERIFICATION: Did the socket actually accept it?
             yield return new WaitForEndOfFrame(); // Wait 1 frame for XRI to update its selection state
