@@ -59,8 +59,39 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     {
         if (prefab == null) return;
 
-        // Spawn the weapon into the world at the player's position
-        GameObject spawnedWeapon = Instantiate(prefab, transform.position, transform.rotation);
+        // MULTIPLAYER FIX:
+        // By default, Instantiate spawns at the player's root. If the NetworkTransform is Server-Authoritative, 
+        // the Client's WeaponAutoReturn script cannot teleport the weapon to the shoulder because the Server snaps it back!
+        // We MUST spawn the weapon at the exact socket position on the Server first!
+        Vector3 spawnPos = transform.position;
+        Quaternion spawnRot = transform.rotation;
+
+        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
+        if (holsters != null)
+        {
+            WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
+            if (autoReturn != null)
+            {
+                if (autoReturn.slotType == WeaponSlotType.Rifle && holsters.rightShoulderSocket != null)
+                {
+                    spawnPos = holsters.rightShoulderSocket.transform.position;
+                    spawnRot = holsters.rightShoulderSocket.transform.rotation;
+                }
+                else if (autoReturn.slotType == WeaponSlotType.Shotgun && holsters.leftShoulderSocket != null)
+                {
+                    spawnPos = holsters.leftShoulderSocket.transform.position;
+                    spawnRot = holsters.leftShoulderSocket.transform.rotation;
+                }
+                else if (autoReturn.slotType == WeaponSlotType.Pistol && holsters.rightBeltSocket != null)
+                {
+                    spawnPos = holsters.rightBeltSocket.transform.position;
+                    spawnRot = holsters.rightBeltSocket.transform.rotation;
+                }
+            }
+        }
+
+        // Spawn the weapon into the world exactly at the socket position!
+        GameObject spawnedWeapon = Instantiate(prefab, spawnPos, spawnRot);
         
         if (!isOffline)
         {
