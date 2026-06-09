@@ -133,9 +133,10 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private IEnumerator ForceSlotWeaponRoutine()
     {
-        // INSTANT PHYSICS FREEZE:
-        // Before we wait for the network, we MUST freeze the weapon! 
-        // Otherwise, gravity causes it to fall past other sockets (like the Belt) which will steal it mid-air!
+        // INSTANT PHYSICS FREEZE AND INTERACTION DISABLE:
+        // Before we wait for the network, we MUST freeze the weapon AND disable interaction!
+        // Otherwise, as your VR Headset snaps your body to your real-world height, 
+        // your Belt socket sweeps through the air and steals it!
         Rigidbody rb = GetComponent<Rigidbody>();
         bool wasKinematic = false;
         if (rb != null)
@@ -145,9 +146,15 @@ public class WeaponAutoReturn : NetworkBehaviour
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
+        
+        // COMPLETELY DISABLE THE GRAB SO NO OTHER SOCKET CAN STEAL IT!
+        if (grabInteractable != null)
+        {
+            grabInteractable.enabled = false;
+        }
 
         // Wait briefly for the network and physics to initialize
-        yield return new WaitForSeconds(0.25f);
+        yield return new WaitForSeconds(0.35f);
         
         if (homeSocket != null)
         {
@@ -155,6 +162,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             {
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
                 if (rb != null) rb.isKinematic = wasKinematic;
+                if (grabInteractable != null) grabInteractable.enabled = true;
                 yield break;
             }
 
@@ -166,6 +174,12 @@ public class WeaponAutoReturn : NetworkBehaviour
                 
                 // Manually force XRI to register it IMMEDIATELY so we don't have to wait for XRI's internal loops!
                 homeSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
+            }
+
+            // RE-ENABLE THE GRAB JUST BEFORE SOCKETING!
+            if (grabInteractable != null)
+            {
+                grabInteractable.enabled = true;
             }
 
             // Teleport the weapon directly to the socket's location
