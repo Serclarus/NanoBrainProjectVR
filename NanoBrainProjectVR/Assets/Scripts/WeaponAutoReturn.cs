@@ -142,9 +142,9 @@ public class WeaponAutoReturn : NetworkBehaviour
             transform.position = homeSocket.transform.position;
             transform.rotation = homeSocket.transform.rotation;
 
-            // Reset velocity so it doesn't fly away
+            // Reset velocity so it doesn't fly away (only if it's not kinematic to prevent Unity warnings!)
             Rigidbody rb = GetComponent<Rigidbody>();
-            if (rb != null)
+            if (rb != null && !rb.isKinematic)
             {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
@@ -154,6 +154,17 @@ public class WeaponAutoReturn : NetworkBehaviour
             {
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
                 yield break;
+            }
+
+            // EXTREMELY IMPORTANT FIX:
+            // Force the weapon to use the EXACT same Interaction Manager as the socket.
+            // This completely prevents the "interactable is not registered with this Interaction Manager" error!
+            if (grabInteractable.interactionManager != homeSocket.interactionManager)
+            {
+                grabInteractable.interactionManager = homeSocket.interactionManager;
+                
+                // Wait 1 frame for XR Interaction Toolkit to process the new registration
+                yield return new WaitForEndOfFrame();
             }
 
             Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
