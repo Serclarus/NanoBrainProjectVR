@@ -133,6 +133,19 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private IEnumerator ForceSlotWeaponRoutine()
     {
+        // INSTANT PHYSICS FREEZE:
+        // Before we wait for the network, we MUST freeze the weapon! 
+        // Otherwise, gravity causes it to fall past other sockets (like the Belt) which will steal it mid-air!
+        Rigidbody rb = GetComponent<Rigidbody>();
+        bool wasKinematic = false;
+        if (rb != null)
+        {
+            wasKinematic = rb.isKinematic;
+            rb.isKinematic = true; // Freeze it in mid-air instantly
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         // Wait briefly for the network and physics to initialize
         yield return new WaitForSeconds(0.25f);
         
@@ -141,6 +154,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             if (homeSocket.interactionManager == null)
             {
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
+                if (rb != null) rb.isKinematic = wasKinematic;
                 yield break;
             }
 
@@ -158,13 +172,8 @@ public class WeaponAutoReturn : NetworkBehaviour
             transform.position = homeSocket.transform.position;
             transform.rotation = homeSocket.transform.rotation;
 
-            // Reset velocity so it doesn't fly away (only if it's not kinematic to prevent Unity warnings!)
-            Rigidbody rb = GetComponent<Rigidbody>();
-            if (rb != null && !rb.isKinematic)
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
+            // Restore physics to XRI's control exactly before we slot it
+            if (rb != null) rb.isKinematic = wasKinematic;
 
             Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Teleporting {gameObject.name} to {homeSocket.name} at World Position: {homeSocket.transform.position}. Forcing SelectEnter...");
             
