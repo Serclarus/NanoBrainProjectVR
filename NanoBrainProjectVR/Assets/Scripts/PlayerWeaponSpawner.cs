@@ -14,48 +14,65 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     [Tooltip("The networked prefab of the Pistol")]
     public GameObject pistolPrefab;
 
+    private void Start()
+    {
+        // If we are playing offline without the network running, spawn locally immediately!
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Offline Mode! Spawning local weapons...");
+            SpawnWeapon(riflePrefab, true);
+            SpawnWeapon(shotgunPrefab, true);
+            SpawnWeapon(pistolPrefab, true);
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
-        // Only the server/host has the authority to spawn Network Objects
-        if (IsServer)
+        // We only want the OWNER of this specific player body to request weapons!
+        if (IsOwner)
         {
-            // Spawn the weapons and strictly give ownership to this specific player!
-            SpawnWeapon(riflePrefab);
-            SpawnWeapon(shotgunPrefab);
-            SpawnWeapon(pistolPrefab);
-        }
-        else if (IsOwner)
-        {
-            // If we are a client joining the game, ask the server to spawn our weapons for us
-            SpawnWeaponsServerRpc();
+            if (IsServer)
+            {
+                // We are the Host, spawning our own weapons directly.
+                SpawnWeapon(riflePrefab, false);
+                SpawnWeapon(shotgunPrefab, false);
+                SpawnWeapon(pistolPrefab, false);
+            }
+            else
+            {
+                // We are a Client, asking the server to spawn our weapons for us.
+                SpawnWeaponsServerRpc();
+            }
         }
     }
 
     [ServerRpc]
     private void SpawnWeaponsServerRpc()
     {
-        SpawnWeapon(riflePrefab);
-        SpawnWeapon(shotgunPrefab);
-        SpawnWeapon(pistolPrefab);
+        SpawnWeapon(riflePrefab, false);
+        SpawnWeapon(shotgunPrefab, false);
+        SpawnWeapon(pistolPrefab, false);
     }
 
-    private void SpawnWeapon(GameObject prefab)
+    private void SpawnWeapon(GameObject prefab, bool isOffline)
     {
         if (prefab == null) return;
 
-        // Spawn the weapon into the world
+        // Spawn the weapon into the world at the player's position
         GameObject spawnedWeapon = Instantiate(prefab, transform.position, transform.rotation);
         
-        NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
-        if (netObj != null)
+        if (!isOffline)
         {
-            // Give ownership of this weapon exclusively to the player whose body spawned it!
-            // This ensures their WeaponAutoReturn script will trigger and slot it into their personal holsters!
-            netObj.SpawnWithOwnership(OwnerClientId);
-        }
-        else
-        {
-            Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> {prefab.name} does not have a NetworkObject attached!");
+            NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
+            if (netObj != null)
+            {
+                // Give ownership of this weapon exclusively to the player whose body spawned it!
+                netObj.SpawnWithOwnership(OwnerClientId);
+            }
+            else
+            {
+                Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> {prefab.name} does not have a NetworkObject attached!");
+            }
         }
     }
 }
