@@ -332,6 +332,17 @@ public class WeaponController : NetworkBehaviour
         if (mag != null)
         {
             currentMagazine = mag;
+            
+            // Fix: If the weapon is NOT currently held by a hand (e.g. resting on a shoulder),
+            // instantly disable the new magazine's colliders so it cannot be accidentally grabbed!
+            if (!isHeld)
+            {
+                var cols = currentMagazine.GetComponentsInChildren<Collider>();
+                foreach (var col in cols)
+                {
+                    col.enabled = false;
+                }
+            }
         }
     }
 
