@@ -189,19 +189,21 @@ public class ShotgunController : NetworkBehaviour
                 rb.isKinematic = false;
             }
 
-            // --- NEW: Smart Ammo Pouch Logic ---
-            // If the local player grabbed this weapon WITH A HAND, swap the Ammo Pouch to this weapon's magazines!
+            // --- NEW: Smart Ammo Pouch Logic (Multiplayer Safe) ---
+            // Find the exact Ammo Pouch attached to the specific player who grabbed the gun
             if (!IsSpawned || IsOwner)
             {
                 if (magazinePrefab != null)
                 {
-                    if (AmmoPouch.Instance != null)
+                    AmmoPouch localPouch = args.interactorObject.transform.root.GetComponentInChildren<AmmoPouch>();
+
+                    if (localPouch != null)
                     {
-                        AmmoPouch.Instance.SetMagazinePrefab(magazinePrefab);
+                        localPouch.SetMagazinePrefab(magazinePrefab);
                     }
                     else
                     {
-                        Debug.LogWarning($"<color=yellow>[ShotgunController]</color> {gameObject.name} tried to update the Ammo Pouch, but AmmoPouch.Instance was NULL!");
+                        Debug.LogWarning($"<color=yellow>[ShotgunController]</color> {gameObject.name} grabbed, but no AmmoPouch was found on the player's rig ({args.interactorObject.transform.root.name})!");
                     }
                 }
                 else

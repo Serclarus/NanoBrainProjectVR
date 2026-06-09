@@ -66,12 +66,31 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        PlayerHolsterSystem holsters = FindObjectOfType<PlayerHolsterSystem>();
-        if (holsters != null)
+        PlayerHolsterSystem[] allHolsters = FindObjectsOfType<PlayerHolsterSystem>();
+        PlayerHolsterSystem myHolsters = null;
+
+        // MULTIPLAYER FIX: Find the holster that belongs to the exact player who owns this weapon!
+        foreach (var holsters in allHolsters)
         {
-            if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
-            else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
-            else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
+            NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
+            if (holsterNetObj != null && holsterNetObj.OwnerClientId == this.OwnerClientId)
+            {
+                myHolsters = holsters;
+                break;
+            }
+        }
+
+        // Fallback for singleplayer offline testing
+        if (myHolsters == null)
+        {
+            myHolsters = FindObjectOfType<PlayerHolsterSystem>();
+        }
+
+        if (myHolsters != null)
+        {
+            if (slotType == WeaponSlotType.Rifle) homeSocket = myHolsters.rightShoulderSocket;
+            else if (slotType == WeaponSlotType.Shotgun) homeSocket = myHolsters.leftShoulderSocket;
+            else if (slotType == WeaponSlotType.Pistol) homeSocket = myHolsters.rightBeltSocket;
 
             if (homeSocket != null)
             {
@@ -85,7 +104,7 @@ public class WeaponAutoReturn : NetworkBehaviour
         }
         else
         {
-            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> Could not find PlayerHolsterSystem in the scene!");
+            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> Could not find a PlayerHolsterSystem in the scene that belongs to Player ID {OwnerClientId}!");
         }
     }
 
