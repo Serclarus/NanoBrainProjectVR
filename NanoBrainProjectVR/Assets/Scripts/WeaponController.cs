@@ -165,6 +165,11 @@ public class WeaponController : NetworkBehaviour
         
         if (grabInteractable != null)
         {
+            // VERY IMPORTANT FOR MULTIPLAYER!
+            // If XR Interaction Toolkit reparents a NetworkObject to a hand or socket locally, Unity Netcode panics and despawns it for all other players!
+            // This forces XRI to leave the weapon in the root of the scene and only move its position/rotation.
+            grabInteractable.retainTransformParent = true;
+
             // Track when the weapon is picked up / dropped
             grabInteractable.selectEntered.AddListener(OnWeaponGrabbed);
             grabInteractable.selectExited.AddListener(OnWeaponDropped);

@@ -66,24 +66,47 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        PlayerHolsterSystem[] allHolsters = FindObjectsOfType<PlayerHolsterSystem>();
+        StartCoroutine(TryFindSocketAndSlotRoutine());
+    }
+
+    private IEnumerator TryFindSocketAndSlotRoutine()
+    {
         PlayerHolsterSystem myHolsters = null;
+        
+        bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
 
-        // MULTIPLAYER FIX: Find the holster that belongs to the exact player who owns this weapon!
-        foreach (var holsters in allHolsters)
+        // Give the network up to 5 seconds to fully sync the player rig to the clients!
+        float timeout = 5f;
+        while (myHolsters == null && timeout > 0f)
         {
-            NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
-            if (holsterNetObj != null && holsterNetObj.OwnerClientId == this.OwnerClientId)
+            PlayerHolsterSystem[] allHolsters = FindObjectsOfType<PlayerHolsterSystem>();
+            
+            foreach (var holsters in allHolsters)
             {
-                myHolsters = holsters;
-                break;
+                if (isOffline)
+                {
+                    // Offline Mode: Just grab the only holster in the scene!
+                    myHolsters = holsters;
+                    break;
+                }
+                else
+                {
+                    // Online Mode: Strictly find the holster that shares our EXACT Player ID!
+                    NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
+                    if (holsterNetObj != null && holsterNetObj.OwnerClientId == this.OwnerClientId)
+                    {
+                        myHolsters = holsters;
+                        break;
+                    }
+                }
             }
-        }
 
-        // Fallback for singleplayer offline testing
-        if (myHolsters == null)
-        {
-            myHolsters = FindObjectOfType<PlayerHolsterSystem>();
+            if (myHolsters == null)
+            {
+                // Wait briefly and try searching again
+                yield return new WaitForSeconds(0.2f);
+                timeout -= 0.2f;
+            }
         }
 
         if (myHolsters != null)
@@ -95,7 +118,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             if (homeSocket != null)
             {
                 Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Found home socket for {gameObject.name}. Forcing slot routine...");
-                StartCoroutine(ForceSlotWeaponRoutine());
+                yield return StartCoroutine(ForceSlotWeaponRoutine());
             }
             else
             {
@@ -104,7 +127,7 @@ public class WeaponAutoReturn : NetworkBehaviour
         }
         else
         {
-            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> Could not find a PlayerHolsterSystem in the scene that belongs to Player ID {OwnerClientId}!");
+            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> TIMEOUT: Could not find a PlayerHolsterSystem in the scene that belongs to Player ID {OwnerClientId}!");
         }
     }
 
@@ -115,13 +138,11 @@ public class WeaponAutoReturn : NetworkBehaviour
         
         if (homeSocket != null)
         {
-            if (homeSocket.interactionManager == null)
-            {
-                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> The home socket has NO Interaction Manager assigned! XRI requires an Interaction Manager.");
-                yield break;
-            }
+            // Teleport the weapon directly to the socket's location IMMEDIATELY
+            transform.position = homeSocket.transform.position;
+            transform.rotation = homeSocket.transform.rotation;
 
-            // Reset velocity
+            // Reset velocity so it doesn't fly away
             Rigidbody rb = GetComponent<Rigidbody>();
             if (rb != null)
             {
@@ -129,9 +150,11 @@ public class WeaponAutoReturn : NetworkBehaviour
                 rb.angularVelocity = Vector3.zero;
             }
 
-            // Teleport the weapon directly to the socket
-            transform.position = homeSocket.transform.position;
-            transform.rotation = homeSocket.transform.rotation;
+            if (homeSocket.interactionManager == null)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
+                yield break;
+            }
 
             Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
             

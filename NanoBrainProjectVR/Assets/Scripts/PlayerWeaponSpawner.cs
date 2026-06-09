@@ -47,14 +47,15 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void SpawnWeaponsServerRpc()
+    private void SpawnWeaponsServerRpc(ServerRpcParams rpcParams = default)
     {
-        SpawnWeapon(riflePrefab, false);
-        SpawnWeapon(shotgunPrefab, false);
-        SpawnWeapon(pistolPrefab, false);
+        ulong callerId = rpcParams.Receive.SenderClientId;
+        SpawnWeapon(riflePrefab, false, callerId);
+        SpawnWeapon(shotgunPrefab, false, callerId);
+        SpawnWeapon(pistolPrefab, false, callerId);
     }
 
-    private void SpawnWeapon(GameObject prefab, bool isOffline)
+    private void SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
     {
         if (prefab == null) return;
 
@@ -66,8 +67,10 @@ public class PlayerWeaponSpawner : NetworkBehaviour
             NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
             if (netObj != null)
             {
-                // Give ownership of this weapon exclusively to the player whose body spawned it!
-                netObj.SpawnWithOwnership(OwnerClientId);
+                // Give ownership of this weapon strictly to the client who called the RPC!
+                ulong finalOwnerId = IsServer && specificOwnerId == 0 ? OwnerClientId : specificOwnerId;
+                netObj.SpawnWithOwnership(finalOwnerId);
+                Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Spawned {prefab.name} and gave ownership to Client ID {finalOwnerId}");
             }
             else
             {
