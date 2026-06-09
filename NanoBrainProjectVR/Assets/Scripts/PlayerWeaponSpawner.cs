@@ -31,6 +31,8 @@ public class PlayerWeaponSpawner : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired for {gameObject.name}! IsOwner: {IsOwner}, IsServer: {IsServer}");
+
         // The network just connected! 
         // We MUST destroy the temporary offline weapons to prevent duplicate networking bugs!
         if (offlineRifle != null) Destroy(offlineRifle);
@@ -42,16 +44,20 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         {
             if (IsServer)
             {
-                // We are the Host, spawning our own weapons directly.
+                Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> We are the Host! Spawning Networked Weapons directly...");
                 SpawnWeapon(riflePrefab, false);
                 SpawnWeapon(shotgunPrefab, false);
                 SpawnWeapon(pistolPrefab, false);
             }
             else
             {
-                // We are a Client, asking the server to spawn our weapons for us.
+                Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> We are the Client! Asking Server to spawn our weapons via RPC...");
                 SpawnWeaponsServerRpc();
             }
+        }
+        else
+        {
+            Debug.Log($"<color=orange>[PlayerWeaponSpawner]</color> Skipping spawn because IsOwner is FALSE. This is correct for other players' bodies.");
         }
     }
 
@@ -59,6 +65,7 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     private void SpawnWeaponsServerRpc(ServerRpcParams rpcParams = default)
     {
         ulong callerId = rpcParams.Receive.SenderClientId;
+        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> Server received RPC from Client {callerId} to spawn weapons!");
         SpawnWeapon(riflePrefab, false, callerId);
         SpawnWeapon(shotgunPrefab, false, callerId);
         SpawnWeapon(pistolPrefab, false, callerId);
@@ -66,7 +73,11 @@ public class PlayerWeaponSpawner : NetworkBehaviour
 
     private GameObject SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
     {
-        if (prefab == null) return null;
+        if (prefab == null)
+        {
+            Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> FAILED TO SPAWN! The weapon prefab slot is EMPTY in the Inspector! Did you forget to apply your Prefab Overrides?");
+            return null;
+        }
 
         Vector3 spawnPos = transform.position;
         Quaternion spawnRot = transform.rotation;
