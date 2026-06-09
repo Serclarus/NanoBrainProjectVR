@@ -138,7 +138,23 @@ public class WeaponAutoReturn : NetworkBehaviour
         
         if (homeSocket != null)
         {
-            // Teleport the weapon directly to the socket's location IMMEDIATELY
+            if (homeSocket.interactionManager == null)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
+                yield break;
+            }
+
+            // EXTREMELY IMPORTANT FIX:
+            // Force the weapon to use the EXACT same Interaction Manager as the socket.
+            if (grabInteractable.interactionManager != homeSocket.interactionManager)
+            {
+                grabInteractable.interactionManager = homeSocket.interactionManager;
+                
+                // Manually force XRI to register it IMMEDIATELY so we don't have to wait for XRI's internal loops!
+                homeSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
+            }
+
+            // Teleport the weapon directly to the socket's location
             transform.position = homeSocket.transform.position;
             transform.rotation = homeSocket.transform.rotation;
 
@@ -150,24 +166,7 @@ public class WeaponAutoReturn : NetworkBehaviour
                 rb.angularVelocity = Vector3.zero;
             }
 
-            if (homeSocket.interactionManager == null)
-            {
-                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
-                yield break;
-            }
-
-            // EXTREMELY IMPORTANT FIX:
-            // Force the weapon to use the EXACT same Interaction Manager as the socket.
-            // This completely prevents the "interactable is not registered with this Interaction Manager" error!
-            if (grabInteractable.interactionManager != homeSocket.interactionManager)
-            {
-                grabInteractable.interactionManager = homeSocket.interactionManager;
-                
-                // Wait 1 frame for XR Interaction Toolkit to process the new registration
-                yield return new WaitForEndOfFrame();
-            }
-
-            Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Forcing SelectEnter on {homeSocket.name} with {grabInteractable.name}");
+            Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Teleporting {gameObject.name} to {homeSocket.name} at World Position: {homeSocket.transform.position}. Forcing SelectEnter...");
             
             // Force the Interaction Manager to link them
             homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
