@@ -14,20 +14,29 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     [Tooltip("The networked prefab of the Pistol")]
     public GameObject pistolPrefab;
 
+    private GameObject offlineRifle;
+    private GameObject offlineShotgun;
+    private GameObject offlinePistol;
+
     private void Start()
     {
-        // If we are playing offline without the network running, spawn locally immediately!
+        // If the game starts without the network running, spawn offline weapons immediately!
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
-            Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Offline Mode! Spawning local weapons...");
-            SpawnWeapon(riflePrefab, true);
-            SpawnWeapon(shotgunPrefab, true);
-            SpawnWeapon(pistolPrefab, true);
+            offlineRifle = SpawnWeapon(riflePrefab, true);
+            offlineShotgun = SpawnWeapon(shotgunPrefab, true);
+            offlinePistol = SpawnWeapon(pistolPrefab, true);
         }
     }
 
     public override void OnNetworkSpawn()
     {
+        // The network just connected! 
+        // We MUST destroy the temporary offline weapons to prevent duplicate networking bugs!
+        if (offlineRifle != null) Destroy(offlineRifle);
+        if (offlineShotgun != null) Destroy(offlineShotgun);
+        if (offlinePistol != null) Destroy(offlinePistol);
+
         // We only want the OWNER of this specific player body to request weapons!
         if (IsOwner)
         {
@@ -55,14 +64,10 @@ public class PlayerWeaponSpawner : NetworkBehaviour
         SpawnWeapon(pistolPrefab, false, callerId);
     }
 
-    private void SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
+    private GameObject SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
     {
-        if (prefab == null) return;
+        if (prefab == null) return null;
 
-        // MULTIPLAYER FIX:
-        // By default, Instantiate spawns at the player's root. If the NetworkTransform is Server-Authoritative, 
-        // the Client's WeaponAutoReturn script cannot teleport the weapon to the shoulder because the Server snaps it back!
-        // We MUST spawn the weapon at the exact socket position on the Server first!
         Vector3 spawnPos = transform.position;
         Quaternion spawnRot = transform.rotation;
 
@@ -72,7 +77,6 @@ public class PlayerWeaponSpawner : NetworkBehaviour
             WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
             if (autoReturn != null)
             {
-                Debug.Log($"<color=magenta>[PlayerWeaponSpawner]</color> Preparing to spawn {prefab.name}. Detected SlotType: {autoReturn.slotType}");
                 if (autoReturn.slotType == WeaponSlotType.Rifle && holsters.rightShoulderSocket != null)
                 {
                     spawnPos = holsters.rightShoulderSocket.transform.position;
@@ -89,18 +93,8 @@ public class PlayerWeaponSpawner : NetworkBehaviour
                     spawnRot = holsters.rightBeltSocket.transform.rotation;
                 }
             }
-            else
-            {
-                Debug.LogWarning($"<color=magenta>[PlayerWeaponSpawner]</color> Prefab {prefab.name} is missing the WeaponAutoReturn script!");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"<color=magenta>[PlayerWeaponSpawner]</color> Could not find PlayerHolsterSystem on this player rig! Spawning at root.");
         }
 
-        Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Instantiating {prefab.name} at World Position: {spawnPos}");
-        // Spawn the weapon into the world exactly at the socket position!
         GameObject spawnedWeapon = Instantiate(prefab, spawnPos, spawnRot);
         
         if (!isOffline)
@@ -108,13 +102,10 @@ public class PlayerWeaponSpawner : NetworkBehaviour
             NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
             if (netObj != null)
             {
-                // Give ownership of this weapon strictly to the client who called the RPC!
                 ulong finalOwnerId = IsServer && specificOwnerId == 0 ? OwnerClientId : specificOwnerId;
                 netObj.SpawnWithOwnership(finalOwnerId);
                 
-                // RENAME THE WEAPON IN THE HIERARCHY SO WE CAN SEE EXACTLY WHO OWNS IT!
                 spawnedWeapon.name = $"{prefab.name}_Player_{finalOwnerId}";
-                
                 Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Spawned {spawnedWeapon.name} and gave ownership to Client ID {finalOwnerId}");
             }
             else
@@ -122,5 +113,7 @@ public class PlayerWeaponSpawner : NetworkBehaviour
                 Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> {prefab.name} does not have a NetworkObject attached!");
             }
         }
+        
+        return spawnedWeapon;
     }
 }
