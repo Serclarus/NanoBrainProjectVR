@@ -52,11 +52,13 @@ public class WeaponSocketFilter : MonoBehaviour, IXRHoverFilter, IXRSelectFilter
         if (interactable.transform.TryGetComponent<WeaponAutoReturn>(out var weapon))
         {
             // 1. Only allow it if the slot types match perfectly!
-            if (weapon.slotType != allowedWeaponType) return false;
+            if (weapon.slotType != allowedWeaponType)
+            {
+                Debug.Log($"<color=orange>[WeaponSocketFilter]</color> {gameObject.name} rejected {interactable.transform.name} because Slot Type is {weapon.slotType}, but expected {allowedWeaponType}!");
+                return false;
+            }
 
             // 2. MULTIPLAYER THEFT PROTECTION:
-            // Prevent another player's holster from stealing this weapon if they stand too close!
-            // The weapon's Network Owner must exactly match the Holster's Network Owner.
             Unity.Netcode.NetworkObject weaponNetObj = weapon.GetComponent<Unity.Netcode.NetworkObject>();
             Unity.Netcode.NetworkObject holsterNetObj = GetComponentInParent<Unity.Netcode.NetworkObject>();
             
@@ -64,15 +66,15 @@ public class WeaponSocketFilter : MonoBehaviour, IXRHoverFilter, IXRSelectFilter
             {
                 if (weaponNetObj.OwnerClientId != holsterNetObj.OwnerClientId)
                 {
-                    // This weapon belongs to another player! Reject it!
+                    Debug.Log($"<color=orange>[WeaponSocketFilter]</color> {gameObject.name} rejected {interactable.transform.name} because Weapon Owner ({weaponNetObj.OwnerClientId}) does not match Holster Owner ({holsterNetObj.OwnerClientId})!");
                     return false;
                 }
             }
 
-            return true;
+            return true; // Everything is correct!
         }
         
-        // If the object doesn't even have a WeaponAutoReturn script (e.g. ammo, magazines), reject it!
+        Debug.Log($"<color=orange>[WeaponSocketFilter]</color> {gameObject.name} rejected {interactable.transform.name} because it has no WeaponAutoReturn script!");
         return false;
     }
 }
