@@ -97,9 +97,20 @@ public class AmmoPouch : MonoBehaviour
 
         IXRSelectInteractable ammoInteractable = newAmmo.GetComponentInChildren<IXRSelectInteractable>();
 
-        if (ammoInteractable != null && socketInteractor.interactionManager != null)
+        // Wait 1 frame to guarantee that XR Interaction Toolkit has fully registered the new object!
+        yield return new WaitForEndOfFrame();
+
+        if (ammoInteractable != null)
         {
-            socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, ammoInteractable);
+            if (socketInteractor.interactionManager != null)
+            {
+                socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, ammoInteractable);
+                Debug.Log($"<color=green>[AmmoPouch]</color> Successfully spawned invisible {magazinePrefab.name} into the socket!");
+            }
+            else
+            {
+                Debug.LogError($"<color=red>[AmmoPouch]</color> FAILED! The Socket is missing an Interaction Manager!");
+            }
         }
 
         isRefilling = false;
