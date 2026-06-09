@@ -170,6 +170,18 @@ public class WeaponAutoReturn : NetworkBehaviour
             
             // Force the Interaction Manager to link them
             homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+
+            // VERIFICATION: Did the socket actually accept it?
+            yield return new WaitForEndOfFrame(); // Wait 1 frame for XRI to update its selection state
+            
+            if (!homeSocket.hasSelection || (UnityEngine.Object)homeSocket.interactablesSelected[0] != (UnityEngine.Object)grabInteractable)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn] REJECTION!</color> {gameObject.name} tried to slot into {homeSocket.name}, but the Socket REJECTED IT! It has now fallen down! Please check your 'Interaction Layer Mask' on the {homeSocket.name}!");
+            }
+            else
+            {
+                Debug.Log($"<color=green>[WeaponAutoReturn]</color> SUCCESS! {gameObject.name} is securely locked inside {homeSocket.name}!");
+            }
         }
     }
 
