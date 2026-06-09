@@ -95,7 +95,7 @@ public class AmmoPouch : MonoBehaviour
         // HIDE it immediately so the player thinks the socket is empty!
         SetObjectVisibility(newAmmo, false);
 
-        IXRSelectInteractable ammoInteractable = newAmmo.GetComponentInChildren<IXRSelectInteractable>();
+        XRBaseInteractable ammoInteractable = newAmmo.GetComponentInChildren<XRBaseInteractable>(true);
 
         // Wait 1 frame to guarantee that XR Interaction Toolkit has fully registered the new object!
         yield return new WaitForEndOfFrame();
@@ -104,13 +104,17 @@ public class AmmoPouch : MonoBehaviour
         {
             if (socketInteractor.interactionManager != null)
             {
-                socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, ammoInteractable);
+                socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, (IXRSelectInteractable)ammoInteractable);
                 Debug.Log($"<color=green>[AmmoPouch]</color> Successfully spawned invisible {magazinePrefab.name} into the socket!");
             }
             else
             {
                 Debug.LogError($"<color=red>[AmmoPouch]</color> FAILED! The Socket is missing an Interaction Manager!");
             }
+        }
+        else
+        {
+            Debug.LogError($"<color=red>[AmmoPouch]</color> FAILED! The spawned ammo ({magazinePrefab.name}) does NOT have an XRGrabInteractable component on it! The pouch cannot grab it.");
         }
 
         isRefilling = false;
