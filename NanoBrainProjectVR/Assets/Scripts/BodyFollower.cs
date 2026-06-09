@@ -39,9 +39,12 @@ public class BodyFollower : MonoBehaviour
     public float bodyTurnDeadzone = 30f;
 
     private float currentBodyYaw;
+    private Unity.Netcode.NetworkObject netObj;
 
     private void Start()
     {
+        netObj = GetComponentInParent<Unity.Netcode.NetworkObject>();
+
         if (head == null)
         {
             if (Camera.main != null) head = Camera.main.transform;
@@ -51,6 +54,10 @@ public class BodyFollower : MonoBehaviour
 
     private void Update()
     {
+        // MULTIPLAYER FIX: Only the owner of this avatar should track the local VR headset!
+        // If this is another player's avatar, it will simply receive its position over the network.
+        if (netObj != null && netObj.IsSpawned && !netObj.IsOwner) return;
+
         if (head == null) return;
 
         // 1. Position follows X and Z of the head exactly, but Y is forced to the chest/hip height.
