@@ -90,7 +90,8 @@ namespace XRMultiplayer
 
         public virtual void PlayerSpawnedAll()
         {
-            m_HostVisuals.SetActive(m_ShowHostVisuals && m_NetworkPlayer.NetworkObject.OwnerClientId == NetworkManager.Singleton.CurrentSessionOwner);
+            if (m_HostVisuals != null)
+                m_HostVisuals.SetActive(m_ShowHostVisuals && m_NetworkPlayer.NetworkObject.OwnerClientId == NetworkManager.Singleton.CurrentSessionOwner);
         }
 
         public virtual void SetPlayerColor(Color newColor)

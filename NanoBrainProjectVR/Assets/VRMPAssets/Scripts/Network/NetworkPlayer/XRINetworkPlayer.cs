@@ -249,16 +249,19 @@ namespace XRMultiplayer
         ///<inheritdoc/>
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> OnNetworkSpawn fired! The Avatar Prefab HAS SUCCESSFULLY SPAWNED! Player ID: {NetworkObject.OwnerClientId}");
             base.OnNetworkSpawn();
+            
             if (IsLocalPlayer)
             {
+                Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Setting up LOCAL Player (this is us!)...");
                 // Set Local Player.
                 LocalPlayer = this;
                 XRINetworkGameManager.Instance.OnLocalClientStarted(NetworkObject.OwnerClientId);
 
                 // Setup Platform Type
                 m_PlatformType.Value = (int)XRPlatformUnderstanding.CurrentPlatform;
-                Debug.Log($"XRINetworkPlayer: Platform type set to {m_PlatformType.Value}");
+                Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Platform type set to {m_PlatformType.Value}");
 
                 // Get Origin and set head.
                 m_XROrigin = FindFirstObjectByType<XROrigin>();
