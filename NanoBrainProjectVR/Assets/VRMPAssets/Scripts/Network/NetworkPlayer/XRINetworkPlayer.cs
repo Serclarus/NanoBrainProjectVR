@@ -214,13 +214,13 @@ namespace XRMultiplayer
         {
             if (!IsOwner) return;
 
-            if (m_HeadOrigin != null)
+            if (m_HeadOrigin != null && head != null)
                 head.SetPositionAndRotation(m_HeadOrigin.position, m_HeadOrigin.rotation);
 
-            if (m_LeftHandOrigin != null)
+            if (m_LeftHandOrigin != null && leftHand != null)
                 leftHand.SetPositionAndRotation(m_LeftHandOrigin.position, m_LeftHandOrigin.rotation);
 
-            if (m_RightHandOrigin != null)
+            if (m_RightHandOrigin != null && rightHand != null)
                 rightHand.SetPositionAndRotation(m_RightHandOrigin.position, m_RightHandOrigin.rotation);
         }
 
@@ -252,7 +252,7 @@ namespace XRMultiplayer
             Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> OnNetworkSpawn fired! The Avatar Prefab HAS SUCCESSFULLY SPAWNED! Player ID: {NetworkObject.OwnerClientId}");
             base.OnNetworkSpawn();
             
-            if (IsLocalPlayer)
+            if (IsOwner)
             {
                 Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Setting up LOCAL Player (this is us!)...");
                 // Set Local Player.
@@ -268,6 +268,13 @@ namespace XRMultiplayer
                 if (m_XROrigin != null)
                 {
                     m_HeadOrigin = m_XROrigin.Camera.transform;
+
+                    // MULTIPLAYER FIX: Automatically find the local controllers so the avatar hands can follow them!
+                    GameObject leftController = GameObject.Find("Left Controller");
+                    if (leftController != null) m_LeftHandOrigin = leftController.transform;
+
+                    GameObject rightController = GameObject.Find("Right Controller");
+                    if (rightController != null) m_RightHandOrigin = rightController.transform;
                 }
                 else
                 {
@@ -388,7 +395,7 @@ namespace XRMultiplayer
             if (!m_InitialConnected & !string.IsNullOrEmpty(currentName.ToString()))
             {
                 m_InitialConnected = true;
-                if (!IsLocalPlayer)
+                if (!IsOwner)
                     PlayerHudNotification.Instance.ShowText($"<b>{playerName}</b> joined");
             }
 
