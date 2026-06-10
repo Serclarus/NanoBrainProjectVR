@@ -435,6 +435,7 @@ GameObject:
   - component: {fileID: 1165756021160359066}
   - component: {fileID: 4588994832583027022}
   - component: {fileID: 8435302620866516779}
+  - component: {fileID: 9099428709935732746}
   m_Layer: 0
   m_Name: XRI_Network_Player_Avatar
   m_TagString: Untagged
@@ -663,6 +664,52 @@ MonoBehaviour:
   m_HandControllerEulerOffsets:
   - {x: 0.25, y: 2.91, z: 101.8}
   - {x: 1.04, y: 0, z: 261.36}
+--- !u!114 &9099428709935732746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5358844088564582620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
 --- !u!1 &5908336471056132768
 GameObject:
   m_ObjectHideFlags: 0
@@ -2351,6 +2398,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Vest_Visual
       objectReference: {fileID: 0}
+    - target: {fileID: 5424477209028800761, guid: 6c8433b01a106dd4ca8cf9a85aa2222f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5641125353028173341, guid: 6c8433b01a106dd4ca8cf9a85aa2222f,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -2766,17 +2818,17 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 2e4e483647cf19c40b40674083e74a87, type: 2}
+      objectReference: {fileID: 2100000, guid: 4a8a61e1e2711c04d81b1964faa03715, type: 2}
     - target: {fileID: 7032998128061901836, guid: e85aee490e2bef044b6084c80f8bbd1e,
         type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 2e4e483647cf19c40b40674083e74a87, type: 2}
+      objectReference: {fileID: 2100000, guid: 4a8a61e1e2711c04d81b1964faa03715, type: 2}
     - target: {fileID: 7032998128061901836, guid: e85aee490e2bef044b6084c80f8bbd1e,
         type: 3}
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
-      objectReference: {fileID: 2100000, guid: 08c550730af1c0644a3cefc09dd6b159, type: 2}
+      objectReference: {fileID: 2100000, guid: 93d475857ac86c54c8617c67c542d9e8, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
