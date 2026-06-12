@@ -14,6 +14,7 @@ public class ScoreManager : NetworkBehaviour
     
     // Fallback offline score
     private int offlineScore = 0;
+    private int offlineHighScore = 0;
 
     [Header("UI References")]
     [Tooltip("Text element for Player 1 (Host)")]
@@ -22,6 +23,9 @@ public class ScoreManager : NetworkBehaviour
     [Tooltip("Text element for Player 2 (Client)")]
     public TMP_Text player2ScoreText;
 
+    [Tooltip("Text element for Offline High Score")]
+    public TMP_Text highScoreText;
+
     private void Awake()
     {
         if (Instance == null)
@@ -29,6 +33,7 @@ public class ScoreManager : NetworkBehaviour
         else
             Destroy(gameObject);
             
+        offlineHighScore = PlayerPrefs.GetInt("OfflineHighScore", 0);
         UpdateScoreUI();
     }
 
@@ -48,14 +53,24 @@ public class ScoreManager : NetworkBehaviour
         UpdateScoreUI();
     }
 
-    public void AddScore(int points)
+    public void AddScore(int points, float customMultiplier = -1f)
     {
-        int finalPoints = Mathf.RoundToInt(points * currentMultiplier);
+        float multiplierToUse = customMultiplier >= 0f ? customMultiplier : currentMultiplier;
+        int finalPoints = Mathf.RoundToInt(points * multiplierToUse);
 
         if (!IsSpawned)
         {
             // If playing offline, just add to the offline score
             offlineScore += finalPoints;
+            
+            // Check for high score
+            if (offlineScore > offlineHighScore)
+            {
+                offlineHighScore = offlineScore;
+                PlayerPrefs.SetInt("OfflineHighScore", offlineHighScore);
+                PlayerPrefs.Save();
+            }
+
             UpdateScoreUI();
             return;
         }
@@ -93,6 +108,11 @@ public class ScoreManager : NetworkBehaviour
                 player2ScoreText.text = clientScore.Value.ToString();
             else
                 player2ScoreText.text = "0"; // Offline, P2 doesn't exist
+        }
+
+        if (highScoreText != null)
+        {
+            highScoreText.text = "HI: " + offlineHighScore.ToString();
         }
     }
 }

@@ -4,13 +4,22 @@ using UnityEngine;
 
 public class TargetMover : MonoBehaviour
 {
-    [Header("Movement Settings")]
-    [Tooltip("How far the target moves along its local Z axis each phase.")]
-    public float zMoveDistance = 4.5f;
-    [Tooltip("How long it takes to move to the next phase position (seconds).")]
-    public float moveDuration = 3f;
+    [Header("Random Movement Settings")]
+    [Tooltip("Minimum global Z position.")]
+    public float minGlobalZ = 0f;
+    [Tooltip("Maximum global Z position.")]
+    public float maxGlobalZ = 30f;
+    [Tooltip("Minimum movement speed (units per second).")]
+    public float minMoveSpeed = 2f;
+    [Tooltip("Maximum movement speed (units per second).")]
+    public float maxMoveSpeed = 6f;
+    [Tooltip("Minimum pause duration between moves.")]
+    public float minPauseDuration = 0.5f;
+    [Tooltip("Maximum pause duration between moves.")]
+    public float maxPauseDuration = 2.5f;
     
     private Vector3 initialPosition;
+    private bool isMovingRandomly = false;
 
     [Header("Audio Settings")]
     [Tooltip("AudioSource to play the movement sound.")]
@@ -28,30 +37,56 @@ public class TargetMover : MonoBehaviour
         initialPosition = transform.position;
     }
 
-    /// <summary>
-    /// Starts moving the target to the position for the specified phase index (0, 1, 2...).
-    /// </summary>
-    public void MoveToPhase(int phaseIndex, System.Action onComplete = null)
+    public void StartRandomMovement()
     {
-        Vector3 targetPosition = initialPosition + (transform.forward * (zMoveDistance * phaseIndex));
-        StartCoroutine(MoveRoutine(targetPosition, onComplete));
+        if (isMovingRandomly) return;
+        isMovingRandomly = true;
+        StartCoroutine(RandomMoveRoutine());
     }
 
-    /// <summary>
-    /// Resets the target instantly to the position for the specified phase index.
-    /// </summary>
-    public void ResetToPhase(int phaseIndex)
+    public void StopAndReset()
     {
+        isMovingRandomly = false;
         StopAllCoroutines();
+
         if (audioSource != null && audioSource.isPlaying)
         {
             audioSource.Stop();
         }
         
-        transform.position = initialPosition + (transform.forward * (zMoveDistance * phaseIndex));
+        transform.position = initialPosition;
     }
 
-    private IEnumerator MoveRoutine(Vector3 targetPosition, System.Action onComplete)
+    public float GetCurrentZDistance()
+    {
+        return transform.position.z;
+    }
+
+    private IEnumerator RandomMoveRoutine()
+    {
+        while (isMovingRandomly)
+        {
+            // Pick a random target global Z position
+            float targetZ = Random.Range(minGlobalZ, maxGlobalZ);
+            Vector3 targetPosition = new Vector3(initialPosition.x, initialPosition.y, targetZ);
+
+            // Pick a random speed
+            float speed = Random.Range(minMoveSpeed, maxMoveSpeed);
+            
+            // Calculate how long it takes to get there at this speed
+            float distance = Vector3.Distance(transform.position, targetPosition);
+            float duration = distance / speed;
+
+            // Move there
+            yield return StartCoroutine(MoveToPositionRoutine(targetPosition, duration));
+
+            // Random pause
+            float pause = Random.Range(minPauseDuration, maxPauseDuration);
+            yield return new WaitForSeconds(pause);
+        }
+    }
+
+    private IEnumerator MoveToPositionRoutine(Vector3 targetPosition, float duration)
     {
         Vector3 startPosition = transform.position;
         float elapsed = 0f;
@@ -61,14 +96,17 @@ public class TargetMover : MonoBehaviour
         {
             audioSource.clip = movingSound;
             audioSource.loop = true;
-            audioSource.Play();
+            if (!audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
         }
 
-        while (elapsed < moveDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / moveDuration);
-            // Optional: Smooth step for smoother start and stop
+            float t = Mathf.Clamp01(elapsed / duration);
+            // Smooth step for smoother start and stop
             t = t * t * (3f - 2f * t);
 
             transform.position = Vector3.Lerp(startPosition, targetPosition, t);
@@ -82,7 +120,5 @@ public class TargetMover : MonoBehaviour
         {
             audioSource.Stop();
         }
-
-        onComplete?.Invoke();
     }
 }

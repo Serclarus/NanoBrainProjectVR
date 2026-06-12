@@ -9,37 +9,25 @@ public class ShootingRangeManager : MonoBehaviour
 
     [Header("Global Settings")]
     public bool isShootingAllowed = true;
+    [Tooltip("Duration of the shooting range game in seconds.")]
+    public float gameDuration = 60f;
 
     [Header("References")]
     [Tooltip("The target movers that will be controlled by this manager.")]
     public TargetMover[] targetMovers;
     
-    [Tooltip("Optional: Text element to display the timer and current phase info.")]
+    [Tooltip("Optional: Text element to display the timer.")]
     public TMP_Text statusText;
 
     [Header("Audio Settings")]
     public AudioSource audioSource;
-    [Tooltip("Sound played for each of the last 3 seconds of a phase.")]
+    [Tooltip("Sound played for each of the last 3 seconds of the game.")]
     public AudioClip countdownTickSound;
-    [Tooltip("Sound played when a phase ends/begins.")]
+    [Tooltip("Sound played when the game starts/ends.")]
     public AudioClip phaseChangeSound;
 
-    [Header("Phase Configuration")]
-    [Tooltip("Duration of Phase 1 in seconds")]
-    public float phase1Duration = 20f;
-    public float phase1Multiplier = 1.0f;
-
-    [Tooltip("Duration of Phase 2 in seconds")]
-    public float phase2Duration = 20f;
-    public float phase2Multiplier = 1.2f;
-
-    [Tooltip("Duration of Phase 3 in seconds")]
-    public float phase3Duration = 20f;
-    public float phase3Multiplier = 1.5f;
-
-    private int currentPhase = 0; // 0 = inactive, 1, 2, 3 = active phases
+    private bool isGameActive = false;
     private float currentTimer = 0f;
-    private bool isResting = false;
     private int lastTickSecond = -1;
 
     private void Awake()
@@ -58,31 +46,26 @@ public class ShootingRangeManager : MonoBehaviour
     [ContextMenu("Start Shooting Range")]
     public void StartRange()
     {
-        // Reset everything to phase 1
-        currentPhase = 1;
-        isResting = false;
+        if (isGameActive) return;
+
+        isGameActive = true;
         isShootingAllowed = true;
-        currentTimer = phase1Duration;
+        currentTimer = gameDuration;
         lastTickSecond = Mathf.CeilToInt(currentTimer);
 
-        if (ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.currentMultiplier = phase1Multiplier;
-        }
-
-        // Reset all targets to phase 0
+        // Tell all targets to start random movement
         foreach (var mover in targetMovers)
         {
-            if (mover != null) mover.ResetToPhase(0);
+            if (mover != null) mover.StartRandomMovement();
         }
 
-        PlayPhaseChangeSound();
+        PlayStateChangeSound();
         UpdateUI();
     }
 
     private void Update()
     {
-        if (currentPhase == 0 || isResting) return;
+        if (!isGameActive) return;
 
         currentTimer -= Time.deltaTime;
 
@@ -97,7 +80,7 @@ public class ShootingRangeManager : MonoBehaviour
         if (currentTimer <= 0f)
         {
             currentTimer = 0f;
-            PhaseEnded();
+            EndGame();
         }
         else
         {
@@ -105,106 +88,18 @@ public class ShootingRangeManager : MonoBehaviour
         }
     }
 
-    private void PhaseEnded()
+    private void EndGame()
     {
-        isResting = true;
+        isGameActive = false;
         isShootingAllowed = false;
-        PlayPhaseChangeSound();
-
-        if (currentPhase == 1)
-        {
-            UpdateUI();
-            MoveTargetsToPhase(1, () => StartPhase(2, phase2Duration, phase2Multiplier));
-        }
-        else if (currentPhase == 2)
-        {
-            UpdateUI();
-            MoveTargetsToPhase(2, () => StartPhase(3, phase3Duration, phase3Multiplier));
-        }
-        else if (currentPhase == 3)
-        {
-            UpdateUI();
-            // Reset the range after Phase 3
-            currentPhase = 0;
-            StartCoroutine(ResetRangeRoutine());
-        }
-    }
-
-    private IEnumerator ResetRangeRoutine()
-    {
-        yield return new WaitForSeconds(3f);
+        PlayStateChangeSound();
         UpdateUI();
-        
-        bool targetsMoved = false;
-        MoveTargetsToPhase(0, () => targetsMoved = true);
-        
-        while (!targetsMoved)
-        {
-            yield return null;
-        }
 
-        currentTimer = phase1Duration;
-        UpdateUI();
-        isShootingAllowed = true;
-    }
-
-    private void StartPhase(int newPhase, float duration, float multiplier)
-    {
-        currentPhase = newPhase;
-        currentTimer = duration;
-        isResting = false;
-        isShootingAllowed = true;
-        lastTickSecond = Mathf.CeilToInt(currentTimer);
-
-        if (ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.currentMultiplier = multiplier;
-        }
-
-        PlayPhaseChangeSound();
-        UpdateUI();
-    }
-
-    private void MoveTargetsToPhase(int index, System.Action onAllComplete)
-    {
-        if (targetMovers == null || targetMovers.Length == 0)
-        {
-            onAllComplete?.Invoke();
-            return;
-        }
-
-        int completedCount = 0;
-        int targetCount = targetMovers.Length;
-
+        // Tell all targets to stop and reset
         foreach (var mover in targetMovers)
         {
-            if (mover != null)
-            {
-                mover.MoveToPhase(index, () => {
-                    completedCount++;
-                    if (completedCount == targetCount)
-                    {
-                        onAllComplete?.Invoke();
-                    }
-                });
-            }
-            else
-            {
-                completedCount++;
-                if (completedCount == targetCount)
-                {
-                    onAllComplete?.Invoke();
-                }
-            }
+            if (mover != null) mover.StopAndReset();
         }
-    }
-
-    private float GetCurrentMultiplier()
-    {
-        if (currentPhase == 1) return phase1Multiplier;
-        if (currentPhase == 2) return phase2Multiplier;
-        if (currentPhase == 3) return phase3Multiplier;
-        return 1.0f;
     }
 
     private void PlayCountdownTick()
@@ -215,7 +110,7 @@ public class ShootingRangeManager : MonoBehaviour
         }
     }
 
-    private void PlayPhaseChangeSound()
+    private void PlayStateChangeSound()
     {
         if (audioSource != null && phaseChangeSound != null)
         {
