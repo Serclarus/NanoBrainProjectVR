@@ -5,10 +5,6 @@ using UnityEngine;
 public class TargetMover : MonoBehaviour
 {
     [Header("Random Movement Settings")]
-    [Tooltip("Minimum global Z position.")]
-    public float minGlobalZ = 0f;
-    [Tooltip("Maximum global Z position.")]
-    public float maxGlobalZ = 30f;
     [Tooltip("Minimum movement speed (units per second).")]
     public float minMoveSpeed = 2f;
     [Tooltip("Maximum movement speed (units per second).")]
@@ -19,7 +15,23 @@ public class TargetMover : MonoBehaviour
     public float maxPauseDuration = 2.5f;
     
     private Vector3 initialPosition;
-    private bool isMovingRandomly = false;
+    [HideInInspector]
+    public bool isMovingRandomly = false;
+
+    [HideInInspector]
+    public bool isWaitingForSwap = false;
+
+    // Multipliers for Phase 2
+    [HideInInspector]
+    public float currentSpeedMultiplier = 1f;
+    [HideInInspector]
+    public float currentPauseMultiplier = 1f;
+
+    // Assigned by Manager
+    private float minGlobalZ = 0f;
+    private float maxGlobalZ = 30f;
+    private int currentAssignedZone = -1;
+    private bool forceNewDestination = false;
 
     [Header("Audio Settings")]
     [Tooltip("AudioSource to play the movement sound.")]
@@ -34,19 +46,38 @@ public class TargetMover : MonoBehaviour
             audioSource = GetComponent<AudioSource>();
         }
         
-        initialPosition = transform.position;
+        initialPosition = transform.localPosition;
+    }
+
+    public void SetZone(int zoneIndex, float minZ, float maxZ)
+    {
+        currentAssignedZone = zoneIndex;
+        minGlobalZ = minZ;
+        maxGlobalZ = maxZ;
+    }
+
+    public int GetCurrentAssignedZone() => currentAssignedZone;
+
+    public void ForceNewDestination()
+    {
+        forceNewDestination = true;
     }
 
     public void StartRandomMovement()
     {
         if (isMovingRandomly) return;
         isMovingRandomly = true;
+        forceNewDestination = false;
+        isWaitingForSwap = false;
+        currentSpeedMultiplier = 1f;
+        currentPauseMultiplier = 1f;
         StartCoroutine(RandomMoveRoutine());
     }
 
     public void StopAndReset()
     {
         isMovingRandomly = false;
+        isWaitingForSwap = false;
         StopAllCoroutines();
 
         if (audioSource != null && audioSource.isPlaying)
@@ -54,41 +85,62 @@ public class TargetMover : MonoBehaviour
             audioSource.Stop();
         }
         
-        transform.position = initialPosition;
+        transform.localPosition = initialPosition;
     }
 
     public float GetCurrentZDistance()
     {
-        return transform.position.z;
+        return transform.localPosition.z;
     }
 
     private IEnumerator RandomMoveRoutine()
     {
         while (isMovingRandomly)
         {
-            // Pick a random target global Z position
+            forceNewDestination = false;
+
+            // Pick a random target global Z position within bounds
             float targetZ = Random.Range(minGlobalZ, maxGlobalZ);
             Vector3 targetPosition = new Vector3(initialPosition.x, initialPosition.y, targetZ);
 
-            // Pick a random speed
-            float speed = Random.Range(minMoveSpeed, maxMoveSpeed);
+            // Pick a random speed and apply multiplier
+            float speed = Random.Range(minMoveSpeed, maxMoveSpeed) * currentSpeedMultiplier;
             
             // Calculate how long it takes to get there at this speed
-            float distance = Vector3.Distance(transform.position, targetPosition);
-            float duration = distance / speed;
+            float distance = Vector3.Distance(transform.localPosition, targetPosition);
+            float duration = speed > 0 ? distance / speed : 0.1f;
 
             // Move there
             yield return StartCoroutine(MoveToPositionRoutine(targetPosition, duration));
 
-            // Random pause
-            float pause = Random.Range(minPauseDuration, maxPauseDuration);
-            yield return new WaitForSeconds(pause);
+            // Random pause and apply multiplier
+            float pauseElapsed = 0f;
+            float totalPause = Random.Range(minPauseDuration, maxPauseDuration) * currentPauseMultiplier;
+            while (pauseElapsed < totalPause)
+            {
+                if (forceNewDestination) break;
+                pauseElapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // Always request to swap to a different zone!
+            if (!forceNewDestination && ShootingRangeManager.Instance != null)
+            {
+                isWaitingForSwap = true;
+                ShootingRangeManager.Instance.RequestZoneSwap(this, currentAssignedZone);
+
+                // Wait until the manager approves the swap
+                while (isWaitingForSwap && isMovingRandomly)
+                {
+                    yield return null;
+                }
+            }
         }
     }
 
     private IEnumerator MoveToPositionRoutine(Vector3 targetPosition, float duration)
     {
-        Vector3 startPosition = transform.position;
+        Vector3 startPosition = transform.localPosition;
         float elapsed = 0f;
 
         // Play moving sound
@@ -104,16 +156,21 @@ public class TargetMover : MonoBehaviour
 
         while (elapsed < duration)
         {
+            if (forceNewDestination) break; // Interrupted by manager
+
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             // Smooth step for smoother start and stop
             t = t * t * (3f - 2f * t);
 
-            transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+            transform.localPosition = Vector3.Lerp(startPosition, targetPosition, t);
             yield return null;
         }
 
-        transform.position = targetPosition;
+        if (!forceNewDestination)
+        {
+            transform.localPosition = targetPosition;
+        }
 
         // Stop moving sound
         if (audioSource != null && audioSource.isPlaying)

@@ -152,15 +152,10 @@ public class HittableSurface : MonoBehaviour
     private float CalculateDistanceMultiplier()
     {
         TargetMover mover = GetComponentInParent<TargetMover>();
-        if (mover != null)
+        if (mover != null && ShootingRangeManager.Instance != null)
         {
             float z = mover.GetCurrentZDistance();
-            if (z < 10f) return 1.2f;
-            if (z < 16f) return 1.3f;
-            if (z < 22f) return 1.6f;
-            if (z < 26f) return 1.8f;
-            if (z < 32f) return 2.5f;
-            return 2.5f; // for z >= 32
+            return ShootingRangeManager.Instance.GetMultiplierForZ(z);
         }
         return -1f; // use default multiplier if not on a moving target
     }

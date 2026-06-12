@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 5558633815756166598}
   - component: {fileID: 4102754067004464841}
   - component: {fileID: 2507393796124778112}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: target
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -150,6 +150,9 @@ MonoBehaviour:
   - zoneColor: {r: 1, g: 0, b: 1, a: 0}
     points: 7
     label: 7pts(magenta)
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &4102754067004464841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,8 +165,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da02c51844f896544ae9468d1dafae32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TargetMover
-  zMoveDistance: -12.5
-  moveDuration: 3
+  minMoveSpeed: 1.5
+  maxMoveSpeed: 2
+  minPauseDuration: 0.5
+  maxPauseDuration: 2.5
+  isMovingRandomly: 0
+  isWaitingForSwap: 0
   audioSource: {fileID: 2507393796124778112}
   movingSound: {fileID: 0}
 --- !u!82 &2507393796124778112
