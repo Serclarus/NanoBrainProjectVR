@@ -16,6 +16,10 @@ public class MapButton : MonoBehaviour
     [Tooltip("Optional: An object that will reverse its active state when this map is previewed (e.g., hiding a default room)")]
     public GameObject linkedToggleObject;
 
+    [Header("Debug Controls")]
+    [Tooltip("Optional: Press this keyboard key to trigger this map button from the PC (e.g., NumPad1)")]
+    public UnityEngine.InputSystem.Key debugKeyboardKey = UnityEngine.InputSystem.Key.None;
+
     private MainMenuController menuController;
 
     private float lastPressTime = 0f;
@@ -25,6 +29,21 @@ public class MapButton : MonoBehaviour
     {
         // Find the MainMenuController in the scene automatically
         menuController = FindObjectOfType<MainMenuController>();
+    }
+
+    private void Update()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (keyboard != null && debugKeyboardKey != UnityEngine.InputSystem.Key.None)
+        {
+            if (keyboard[debugKeyboardKey].wasPressedThisFrame)
+            {
+                Debug.Log($"[MapButton] Keyboard override triggered for {gameObject.name}");
+                ClickMapButton();
+            }
+        }
+#endif
     }
 
     // This automatically detects physical touches from your ghost hands!

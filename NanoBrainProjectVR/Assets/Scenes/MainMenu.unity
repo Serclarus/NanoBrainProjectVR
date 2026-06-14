@@ -993,6 +993,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &12607495
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1481,6 +1484,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &16415364
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6550,18 +6556,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 61632648}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &61632650 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7588182236691840348, guid: 6874ef2cbe6ec194183ca03c5bd15123,
-    type: 3}
-  m_PrefabInstance: {fileID: 61632648}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e8e886e5bdf212449bd3ee603751cf7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &63206951
 GameObject:
   m_ObjectHideFlags: 0
@@ -7297,6 +7291,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: TgtTargetSetB1A1Demo (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 362783372
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2894565702
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9598,6 +9607,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &99502925
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15515,6 +15527,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &176001525
 GameObject:
   m_ObjectHideFlags: 0
@@ -19295,6 +19310,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &221176928
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19503,6 +19521,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &222114381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22883,23 +22904,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: TgtTargetSetB1A1Demo
       objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 268191682
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2894565702
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7577461c3de0a8b498ef3cf486ce0c5b, type: 3}
---- !u!114 &258221366 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1239047723, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-    type: 3}
-  m_PrefabInstance: {fileID: 258221365}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e8e886e5bdf212449bd3ee603751cf7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &258221367 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
@@ -23835,7 +23859,7 @@ PrefabInstance:
         type: 3}
       propertyPath: '_bodies.Array.data[0]'
       value: 
-      objectReference: {fileID: 61632650}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24226,17 +24250,17 @@ PrefabInstance:
         type: 3}
       propertyPath: '_bodies.Array.data[0]'
       value: 
-      objectReference: {fileID: 1975065876}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[1]'
       value: 
-      objectReference: {fileID: 2117528496}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[2]'
       value: 
-      objectReference: {fileID: 258221366}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -30173,6 +30197,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &353278014
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -30712,6 +30739,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &357251232
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31182,6 +31212,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &363217292
 GameObject:
   m_ObjectHideFlags: 0
@@ -44347,6 +44380,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &524083465
 GameObject:
   m_ObjectHideFlags: 0
@@ -50843,6 +50879,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &583484037
 GameObject:
   m_ObjectHideFlags: 0
@@ -51032,6 +51071,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &585575268 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5780954395964696418, guid: 4be0a0a5d0f41ab4f8e3f83b3922455c,
@@ -52047,6 +52089,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &610479023
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -58788,6 +58833,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &698675562
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60002,6 +60050,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &711137316
 GameObject:
   m_ObjectHideFlags: 0
@@ -69946,6 +69997,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &811775644
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -72292,6 +72346,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &838529036
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -74038,6 +74095,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &855874748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -75425,6 +75485,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &875623881 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 821052158358425079, guid: 3ddbca6d4f43dc54f9b682fb0bacb7da,
@@ -75475,6 +75538,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &877305656
 GameObject:
   m_ObjectHideFlags: 0
@@ -77426,6 +77492,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &893254067 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2195193492731860471, guid: d31d8a4396eaf1a40a226b64f6e68033,
@@ -77744,6 +77813,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &894246887
 GameObject:
   m_ObjectHideFlags: 0
@@ -78228,6 +78300,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &901526974
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -83046,6 +83121,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &953082862
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -84757,6 +84835,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &970848955
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -92119,17 +92200,17 @@ PrefabInstance:
         type: 3}
       propertyPath: '_bodies.Array.data[0]'
       value: 
-      objectReference: {fileID: 1975065876}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[1]'
       value: 
-      objectReference: {fileID: 2117528496}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[2]'
       value: 
-      objectReference: {fileID: 258221366}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -93929,6 +94010,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1069521905
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -96428,6 +96512,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1109521206
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -98501,6 +98588,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &1123927531 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6370273608108386378, guid: 91c63c8a5e70f8849ad0602f4d22a317,
@@ -101751,6 +101841,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1161817116
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -104183,6 +104276,7 @@ MonoBehaviour:
   sceneToLoad: BoarHunting
   buttonTextComponent: {fileID: 685703865}
   linkedToggleObject: {fileID: 1319926091}
+  debugKeyboardKey: 16
 --- !u!65 &1186399201
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -104556,6 +104650,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1191352349
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -107311,18 +107408,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1222094983}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1222094985 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7588182236691840348, guid: 6874ef2cbe6ec194183ca03c5bd15123,
-    type: 3}
-  m_PrefabInstance: {fileID: 1222094983}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e8e886e5bdf212449bd3ee603751cf7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &1222808618 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4452131913662461624, guid: 1c8f852bb242e4f419b181266fc54694,
@@ -107665,6 +107750,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1226538765
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -108002,6 +108090,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1231910224
 GameObject:
   m_ObjectHideFlags: 0
@@ -108555,6 +108646,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: TgtTargetSetB1A1Demo (4)
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1276274885
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2894565702
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -109829,6 +109935,55 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.22556932, y: 0.0869065, z: 0.16593428}
   m_Center: {x: 0.00000047683716, y: 0, z: -0.000000003725291}
+--- !u!1 &1250533914
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1250533916}
+  - component: {fileID: 1250533915}
+  m_Layer: 0
+  m_Name: OperatorManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1250533915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1250533914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84a0ebdbf1714e64a80d970b92a4a778, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OperatorControls
+  mainMenuKey: 94
+  mainMenuSceneName: MainMenu
+  resetSceneKey: 98
+  pauseKey: 60
+  keepAliveAcrossScenes: 1
+--- !u!4 &1250533916
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1250533914}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -64.99992, y: 0, z: 16.0373}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1251441449
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -114001,6 +114156,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1297190339
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -115805,6 +115963,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1312636136
 GameObject:
   m_ObjectHideFlags: 0
@@ -116604,6 +116765,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1324639118
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -117221,6 +117385,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1334388905
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -118212,6 +118379,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1346671372
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -119656,6 +119826,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1355378085 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3275486040395350631, guid: df699902652af4945a3185653d9aec75,
@@ -119684,6 +119857,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1355920675
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -120209,6 +120385,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1363509522
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -125739,17 +125918,17 @@ PrefabInstance:
         type: 3}
       propertyPath: '_bodies.Array.data[0]'
       value: 
-      objectReference: {fileID: 1975065876}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[1]'
       value: 
-      objectReference: {fileID: 2117528496}
+      objectReference: {fileID: 0}
     - target: {fileID: 5911326605515175416, guid: b2f769684fd8d554cb8b4b8e2bf7633d,
         type: 3}
       propertyPath: '_bodies.Array.data[2]'
       value: 
-      objectReference: {fileID: 258221366}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -126150,6 +126329,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1432735584
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -127929,6 +128111,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1445710523
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -130165,6 +130350,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1468259374
 GameObject:
   m_ObjectHideFlags: 0
@@ -131507,6 +131695,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1476871902
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -133873,6 +134064,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1502808875
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -136504,6 +136698,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1525804384
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -139483,6 +139680,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &1562024001 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6370273608108386378, guid: 91c63c8a5e70f8849ad0602f4d22a317,
@@ -143345,6 +143545,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1605367937
 GameObject:
   m_ObjectHideFlags: 0
@@ -146297,6 +146500,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1648047589
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -146528,6 +146734,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1649274629
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -148797,6 +149006,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1670823071
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -151875,6 +152087,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1696097222
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -155018,7 +155233,7 @@ PrefabInstance:
         type: 3}
       propertyPath: '_bodies.Array.data[0]'
       value: 
-      objectReference: {fileID: 1222094985}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -156288,6 +156503,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1752319638
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -157340,6 +157558,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1760534860
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -160336,6 +160557,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1789087549
 GameObject:
   m_ObjectHideFlags: 0
@@ -164473,6 +164697,7 @@ MonoBehaviour:
   sceneToLoad: TrainingGrounds
   buttonTextComponent: {fileID: 192438057}
   linkedToggleObject: {fileID: 1319926091}
+  debugKeyboardKey: 34
 --- !u!65 &1834418078
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -169306,6 +169531,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1891292117
 GameObject:
   m_ObjectHideFlags: 0
@@ -169737,6 +169965,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1896198274
 GameObject:
   m_ObjectHideFlags: 0
@@ -170550,6 +170781,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1907259775
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -171306,6 +171540,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1912327282
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -173651,6 +173888,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1938561733
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -175033,6 +175273,7 @@ MonoBehaviour:
   sceneToLoad: ShootingRange
   buttonTextComponent: {fileID: 232531394}
   linkedToggleObject: {fileID: 1319926091}
+  debugKeyboardKey: 33
 --- !u!65 &1950700546
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -177454,23 +177695,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: TgtTargetSetB1A1Demo (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2775800928
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2894565702
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7577461c3de0a8b498ef3cf486ce0c5b, type: 3}
---- !u!114 &1975065876 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1239047723, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-    type: 3}
-  m_PrefabInstance: {fileID: 1975065875}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e8e886e5bdf212449bd3ee603751cf7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &1975065877 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
@@ -179964,6 +180208,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &2002153521
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -180856,6 +181103,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &2014015089
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -181589,6 +181839,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &2021289780
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -183976,6 +184229,9 @@ MonoBehaviour:
   pointsAwarded: 0
   scoreMap: {fileID: 0}
   colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &2058356325
 GameObject:
   m_ObjectHideFlags: 0
@@ -188811,23 +189067,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: TgtTargetSetB1A1Demo (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2725148378
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9199693634638450375, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2894565702
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7577461c3de0a8b498ef3cf486ce0c5b, type: 3}
---- !u!114 &2117528496 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1239047723, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
-    type: 3}
-  m_PrefabInstance: {fileID: 2117528495}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e8e886e5bdf212449bd3ee603751cf7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &2117528497 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8749652874911922534, guid: 7577461c3de0a8b498ef3cf486ce0c5b,
@@ -191296,3 +191555,4 @@ SceneRoots:
   - {fileID: 1114748051}
   - {fileID: 1741554639}
   - {fileID: 450547291}
+  - {fileID: 1250533916}

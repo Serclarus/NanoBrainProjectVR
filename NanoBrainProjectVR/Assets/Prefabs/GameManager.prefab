@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7562121396159684026
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3121564072361948055}
+  - component: {fileID: 6098194515018703865}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3121564072361948055
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7562121396159684026}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.68845, y: -0, z: 0.22608}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6098194515018703865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7562121396159684026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac46d4515ab11d643bdb2beae80b058a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitEffectPoolManager
+  hitEffectSetups:
+  - surfaceType: 5
+    effectPrefab: {fileID: 6209960021650955570, guid: 8f621a1be927a1e44a81dce114f8a68d,
+      type: 3}
+  - surfaceType: 1
+    effectPrefab: {fileID: 205449673003834946, guid: e3c21808bc57c534cad1f655caf6f9b3,
+      type: 3}
+  - surfaceType: 2
+    effectPrefab: {fileID: 8745316202587895977, guid: f59bbb20d9dd8104fa30f82ef60b3217,
+      type: 3}
+  - surfaceType: 3
+    effectPrefab: {fileID: 5408767846624046169, guid: 8755691a80459c74eacfba549fe79a14,
+      type: 3}
+  - surfaceType: 4
+    effectPrefab: {fileID: 7384050000351149955, guid: 8f8c16e59ad0d184cbf6c7ce6e1cb80c,
+      type: 3}
+  - surfaceType: 0
+    effectPrefab: {fileID: 5408767846624046169, guid: fa78a43833a68a24fbb9f4356c654ba2,
+      type: 3}
+  poolSizePerType: 20
+  effectDuration: 10
