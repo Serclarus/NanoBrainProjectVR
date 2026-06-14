@@ -504,6 +504,11 @@ public class ShotgunController : NetworkBehaviour
         if (shellEjectionPoint == null || shellPrefab == null || shellPool == null || shellPool.Count == 0) return;
 
         GameObject shell = shellPool.Dequeue();
+        
+        // Move the shell to the ejection port BEFORE applying physics!
+        shell.transform.position = shellEjectionPoint.position;
+        shell.transform.rotation = shellEjectionPoint.rotation;
+        
         shell.SetActive(true);
 
         Rigidbody shellRb = shell.GetComponent<Rigidbody>();

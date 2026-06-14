@@ -581,8 +581,8 @@ public class WeaponController : NetworkBehaviour
             // For a correct prefab (+Z forward), moving backwards requires a negative local Z offset
             boltTransform.localPosition = originalBoltPosition + new Vector3(0, 0, -currentBoltOffset);
 
-            // Eject shell when the bolt visibly moves enough (lowered threshold to 30% and made absolute so it triggers reliably)
-            if (!hasEjectedShell && Mathf.Abs(currentBoltOffset) > Mathf.Abs(boltTravelDistance) * 0.3f)
+            // Eject shell when the bolt visibly moves enough (lowered threshold to 10% to guarantee it triggers even at high return speeds)
+            if (!hasEjectedShell && Mathf.Abs(currentBoltOffset) > Mathf.Abs(boltTravelDistance) * 0.1f)
             {
                 EjectShell();
                 hasEjectedShell = true;
@@ -845,7 +845,12 @@ public class WeaponController : NetworkBehaviour
         if (boltTransform != null)
         {
             targetBoltOffset = boltTravelDistance;
+            currentBoltOffset = boltTravelDistance; // Snap the target offset back instantly to guarantee full visual travel
             hasEjectedShell = false; // Prepare a new shell to be ejected as the bolt travels back
+        }
+        else
+        {
+            EjectShell(); // Instantly eject if the gun doesn't have an animated bolt!
         }
     }
 
@@ -888,6 +893,10 @@ public class WeaponController : NetworkBehaviour
 
         // Dequeue oldest shell (cyclic buffer format)
         GameObject shell = shellPool.Dequeue();
+
+        // Move the shell to the ejection port BEFORE applying physics!
+        shell.transform.position = shellEjectionPoint.position;
+        shell.transform.rotation = shellEjectionPoint.rotation;
 
         EjectShellPhysics(shell);
 

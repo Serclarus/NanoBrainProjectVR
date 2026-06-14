@@ -58,13 +58,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 527236439183776845}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.0005, y: -0.0046, z: 0.0047}
+  m_LocalRotation: {x: -0, y: -0.0014647901, z: 1.7462297e-10, w: 0.9999989}
+  m_LocalPosition: {x: 0.00064849854, y: 0.060641408, z: -0.025610924}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8368745034676660332}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 7973448435006248422}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &1059722269046819364
 GameObject:
   m_ObjectHideFlags: 0
@@ -1261,7 +1261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2402539020
+  GlobalObjectIdHash: 625175394
   InScenePlacedSourceGlobalObjectIdHash: 625175394
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1345,7 +1345,7 @@ MonoBehaviour:
   muzzleFlash: {fileID: 8496804248545592563}
   audioSource: {fileID: 6736371705371294886}
   boltTransform: {fileID: 8368745034676660332}
-  boltTravelDistance: 0.2
+  boltTravelDistance: 0.0346
   boltSnappiness: 30
   boltReturnSpeed: 15
   shellEjectionPoint: {fileID: 8145965371023618119}
@@ -1766,6 +1766,7 @@ Transform:
   - {fileID: 5769956996592649994}
   - {fileID: 4146045134738490839}
   - {fileID: 3785535671452885869}
+  - {fileID: 8145965371023618119}
   - {fileID: 403805671228153675}
   - {fileID: 4814974805029442238}
   m_Father: {fileID: 4347739073821035716}
@@ -1945,11 +1946,10 @@ Transform:
   m_GameObject: {fileID: 8732194908939918108}
   serializedVersion: 2
   m_LocalRotation: {x: -0.70710605, y: -0.0010357632, z: -0.001035763, w: 0.70710605}
-  m_LocalPosition: {x: 0.000049591064, y: 0.05364144, z: 0.008187294}
+  m_LocalPosition: {x: 0, y: 0.05364144, z: 0.0089}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8145965371023618119}
   - {fileID: 2780305357344535976}
   - {fileID: 6661484924644247942}
   m_Father: {fileID: 4814974805029442238}
@@ -2098,7 +2098,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSlide
   weapon: {fileID: 5497520948825985137}
-  rackDistance: 0.02753
+  rackDistance: 0.0346
   pullAxis: {x: 0, y: 0, z: -1}
   audioSource: {fileID: 0}
   slideBackSound: {fileID: 8300000, guid: 4fb3cc59855fe5944acd7f9db3f75755, type: 3}
@@ -2258,6 +2258,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.z
       value: 0.131
+      objectReference: {fileID: 0}
+    - target: {fileID: 2707595350450253417, guid: 38d6d68256f4cd1478708774bedcd5d7,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3969506070514152021, guid: 38d6d68256f4cd1478708774bedcd5d7,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7262889502382870988, guid: 38d6d68256f4cd1478708774bedcd5d7,
         type: 3}
