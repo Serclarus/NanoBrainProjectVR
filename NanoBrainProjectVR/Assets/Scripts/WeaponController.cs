@@ -98,6 +98,9 @@ public class WeaponController : NetworkBehaviour
     [Tooltip("The socket interactor that holds the magazine")]
     public XRSocketInteractor magazineSocket;
     
+    [Tooltip("An offset applied to the shell when it spawns, to correct shell models that are oriented vertically")]
+    public Vector3 shellSpawnRotationOffset = Vector3.zero;
+
     [Tooltip("If true, the slide locks backwards when the magazine is empty (used for Pistols, disable for Rifles)")]
     public bool hasSlideLockOnEmpty = true;
     [Tooltip("How far back the slide goes when locked back on empty. Usually smaller than boltTravelDistance.")]
@@ -900,7 +903,7 @@ public class WeaponController : NetworkBehaviour
 
         // Move the shell to the ejection port BEFORE applying physics!
         shell.transform.position = shellEjectionPoint.position;
-        shell.transform.rotation = shellEjectionPoint.rotation;
+        shell.transform.rotation = shellEjectionPoint.rotation * Quaternion.Euler(shellSpawnRotationOffset);
 
         EjectShellPhysics(shell);
 
