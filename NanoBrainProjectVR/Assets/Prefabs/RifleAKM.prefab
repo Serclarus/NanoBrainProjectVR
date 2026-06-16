@@ -1102,7 +1102,6 @@ GameObject:
   - component: {fileID: 6524745616840175171}
   - component: {fileID: 4720777727785034721}
   - component: {fileID: 3144038195845386442}
-  - component: {fileID: 7599575759986319009}
   - component: {fileID: 397748246730711265}
   - component: {fileID: 6965306771421435060}
   m_Layer: 8
@@ -1169,7 +1168,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TwoHandGrabInteractable
   m_InteractionManager: {fileID: 0}
   m_Colliders:
-  - {fileID: 7599575759986319009}
+  - {fileID: 397748246730711265}
   m_InteractionLayers:
     m_Bits: 15
   m_DistanceCalculationMode: 1
@@ -1312,7 +1311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2741449650
+  GlobalObjectIdHash: 44583071
   InScenePlacedSourceGlobalObjectIdHash: 2741449650
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1355,22 +1354,22 @@ MonoBehaviour:
     pitchRange: {x: 1, y: 2}
     yawRange: {x: -0.3, y: 0.3}
     rollRange: {x: -0.2, y: 0.2}
-    backwardKick: 0.01
+    backwardKick: 0.08
   tier2_Shots4to8:
     pitchRange: {x: 2, y: 4}
     yawRange: {x: -1, y: 1}
     rollRange: {x: -0.5, y: 0.5}
-    backwardKick: 0.025
+    backwardKick: 0.1
   tier3_Shots9to17:
     pitchRange: {x: 3, y: 6}
     yawRange: {x: -2, y: 2}
     rollRange: {x: -0.8, y: 0.8}
-    backwardKick: 0.04
+    backwardKick: 0.12
   tier4_Shots18plus:
     pitchRange: {x: 4, y: 8}
     yawRange: {x: -3, y: 3}
     rollRange: {x: -1, y: 1}
-    backwardKick: 0.05
+    backwardKick: 0.15
   snappiness: 20
   returnSpeed: 8
   twoHandRecoilModifier: 0.4
@@ -1632,27 +1631,6 @@ MonoBehaviour:
   m_AllowCollisionOwnershipExchange: 1
   m_MinExchangeVelocityMagitude: 0.025
   spawnLocked: 1
---- !u!65 &7599575759986319009
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7121643266348946437}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 4352
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.046696503, y: 0.1269759, z: 0.13029858}
-  m_Center: {x: -0.002801627, y: -0.06093806, z: -0.13639653}
 --- !u!65 &397748246730711265
 BoxCollider:
   m_ObjectHideFlags: 0
