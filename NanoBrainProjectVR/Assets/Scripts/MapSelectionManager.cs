@@ -33,6 +33,12 @@ public class MapSelectionManager : MonoBehaviour
     [Tooltip("The default blank skybox when no map is previewed")]
     public Material defaultSkybox;
 
+    [Header("Layer Culling Setup")]
+    [Tooltip("If true, swaps layers to hide maps instead of deactivating them (prevents lag spikes)")]
+    public bool useLayerCulling = true;
+    public string visibleLayerName = "Default";
+    public string hiddenLayerName = "HideFromCamera";
+
     [Header("Map Buttons")]
     public List<MapButtonData> maps = new List<MapButtonData>();
 
@@ -65,7 +71,8 @@ public class MapSelectionManager : MonoBehaviour
                 // Make sure the preview object is off by default
                 if (maps[i].previewObject != null)
                 {
-                    maps[i].previewObject.SetActive(false);
+                    if (useLayerCulling) SetLayerRecursively(maps[i].previewObject, LayerMask.NameToLayer(hiddenLayerName));
+                    else maps[i].previewObject.SetActive(false);
                 }
 
                 // Add our secret collision reporter to the button automatically
@@ -161,7 +168,11 @@ public class MapSelectionManager : MonoBehaviour
         if (currentlyPreviewedIndex != -1)
         {
             MapButtonData oldMap = maps[currentlyPreviewedIndex];
-            if (oldMap.previewObject != null) oldMap.previewObject.SetActive(false);
+            if (oldMap.previewObject != null)
+            {
+                if (useLayerCulling) SetLayerRecursively(oldMap.previewObject, LayerMask.NameToLayer(hiddenLayerName));
+                else oldMap.previewObject.SetActive(false);
+            }
             if (oldMap.buttonText != null)
             {
                 oldMap.buttonText.text = oldMap.originalTextString;
@@ -175,7 +186,11 @@ public class MapSelectionManager : MonoBehaviour
 
         // C. Turn on the NEW preview and update its button text
         MapButtonData newMap = maps[currentlyPreviewedIndex];
-        if (newMap.previewObject != null) newMap.previewObject.SetActive(true);
+        if (newMap.previewObject != null)
+        {
+            if (useLayerCulling) SetLayerRecursively(newMap.previewObject, LayerMask.NameToLayer(visibleLayerName));
+            else newMap.previewObject.SetActive(true);
+        }
         if (newMap.buttonText != null)
         {
             newMap.buttonText.text = "Start";
@@ -202,7 +217,11 @@ public class MapSelectionManager : MonoBehaviour
         if (currentlyPreviewedIndex != -1)
         {
             MapButtonData oldMap = maps[currentlyPreviewedIndex];
-            if (oldMap.previewObject != null) oldMap.previewObject.SetActive(false);
+            if (oldMap.previewObject != null)
+            {
+                if (useLayerCulling) SetLayerRecursively(oldMap.previewObject, LayerMask.NameToLayer(hiddenLayerName));
+                else oldMap.previewObject.SetActive(false);
+            }
             if (oldMap.buttonText != null)
             {
                 oldMap.buttonText.text = oldMap.originalTextString;
@@ -210,6 +229,17 @@ public class MapSelectionManager : MonoBehaviour
             }
         }
         currentlyPreviewedIndex = -1;
+    }
+
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null || newLayer == -1) return;
+        
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, newLayer);
+        }
     }
 }
 

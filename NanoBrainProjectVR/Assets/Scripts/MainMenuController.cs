@@ -8,6 +8,12 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("The blank skybox (or generic room) when nothing is selected")]
     public Material defaultSkybox;
 
+    [Header("Layer Culling Setup")]
+    [Tooltip("If true, swaps layers to hide maps instead of deactivating them (prevents lag spikes)")]
+    public bool useLayerCulling = true;
+    public string visibleLayerName = "Default";
+    public string hiddenLayerName = "HideFromCamera";
+
     // We keep track of what the user is currently previewing
     private string selectedSceneName = "";
     private TMP_Text selectedButtonText;
@@ -94,7 +100,11 @@ public class MainMenuController : MonoBehaviour
     private void SwapMapGeometry(GameObject mapPreviewObject, string sceneToLoad, TMP_Text buttonTextComponent, GameObject linkedToggleObject)
     {
         // 3. Turn OFF the old 3D map preview and revert its linked object
-        if (currentlyActivePreview != null) currentlyActivePreview.SetActive(false);
+        if (currentlyActivePreview != null)
+        {
+            if (useLayerCulling) SetLayerRecursively(currentlyActivePreview, LayerMask.NameToLayer(hiddenLayerName));
+            else currentlyActivePreview.SetActive(false);
+        }
         if (currentlyLinkedToggleObject != null) currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
 
         // 4. Set the new preview state
@@ -110,7 +120,11 @@ public class MainMenuController : MonoBehaviour
         }
 
         // 5. Turn ON the new 3D map preview and reverse its linked object!
-        if (currentlyActivePreview != null) currentlyActivePreview.SetActive(true);
+        if (currentlyActivePreview != null)
+        {
+            if (useLayerCulling) SetLayerRecursively(currentlyActivePreview, LayerMask.NameToLayer(visibleLayerName));
+            else currentlyActivePreview.SetActive(true);
+        }
         if (currentlyLinkedToggleObject != null) currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
 
         // 6. Change this button's text to "Start" in Green!
@@ -149,7 +163,9 @@ public class MainMenuController : MonoBehaviour
 
         if (currentlyActivePreview != null)
         {
-            currentlyActivePreview.SetActive(false);
+            if (useLayerCulling) SetLayerRecursively(currentlyActivePreview, LayerMask.NameToLayer(hiddenLayerName));
+            else currentlyActivePreview.SetActive(false);
+            
             currentlyActivePreview = null;
         }
         
@@ -157,6 +173,17 @@ public class MainMenuController : MonoBehaviour
         {
             currentlyLinkedToggleObject.SetActive(!currentlyLinkedToggleObject.activeSelf);
             currentlyLinkedToggleObject = null;
+        }
+    }
+
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null || newLayer == -1) return;
+        
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, newLayer);
         }
     }
 }
