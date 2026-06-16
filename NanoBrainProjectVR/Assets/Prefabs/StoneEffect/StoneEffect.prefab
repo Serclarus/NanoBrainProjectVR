@@ -154,6 +154,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4840582839435756455}
     m_Modifications:
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
+      propertyPath: InitialModule.startSize.minScalar
+      value: 0.24
+      objectReference: {fileID: 0}
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
+      propertyPath: EmissionModule.rateOverTime.minMaxState
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4478329714868143470, guid: e9c83e9a0a8369e448fc041e44e27e79,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -302,6 +317,51 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4840582839435756455}
     m_Modifications:
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: ShapeModule.angle
+      value: 38.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.size3D
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSize.minScalar
+      value: 0.02
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSpeed.minScalar
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSize.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSizeY.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8787167424471149858, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: InitialModule.startSizeZ.minMaxState
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 8872692749047799746, guid: 02b4132b8b061f44c93a6c29aa779e9b,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -351,6 +411,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8872692749047799746, guid: 02b4132b8b061f44c93a6c29aa779e9b,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8877919617880954298, guid: 02b4132b8b061f44c93a6c29aa779e9b,
         type: 3}
