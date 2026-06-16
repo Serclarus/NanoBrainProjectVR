@@ -650,6 +650,9 @@ public class WeaponController : NetworkBehaviour
         Vector3 hitNormal = Vector3.zero;
         SurfaceType hitType = SurfaceType.Default;
 
+        // VISUAL DEBUG: Draw a 5-second red line in the Scene view so the user can see EXACTLY where the raycast went!
+        Debug.DrawRay(barrelPoint.position, barrelPoint.forward * range, Color.red, 5f);
+
         RaycastHit[] hitBuffer = new RaycastHit[20];
         int hitCount = Physics.RaycastNonAlloc(barrelPoint.position, barrelPoint.forward, hitBuffer, range, hitMask, QueryTriggerInteraction.Collide);
 
