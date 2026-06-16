@@ -1336,6 +1336,7 @@ MonoBehaviour:
   triggerRotateAxis: {x: 1, y: 0, z: 0}
   spawnWithMagazine: 1
   magazineSocket: {fileID: 4926305009218224376}
+  shellSpawnRotationOffset: {x: 0, y: 0, z: 0}
   hasSlideLockOnEmpty: 1
   slideLockDistance: 0.04
   isSlideLockedBack:
@@ -2259,6 +2260,11 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2681143409313702283, guid: 23c220a5d42a46045ace95e38a610484,
+        type: 3}
+      propertyPath: m_SortingOrder
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 2881850200569557591, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_LocalScale.y
@@ -2273,6 +2279,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.z
       value: 0.08
+      objectReference: {fileID: 0}
+    - target: {fileID: 3810514701719605369, guid: 23c220a5d42a46045ace95e38a610484,
+        type: 3}
+      propertyPath: m_SortingOrder
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3901148745110949095, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
@@ -2364,6 +2375,11 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.3549999
       objectReference: {fileID: 0}
+    - target: {fileID: 5171303915355544734, guid: 23c220a5d42a46045ace95e38a610484,
+        type: 3}
+      propertyPath: m_SortingOrder
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 5546563298014980597, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_Enabled
@@ -2373,6 +2389,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5674065136992228059, guid: 23c220a5d42a46045ace95e38a610484,
+        type: 3}
+      propertyPath: m_SortingOrder
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 5775401684101409151, guid: 23c220a5d42a46045ace95e38a610484,
+        type: 3}
+      propertyPath: m_SortingOrder
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 6204831687280878765, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
