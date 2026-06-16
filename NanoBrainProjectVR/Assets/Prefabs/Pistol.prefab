@@ -502,8 +502,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.04780197, y: 0.067589134, z: 0.034913287}
-  m_Center: {x: -0.00004005432, y: 0.012324501, z: -0.057920765}
+  m_Size: {x: 0.04780197, y: 0.067589134, z: 0.02255117}
+  m_Center: {x: -0.00004005432, y: 0.012324501, z: -0.06410182}
 --- !u!1 &4063309415445872305
 GameObject:
   m_ObjectHideFlags: 0
@@ -1304,22 +1304,22 @@ MonoBehaviour:
     pitchRange: {x: 1, y: 2}
     yawRange: {x: -0.3, y: 0.3}
     rollRange: {x: -0.2, y: 0.2}
-    backwardKick: 0.01
+    backwardKick: 0.06
   tier2_Shots4to8:
     pitchRange: {x: 2, y: 4}
     yawRange: {x: -1, y: 1}
     rollRange: {x: -0.5, y: 0.5}
-    backwardKick: 0.025
+    backwardKick: 0.07
   tier3_Shots9to17:
     pitchRange: {x: 3, y: 6}
     yawRange: {x: -2, y: 2}
     rollRange: {x: -0.8, y: 0.8}
-    backwardKick: 0.04
+    backwardKick: 0.08
   tier4_Shots18plus:
     pitchRange: {x: 4, y: 8}
     yawRange: {x: -3, y: 3}
     rollRange: {x: -1, y: 1}
-    backwardKick: 0.05
+    backwardKick: 0.09
   snappiness: 20
   returnSpeed: 8
   twoHandRecoilModifier: 0.4
@@ -1621,8 +1621,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.035111517, y: 0.15374196, z: 0.21173716}
-  m_Center: {x: 0.0003171414, y: -0.00034183264, z: 0.00066399574}
+  m_Size: {x: 0.035111517, y: 0.15374196, z: 0.20327091}
+  m_Center: {x: 0.0003171414, y: -0.00034183264, z: -0.0035691261}
 --- !u!114 &6595766095287605931
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1779,7 +1779,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6610627416983356260}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 9000000, guid: fc9911aadaf045340b2c0cf4d8c87c9d, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 0
@@ -1930,7 +1930,7 @@ GameObject:
   - component: {fileID: 914354400352225551}
   - component: {fileID: 9206704746730862512}
   - component: {fileID: 2283533615830615339}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: WPN_P350_slide
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2117,14 +2117,14 @@ BoxCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 768
+    m_Bits: 4864
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.030047156, y: 0.18327911, z: 0.028871637}
-  m_Center: {x: 0, y: 1.4902168e-17, z: 0.008861145}
+  m_Size: {x: 0.030047156, y: 0.19266307, z: 0.03849327}
+  m_Center: {x: -1.2916245e-12, y: 0.0042255376, z: 0.013671961}
 --- !u!114 &9206704746730862512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2262,7 +2262,7 @@ PrefabInstance:
     - target: {fileID: 2881850200569557591, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.82
+      value: 0.76
       objectReference: {fileID: 0}
     - target: {fileID: 2881850200569557591, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
@@ -2357,7 +2357,7 @@ PrefabInstance:
     - target: {fileID: 4429508637459823146, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.82
+      value: 0.76
       objectReference: {fileID: 0}
     - target: {fileID: 4429508637459823146, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
@@ -2377,7 +2377,7 @@ PrefabInstance:
     - target: {fileID: 6204831687280878765, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.82
+      value: 0.76
       objectReference: {fileID: 0}
     - target: {fileID: 6204831687280878765, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
@@ -2387,7 +2387,7 @@ PrefabInstance:
     - target: {fileID: 6233888852537014325, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.82
+      value: 0.76
       objectReference: {fileID: 0}
     - target: {fileID: 6233888852537014325, guid: 23c220a5d42a46045ace95e38a610484,
         type: 3}
