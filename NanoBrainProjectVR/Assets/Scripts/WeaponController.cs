@@ -524,7 +524,8 @@ public class WeaponController : NetworkBehaviour
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
 
         // Auto-firing logic for when the trigger is held down over multiple frames
-        if (IsOwner)
+        bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
+        if (IsOwner || isOffline)
         {
             if (fullAuto && isTriggerHeld && isHeld)
             {
