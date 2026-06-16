@@ -113,17 +113,17 @@ public class WeaponSlide : MonoBehaviour
             // Clamp between 0 (resting) and slightly past rackDistance (to allow unlocking)
             float clampedPull = Mathf.Clamp(newBoltOffset, 0f, rackDistance * 1.05f);
 
-            // Directly drive the WeaponController's procedural variables (visually capped at max rack)
-            weapon.targetBoltOffset = Mathf.Min(clampedPull, rackDistance);
-            weapon.currentBoltOffset = Mathf.Min(clampedPull, rackDistance);
+            // Directly drive the WeaponController's procedural variables (visually capped slightly past max rack so it moves when locked!)
+            weapon.targetBoltOffset = Mathf.Min(clampedPull, rackDistance * 1.1f);
+            weapon.currentBoltOffset = Mathf.Min(clampedPull, rackDistance * 1.1f);
 
             // Logic changes depending on whether the slide was locked back!
             if (weapon.isSlideLockedBack.Value)
             {
-                // If the slide is locked back, they only need to pull it slightly further backwards to unlock it!
-                float unlockThreshold = weapon.slideLockDistance + 0.005f; 
+                // If the slide is locked back, they only need to pull it slightly further backwards from where they grabbed it!
+                float unlockThreshold = initialBoltOffset + 0.01f; 
                 
-                if (!hasRackedThisPull && clampedPull >= unlockThreshold)
+                if (!hasRackedThisPull && newBoltOffset >= unlockThreshold)
                 {
                     hasRackedThisPull = true;
                     weapon.isSlideLockedBack.Value = false; // Unlock it!
