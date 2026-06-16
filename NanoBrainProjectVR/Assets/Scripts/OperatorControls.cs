@@ -87,13 +87,28 @@ public class OperatorControls : MonoBehaviour
     public void LoadMainMenu()
     {
         Debug.Log("[OperatorControls] Operator requested Main Menu load...");
-        SceneManager.LoadScene(mainMenuSceneName);
+        
+        // Ensure game isn't frozen, otherwise the fade animation won't play!
+        if (isPaused) TogglePause();
+
+        if (VRSceneFader.Instance != null) {
+            VRSceneFader.Instance.FadeToScene(mainMenuSceneName);
+        } else {
+            SceneManager.LoadScene(mainMenuSceneName);
+        }
     }
 
     public void ResetCurrentScene()
     {
         Debug.Log("[OperatorControls] Operator requested Scene Reset...");
+        
+        if (isPaused) TogglePause();
+
         string currentScene = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentScene);
+        if (VRSceneFader.Instance != null) {
+            VRSceneFader.Instance.FadeToScene(currentScene);
+        } else {
+            SceneManager.LoadScene(currentScene);
+        }
     }
 }

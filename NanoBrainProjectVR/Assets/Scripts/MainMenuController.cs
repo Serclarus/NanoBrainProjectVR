@@ -14,6 +14,10 @@ public class MainMenuController : MonoBehaviour
     private Color originalTextColor = Color.white;
     private string originalTextString = "";
     
+    // Safety timer to prevent accidental double-clicks from loading the scene instantly
+    private float timeWhenPreviewed = -10f;
+    private float previewLockDuration = 1.5f; // Must wait 1.5 seconds after previewing before you can click Start
+    
     // Track the currently active 3D map so we can turn it off
     private GameObject currentlyActivePreview;
     
@@ -41,6 +45,13 @@ public class MainMenuController : MonoBehaviour
         // 1. If they click the SAME button twice (which now says "Start"), we load the game!
         if (selectedSceneName == sceneToLoad)
         {
+            // SAFETY: Ignore the click if they just previewed it a split second ago (prevents VR hand multi-collider double clicks)
+            if (Time.unscaledTime < timeWhenPreviewed + previewLockDuration)
+            {
+                Debug.Log($"[MainMenuController] Ignored accidental double-click on {sceneToLoad} (Wait {previewLockDuration}s)");
+                return;
+            }
+
             Debug.Log($"Loading Scene: {sceneToLoad}");
             if (buttonTextComponent != null) 
             {
@@ -63,6 +74,8 @@ public class MainMenuController : MonoBehaviour
             selectedButtonText.text = originalTextString; // Revert text
             selectedButtonText.color = originalTextColor; // Revert color
         }
+
+        timeWhenPreviewed = Time.unscaledTime; // Start the safety lock timer
 
         // If VRSceneFader exists, do a quick Blink transition!
         if (VRSceneFader.Instance != null)

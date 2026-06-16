@@ -22,8 +22,8 @@ public class MapButton : MonoBehaviour
 
     private MainMenuController menuController;
 
-    private float lastPressTime = 0f;
-    private float cooldownDelay = 1.0f; // 1 second cooldown between touches
+    private float lastPressTime = -10f;
+    private float cooldownDelay = 0.5f; // 0.5 second cooldown between any touches
 
     private void Start()
     {
@@ -46,24 +46,21 @@ public class MapButton : MonoBehaviour
 #endif
     }
 
-    // This automatically detects physical touches from your ghost hands!
-    // No need to mess with Interaction Layers or XR Simple Interactable settings.
     private void OnTriggerEnter(Collider other)
     {
-        // Prevent double-touching instantly
-        if (Time.time < lastPressTime + cooldownDelay) return;
-
         // Only react if the object touching the button is a hand/controller
         if (other.CompareTag("Player") || other.name.ToLower().Contains("hand") || other.name.ToLower().Contains("controller"))
         {
-            lastPressTime = Time.time;
             ClickMapButton();
         }
     }
 
-    // You can also call this from your Button's OnClick() if you want!
     public void ClickMapButton()
     {
+        // Prevent double-clicks across all event types (UnityEvents + Triggers)
+        if (Time.unscaledTime < lastPressTime + cooldownDelay) return;
+        lastPressTime = Time.unscaledTime;
+
         Debug.Log($"[MapButton] ClickMapButton was successfully triggered on {gameObject.name}!");
 
         if (menuController != null)
