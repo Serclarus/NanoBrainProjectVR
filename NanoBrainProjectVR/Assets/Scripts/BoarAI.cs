@@ -68,6 +68,19 @@ public class BoarAI : MonoBehaviour
     
     private Collider[] cachedFleeZones;
 
+    // Keep track of all living boars for highly performant custom avoidance!
+    public static System.Collections.Generic.List<BoarAI> activeBoars = new System.Collections.Generic.List<BoarAI>();
+
+    private void OnEnable()
+    {
+        activeBoars.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        activeBoars.Remove(this);
+    }
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -145,8 +158,43 @@ public class BoarAI : MonoBehaviour
                 break;
         }
 
+        HandleBoarAvoidance();
         AlignToTerrain();
         UpdateAnimator();
+    }
+
+    private void HandleBoarAvoidance()
+    {
+        if (agent == null || !agent.enabled || currentState == BoarState.Dead) return;
+
+        Vector3 avoidanceForce = Vector3.zero;
+        int count = 0;
+
+        // Loop through the highly-optimized list of active boars (No expensive Physics overlaps!)
+        foreach (var otherBoar in activeBoars)
+        {
+            if (otherBoar == this || otherBoar == null || otherBoar.currentState == BoarState.Dead) continue;
+
+            Vector3 diff = transform.position - otherBoar.transform.position;
+            diff.y = 0; // Only care about horizontal distance
+            float distSqr = diff.sqrMagnitude;
+
+            // If closer than 1 meter (1 squared is 1)
+            if (distSqr < 1.0f && distSqr > 0.001f)
+            {
+                float actualDist = Mathf.Sqrt(distSqr);
+                // Push harder the closer they get
+                avoidanceForce += diff.normalized * (1.0f - actualDist);
+                count++;
+            }
+        }
+
+        if (count > 0)
+        {
+            // Instead of magically gliding sideways, we add the avoidance to the velocity!
+            // This forces the NavMeshAgent to naturally steer and curve its path.
+            agent.velocity += avoidanceForce * Time.deltaTime * 8f;
+        }
     }
 
     private void AlignToTerrain()
@@ -160,20 +208,35 @@ public class BoarAI : MonoBehaviour
         if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
 
         // Raycast down to find the slope normal
-        RaycastHit hit;
         Vector3 rayStart = transform.position + Vector3.up * 1.5f;
+        RaycastHit[] hits = Physics.RaycastAll(rayStart, Vector3.down, 3f);
         
-        // We cast down up to 3 meters. 
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, 3f))
+        bool foundGround = false;
+        Vector3 groundNormal = Vector3.up;
+
+        // Loop through everything the raycast hit
+        foreach (RaycastHit hit in hits)
+        {
+            // Ignore if we hit our own body/child colliders!
+            if (!hit.collider.transform.IsChildOf(transform) && hit.collider.gameObject != gameObject)
+            {
+                // Must be the ground or environment
+                groundNormal = hit.normal;
+                foundGround = true;
+                break;
+            }
+        }
+
+        if (foundGround)
         {
             // Create a rotation that looks forward but leans to match the ground
-            Quaternion targetRotation = Quaternion.LookRotation(direction, hit.normal);
+            Quaternion targetRotation = Quaternion.LookRotation(direction, groundNormal);
             // Smoothly rotate into the new angle
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
         }
         else
         {
-            // Fallback to flat ground if flying in the air for some reason
+            // Fallback to flat ground
             Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
         }
