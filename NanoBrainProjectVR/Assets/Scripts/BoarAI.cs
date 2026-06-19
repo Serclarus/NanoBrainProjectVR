@@ -208,20 +208,40 @@ public class BoarAI : MonoBehaviour
         if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
 
         // Raycast down to find the slope normal
-        RaycastHit hit;
         Vector3 rayStart = transform.position + Vector3.up * 1.5f;
         
         // Draw a red line showing the raycast in the Scene View!
         Debug.DrawRay(rayStart, Vector3.down * 3f, Color.red);
         
-        // We cast down up to 3 meters. 
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, 3f))
-        {
-            // Draw a green line showing the Normal it found!
-            Debug.DrawRay(hit.point, hit.normal * 2f, Color.green);
+        // Use ~0 to hit EVERY single layer (just in case the Terrain is on a weird layer)
+        // We use QueryTriggerInteraction.Ignore so it doesn't accidentally tilt when touching FleeZones!
+        RaycastHit[] hits = Physics.RaycastAll(rayStart, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore);
+        
+        bool foundGround = false;
+        Vector3 groundNormal = Vector3.up;
+        float closestDist = float.MaxValue;
 
+        // Find the closest hit that isn't the boar itself
+        foreach (RaycastHit hit in hits)
+        {
+            // Ignore if we hit our own body/child colliders!
+            if (!hit.collider.transform.IsChildOf(transform) && hit.collider.gameObject != gameObject)
+            {
+                if (hit.distance < closestDist)
+                {
+                    closestDist = hit.distance;
+                    groundNormal = hit.normal;
+                    foundGround = true;
+                    // Draw a green line showing the Normal it found!
+                    Debug.DrawRay(hit.point, hit.normal * 2f, Color.green);
+                }
+            }
+        }
+
+        if (foundGround)
+        {
             // Create a rotation that looks forward but leans to match the ground
-            Quaternion targetRotation = Quaternion.LookRotation(direction, hit.normal);
+            Quaternion targetRotation = Quaternion.LookRotation(direction, groundNormal);
             // Smoothly rotate into the new angle
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
         }
