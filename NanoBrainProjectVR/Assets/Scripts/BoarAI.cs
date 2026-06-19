@@ -211,9 +211,15 @@ public class BoarAI : MonoBehaviour
         RaycastHit hit;
         Vector3 rayStart = transform.position + Vector3.up * 1.5f;
         
+        // Draw a red line showing the raycast in the Scene View!
+        Debug.DrawRay(rayStart, Vector3.down * 3f, Color.red);
+        
         // We cast down up to 3 meters. 
         if (Physics.Raycast(rayStart, Vector3.down, out hit, 3f))
         {
+            // Draw a green line showing the Normal it found!
+            Debug.DrawRay(hit.point, hit.normal * 2f, Color.green);
+
             // Create a rotation that looks forward but leans to match the ground
             Quaternion targetRotation = Quaternion.LookRotation(direction, hit.normal);
             // Smoothly rotate into the new angle
