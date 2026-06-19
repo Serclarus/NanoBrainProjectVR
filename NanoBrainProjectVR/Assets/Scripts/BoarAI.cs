@@ -103,6 +103,9 @@ public class BoarAI : MonoBehaviour
             cachedFleeZones[i] = zoneObjs[i].GetComponent<Collider>();
         }
 
+        // Disable NavMeshAgent's automatic upright rotation so we can manually tilt on hills
+        agent.updateRotation = false;
+
         ChangeState(BoarState.Wander);
     }
 
@@ -142,7 +145,38 @@ public class BoarAI : MonoBehaviour
                 break;
         }
 
+        AlignToTerrain();
         UpdateAnimator();
+    }
+
+    private void AlignToTerrain()
+    {
+        if (agent == null) return;
+
+        // Determine forward direction (velocity if moving, otherwise current forward)
+        Vector3 direction = agent.velocity.sqrMagnitude > 0.1f ? agent.velocity.normalized : transform.forward;
+        direction.y = 0; // Keep horizontal
+
+        if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
+
+        // Raycast down to find the slope normal
+        RaycastHit hit;
+        Vector3 rayStart = transform.position + Vector3.up * 1.5f;
+        
+        // We cast down up to 3 meters. 
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 3f))
+        {
+            // Create a rotation that looks forward but leans to match the ground
+            Quaternion targetRotation = Quaternion.LookRotation(direction, hit.normal);
+            // Smoothly rotate into the new angle
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
+        }
+        else
+        {
+            // Fallback to flat ground if flying in the air for some reason
+            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
+        }
     }
 
     private void CheckHealthStatus()
