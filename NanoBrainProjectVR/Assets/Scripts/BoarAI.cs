@@ -208,29 +208,14 @@ public class BoarAI : MonoBehaviour
         if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
 
         // Raycast down to find the slope normal
+        RaycastHit hit;
         Vector3 rayStart = transform.position + Vector3.up * 1.5f;
-        RaycastHit[] hits = Physics.RaycastAll(rayStart, Vector3.down, 3f);
         
-        bool foundGround = false;
-        Vector3 groundNormal = Vector3.up;
-
-        // Loop through everything the raycast hit
-        foreach (RaycastHit hit in hits)
-        {
-            // Ignore if we hit our own body/child colliders!
-            if (!hit.collider.transform.IsChildOf(transform) && hit.collider.gameObject != gameObject)
-            {
-                // Must be the ground or environment
-                groundNormal = hit.normal;
-                foundGround = true;
-                break;
-            }
-        }
-
-        if (foundGround)
+        // We cast down up to 3 meters. 
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 3f))
         {
             // Create a rotation that looks forward but leans to match the ground
-            Quaternion targetRotation = Quaternion.LookRotation(direction, groundNormal);
+            Quaternion targetRotation = Quaternion.LookRotation(direction, hit.normal);
             // Smoothly rotate into the new angle
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
         }
