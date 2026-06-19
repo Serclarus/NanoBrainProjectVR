@@ -13,6 +13,8 @@ public class BoarAI : MonoBehaviour
     public float normalRunSpeed = 8f;
     public float injuredRunSpeed = 4f;
     public float wanderSpeed = 1.5f;
+    [Tooltip("How far the boar will search for a random wander point. Increase this so it travels across the whole zone instead of small steps.")]
+    public float wanderRadius = 30f;
 
     [Header("Detection Settings")]
     public Transform playerTransform;
@@ -20,12 +22,20 @@ public class BoarAI : MonoBehaviour
     public float detectionRadius = 15f;
     [Tooltip("How far the boar tries to run when escaping.")]
     public float fleeDistance = 30f;
+    [Tooltip("If the player shoots a gun within this radius, the boar will hear it and flee.")]
+    public float hearingRadius = 50f;
 
     [Header("Health Integration")]
     public AnimalHealth healthScript;
     [Tooltip("Health percentage (0.0 to 1.0) at which the boar gets injured and slows down.")]
     [Range(0f, 1f)]
     public float injuryThreshold = 0.3f;
+
+    [Header("NavMesh Areas")]
+    [Tooltip("The exact name of the NavMesh area to use when wandering/hovering")]
+    public string wanderAreaName = "Hover";
+    [Tooltip("The exact name of the NavMesh area to use when fleeing")]
+    public string fleeAreaName = "Flee";
 
     [Header("Animation States")]
     public Animator animator;
@@ -53,9 +63,19 @@ public class BoarAI : MonoBehaviour
     private string currentAnim = "";
     private float lastYRotation = 0f;
 
+    private int wanderAreaMask;
+    private int fleeAreaMask;
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+
+        // Convert the string names into integer bitmasks that Unity's NavMesh system understands
+        int wanderLayer = NavMesh.GetAreaFromName(wanderAreaName);
+        int fleeLayer = NavMesh.GetAreaFromName(fleeAreaName);
+        
+        wanderAreaMask = (wanderLayer != -1) ? (1 << wanderLayer) : NavMesh.AllAreas;
+        fleeAreaMask = (fleeLayer != -1) ? (1 << fleeLayer) : NavMesh.AllAreas;
 
         if (healthScript != null)
         {
@@ -70,7 +90,26 @@ public class BoarAI : MonoBehaviour
             playerTransform = Camera.main.transform;
         }
 
+        // Listen for gunshots globally
+        WeaponController.OnProjectilesFired += OnGunshotHeard;
+
         ChangeState(BoarState.Wander);
+    }
+
+    private void OnDestroy()
+    {
+        WeaponController.OnProjectilesFired -= OnGunshotHeard;
+    }
+
+    private void OnGunshotHeard(int amount)
+    {
+        if (currentState == BoarState.Dead || currentState == BoarState.Flee || playerTransform == null) return;
+
+        float dist = Vector3.Distance(transform.position, playerTransform.position);
+        if (dist <= hearingRadius)
+        {
+            ChangeState(BoarState.Flee);
+        }
     }
 
     private void Update()
@@ -168,9 +207,9 @@ public class BoarAI : MonoBehaviour
 
             Vector3 targetDest = transform.position + runDir * fleeDistance;
 
-            // Find a valid point on the NavMesh
+            // Find a valid point on the NavMesh using the Flee Area Mask!
             NavMeshHit hit;
-            if (NavMesh.SamplePosition(targetDest, out hit, 10f, NavMesh.AllAreas))
+            if (NavMesh.SamplePosition(targetDest, out hit, 10f, fleeAreaMask))
             {
                 agent.SetDestination(hit.position);
             }
@@ -191,11 +230,13 @@ public class BoarAI : MonoBehaviour
             agent.isStopped = false;
             agent.speed = wanderSpeed;
             
-            // Pick a random point nearby
-            Vector3 randomDir = Random.insideUnitSphere * 10f;
+            // Pick a random point within the Wander Radius
+            Vector3 randomDir = Random.insideUnitSphere * wanderRadius;
             randomDir += transform.position;
             NavMeshHit hit;
-            if (NavMesh.SamplePosition(randomDir, out hit, 10f, NavMesh.AllAreas))
+            
+            // Strictly enforce that the wander point is inside the Wander Area Mask!
+            if (NavMesh.SamplePosition(randomDir, out hit, wanderRadius, wanderAreaMask))
             {
                 agent.SetDestination(hit.position);
             }
@@ -309,5 +350,50 @@ public class BoarAI : MonoBehaviour
         
         // 4. Disable the script so it never updates again
         this.enabled = false;
+    }
+
+    // Flee Zone Integration
+    private void OnTriggerEnter(Collider other)
+    {
+        if (currentState == BoarState.Flee && other.CompareTag("FleeZone"))
+        {
+            StartCoroutine(FadeOutAndDestroy());
+        }
+    }
+
+    private System.Collections.IEnumerator FadeOutAndDestroy()
+    {
+        agent.isStopped = true;
+        agent.enabled = false;
+        
+        // Let the manager know it successfully fled
+        SendMessageUpwards("OnBoarFled", SendMessageOptions.DontRequireReceiver);
+        
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        float fadeTime = 1.0f;
+        float timer = 0f;
+
+        // Note: Accessing .materials automatically creates unique instances for this specific boar!
+        while (timer < fadeTime)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / fadeTime;
+
+            foreach (Renderer r in renderers)
+            {
+                foreach (Material mat in r.materials)
+                {
+                    // Update alpha clipping property (Common names are _Cutoff or _AlphaClipThreshold)
+                    if (mat.HasProperty("_Cutoff")) mat.SetFloat("_Cutoff", progress);
+                    if (mat.HasProperty("_AlphaClipThreshold")) mat.SetFloat("_AlphaClipThreshold", progress);
+                    
+                    // Fallback scale down in case shader doesn't support alpha clip
+                    transform.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, progress);
+                }
+            }
+            yield return null;
+        }
+
+        Destroy(gameObject);
     }
 }

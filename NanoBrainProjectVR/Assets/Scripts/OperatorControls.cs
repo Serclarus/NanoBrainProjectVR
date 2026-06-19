@@ -3,6 +3,14 @@ using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+using System.Collections.Generic;
+
+[System.Serializable]
+public class SceneShortcut
+{
+    public Key shortcutKey;
+    public string sceneToLoad;
+}
 
 public class OperatorControls : MonoBehaviour
 {
@@ -19,6 +27,10 @@ public class OperatorControls : MonoBehaviour
 
     [Tooltip("If true, this script will stay alive even when you change scenes, so you only need to add it to your starting scene.")]
     public bool keepAliveAcrossScenes = true;
+
+    [Header("Scene Shortcuts")]
+    [Tooltip("Pressing these keys will instantly load the corresponding scene from anywhere")]
+    public List<SceneShortcut> sceneShortcuts = new List<SceneShortcut>();
 
     private static OperatorControls instance;
     private bool isPaused = false;
@@ -57,6 +69,21 @@ public class OperatorControls : MonoBehaviour
         if (keyboard[pauseKey].wasPressedThisFrame)
         {
             TogglePause();
+        }
+
+        foreach (var shortcut in sceneShortcuts)
+        {
+            if (shortcut.shortcutKey != Key.None && keyboard[shortcut.shortcutKey].wasPressedThisFrame)
+            {
+                Debug.Log($"[OperatorControls] Operator requested load for Scene: {shortcut.sceneToLoad}");
+                if (isPaused) TogglePause();
+
+                if (VRSceneFader.Instance != null) {
+                    VRSceneFader.Instance.FadeToScene(shortcut.sceneToLoad);
+                } else {
+                    SceneManager.LoadScene(shortcut.sceneToLoad);
+                }
+            }
         }
 #else
         // Fallback for Legacy Input System just in case

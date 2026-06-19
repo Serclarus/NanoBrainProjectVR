@@ -1,0 +1,239 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.XR.Interaction.Toolkit;
+#endif
+
+public class BoarHuntingManager : MonoBehaviour
+{
+    [Header("Spawning Settings")]
+    public GameObject boarPrefab;
+    public Transform[] spawnPoints;
+    public int maxBoarsPerSession = 5;
+
+    [Header("UI Settings")]
+    public Canvas endGameCanvas;
+    public TMP_Text huntedText;
+    public TMP_Text timeText;
+    public TMP_Text accuracyText;
+
+    private int totalSpawned = 0;
+    private int huntedBoars = 0;
+    private int fledBoars = 0;
+    private int totalShotsFired = 0;
+    private int totalHits = 0;
+    private float gameStartTime;
+    private bool gameEnded = false;
+
+    private List<GameObject> activeBoars = new List<GameObject>();
+    private Camera mainCamera;
+
+    private void Start()
+    {
+        mainCamera = Camera.main;
+        if (endGameCanvas != null) endGameCanvas.gameObject.SetActive(false);
+        gameStartTime = Time.time;
+
+        WeaponController.OnProjectilesFired += HandleShotFired;
+
+        // Register the boars that are already placed in the scene
+        BoarAI[] existingBoars = FindObjectsOfType<BoarAI>();
+        foreach (BoarAI boar in existingBoars)
+        {
+            RegisterBoar(boar.gameObject);
+        }
+
+        StartCoroutine(SpawnRoutine());
+    }
+
+    private void OnDestroy()
+    {
+        WeaponController.OnProjectilesFired -= HandleShotFired;
+    }
+
+    private void HandleShotFired(int amount)
+    {
+        if (!gameEnded)
+        {
+            totalShotsFired += amount;
+        }
+    }
+
+    private IEnumerator SpawnRoutine()
+    {
+        // 1. Wait 15 seconds, then spawn the 3rd boar unconditionally
+        yield return new WaitForSeconds(15f);
+        SpawnBoar();
+
+        // 2. Keep checking if only 1 boar is left
+        while (totalSpawned < maxBoarsPerSession)
+        {
+            // Clean up list in case boars were destroyed unexpectedly
+            activeBoars.RemoveAll(b => b == null);
+
+            if (activeBoars.Count <= 1)
+            {
+                // Wait 7 seconds before spawning new one
+                yield return new WaitForSeconds(7f);
+                if (totalSpawned < maxBoarsPerSession)
+                {
+                    SpawnBoar();
+                }
+            }
+            yield return new WaitForSeconds(1f); // Check every second
+        }
+    }
+
+    private void SpawnBoar()
+    {
+        if (totalSpawned >= maxBoarsPerSession) return;
+        if (boarPrefab == null || spawnPoints.Length == 0) return;
+
+        Transform chosenPoint = GetBestSpawnPoint();
+        
+        // Spawn as a child of this manager so SendMessageUpwards works!
+        GameObject newBoar = Instantiate(boarPrefab, chosenPoint.position, chosenPoint.rotation, this.transform);
+        RegisterBoar(newBoar);
+    }
+
+    private void RegisterBoar(GameObject boarObj)
+    {
+        if (!activeBoars.Contains(boarObj))
+        {
+            activeBoars.Add(boarObj);
+            totalSpawned++;
+        }
+
+        // Hook into AnimalHealth
+        AnimalHealth health = boarObj.GetComponent<AnimalHealth>();
+        if (health != null)
+        {
+            health.onDamageTaken.AddListener(() => {
+                if (!health.isDead && !gameEnded) totalHits++;
+            });
+            
+            health.onDeathEvent.AddListener(() => {
+                if (gameEnded) return;
+                huntedBoars++;
+                activeBoars.Remove(boarObj);
+                CheckEndCondition();
+            });
+        }
+    }
+
+    public void OnBoarFled()
+    {
+        // Called via SendMessageUpwards from BoarAI
+        if (gameEnded) return;
+        fledBoars++;
+        // The boar will destroy itself, so we just remove nulls in the routine
+        CheckEndCondition();
+    }
+
+    private void CheckEndCondition()
+    {
+        if (gameEnded) return;
+
+        if (huntedBoars + fledBoars >= maxBoarsPerSession)
+        {
+            EndGame();
+        }
+    }
+
+    private Transform GetBestSpawnPoint()
+    {
+        if (mainCamera == null) return spawnPoints[Random.Range(0, spawnPoints.Length)];
+
+        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(mainCamera);
+        List<Transform> hiddenPoints = new List<Transform>();
+        Transform furthestPoint = spawnPoints[0];
+        float maxDist = -1f;
+
+        foreach (Transform point in spawnPoints)
+        {
+            // Check if point is inside camera frustum (visible)
+            bool isVisible = GeometryUtility.TestPlanesAABB(planes, new Bounds(point.position, Vector3.one * 2f));
+            
+            if (!isVisible)
+            {
+                hiddenPoints.Add(point);
+            }
+
+            float dist = Vector3.Distance(point.position, mainCamera.transform.position);
+            if (dist > maxDist)
+            {
+                maxDist = dist;
+                furthestPoint = point;
+            }
+        }
+
+        // If there are points the player cannot see, pick a random one of those
+        if (hiddenPoints.Count > 0)
+        {
+            return hiddenPoints[Random.Range(0, hiddenPoints.Count)];
+        }
+
+        // If player sees all points, pick the furthest one
+        return furthestPoint;
+    }
+
+    private void EndGame()
+    {
+        gameEnded = true;
+
+        // 1. Disable Player Movement
+#if ENABLE_INPUT_SYSTEM
+        UnityEngine.XR.Interaction.Toolkit.ActionBasedContinuousMoveProvider moveProvider = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.ActionBasedContinuousMoveProvider>();
+        if (moveProvider != null)
+        {
+            moveProvider.enabled = false;
+        }
+#endif
+
+        // 2. Show UI
+        if (endGameCanvas != null)
+        {
+            // Position canvas in front of player
+            if (mainCamera != null)
+            {
+                Vector3 flatForward = mainCamera.transform.forward;
+                flatForward.y = 0;
+                flatForward.Normalize();
+                
+                endGameCanvas.transform.position = mainCamera.transform.position + flatForward * 1.5f;
+                endGameCanvas.transform.position = new Vector3(endGameCanvas.transform.position.x, mainCamera.transform.position.y, endGameCanvas.transform.position.z);
+                
+                endGameCanvas.transform.rotation = Quaternion.LookRotation(endGameCanvas.transform.position - mainCamera.transform.position);
+            }
+            
+            endGameCanvas.gameObject.SetActive(true);
+        }
+
+        // 3. Populate Texts
+        if (huntedText != null)
+        {
+            huntedText.text = $"{huntedBoars}/{maxBoarsPerSession}";
+        }
+
+        if (timeText != null)
+        {
+            float duration = Time.time - gameStartTime;
+            int minutes = Mathf.FloorToInt(duration / 60F);
+            int seconds = Mathf.FloorToInt(duration - minutes * 60);
+            timeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        }
+
+        if (accuracyText != null)
+        {
+            float accuracy = 0f;
+            if (totalShotsFired > 0)
+            {
+                // Ensure accuracy doesn't exceed 100% (e.g. shotgun spread multi-hits)
+                accuracy = Mathf.Min(100f, ((float)totalHits / totalShotsFired) * 100f);
+            }
+            accuracyText.text = string.Format("%{0:0}", accuracy);
+        }
+    }
+}

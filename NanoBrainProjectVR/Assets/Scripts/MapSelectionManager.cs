@@ -85,28 +85,7 @@ public class MapSelectionManager : MonoBehaviour
 
     private void Update()
     {
-        // Allow PC Operator to trigger buttons using keyboard
-#if ENABLE_INPUT_SYSTEM
-        var keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (keyboard != null)
-        {
-            for (int i = 0; i < maps.Count; i++)
-            {
-                if (maps[i].debugKeyboardKey != UnityEngine.InputSystem.Key.None)
-                {
-                    try
-                    {
-                        if (keyboard[maps[i].debugKeyboardKey].wasPressedThisFrame)
-                        {
-                            Debug.Log($"[MapSelectionManager] Keyboard trigger for Map {i}");
-                            HandleButtonPress(i);
-                        }
-                    }
-                    catch { } // Ignore if key is invalid
-                }
-            }
-        }
-#endif
+        // Keyboard shortcuts have been moved to OperatorControls.cs
     }
 
     private float lastSwapTime = -10f;
