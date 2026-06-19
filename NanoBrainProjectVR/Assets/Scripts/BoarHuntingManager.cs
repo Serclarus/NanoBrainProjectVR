@@ -106,8 +106,10 @@ public class BoarHuntingManager : MonoBehaviour
             totalSpawned++;
         }
 
-        // Hook into AnimalHealth
-        AnimalHealth health = boarObj.GetComponent<AnimalHealth>();
+        // Hook into AnimalHealth. Try to use the explicit reference from BoarAI first!
+        BoarAI ai = boarObj.GetComponent<BoarAI>();
+        AnimalHealth health = (ai != null && ai.healthScript != null) ? ai.healthScript : boarObj.GetComponentInChildren<AnimalHealth>();
+        
         if (health != null)
         {
             health.onDamageTaken.AddListener(() => {
@@ -202,7 +204,7 @@ public class BoarHuntingManager : MonoBehaviour
                 flatForward.y = 0;
                 flatForward.Normalize();
                 
-                endGameCanvas.transform.position = mainCamera.transform.position + flatForward * 1.5f;
+                endGameCanvas.transform.position = mainCamera.transform.position + flatForward * 0.4f;
                 endGameCanvas.transform.position = new Vector3(endGameCanvas.transform.position.x, mainCamera.transform.position.y, endGameCanvas.transform.position.z);
                 
                 endGameCanvas.transform.rotation = Quaternion.LookRotation(endGameCanvas.transform.position - mainCamera.transform.position);

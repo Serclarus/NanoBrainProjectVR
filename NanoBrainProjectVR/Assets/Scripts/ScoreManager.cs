@@ -92,6 +92,28 @@ public class ScoreManager : NetworkBehaviour
         }
     }
 
+    [ContextMenu("Reset Current Score")]
+    public void ResetCurrentScore()
+    {
+        // Reset local offline score
+        offlineScore = 0;
+
+        if (IsSpawned)
+        {
+            // If online, tell the server to reset everyone's score
+            ResetScoreServerRpc();
+        }
+
+        UpdateScoreUI();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void ResetScoreServerRpc()
+    {
+        hostScore.Value = 0;
+        clientScore.Value = 0;
+    }
+
     private void UpdateScoreUI()
     {
         if (player1ScoreText != null)

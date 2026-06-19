@@ -65,6 +65,8 @@ public class BoarAI : MonoBehaviour
 
     private int wanderAreaMask;
     private int fleeAreaMask;
+    
+    private Collider[] cachedFleeZones;
 
     private void Start()
     {
@@ -92,6 +94,14 @@ public class BoarAI : MonoBehaviour
 
         // Listen for gunshots globally
         WeaponController.OnProjectilesFired += OnGunshotHeard;
+
+        // Cache flee zones to manually check overlaps (bypasses Unity's Rigidbody requirement for OnTriggerEnter)
+        GameObject[] zoneObjs = GameObject.FindGameObjectsWithTag("FleeZone");
+        cachedFleeZones = new Collider[zoneObjs.Length];
+        for (int i = 0; i < zoneObjs.Length; i++)
+        {
+            cachedFleeZones[i] = zoneObjs[i].GetComponent<Collider>();
+        }
 
         ChangeState(BoarState.Wander);
     }
@@ -191,6 +201,20 @@ public class BoarAI : MonoBehaviour
 
     private void UpdateFlee()
     {
+        // Manually check if inside a FleeZone (Works even if the Boar doesn't have a Rigidbody!)
+        if (cachedFleeZones != null)
+        {
+            foreach (var col in cachedFleeZones)
+            {
+                if (col != null && col.ClosestPoint(transform.position) == transform.position)
+                {
+                    // We are inside the FleeZone!
+                    StartCoroutine(FadeOutAndDestroy());
+                    return; // Stop updating
+                }
+            }
+        }
+
         fleeRecalculateTimer -= Time.deltaTime;
 
         // Continuously update the flee target away from the player, but zig-zag randomly!
@@ -353,6 +377,7 @@ public class BoarAI : MonoBehaviour
     }
 
     // Flee Zone Integration
+    // We keep OnTriggerEnter just in case it DOES have a Rigidbody
     private void OnTriggerEnter(Collider other)
     {
         if (currentState == BoarState.Flee && other.CompareTag("FleeZone"))
@@ -361,13 +386,26 @@ public class BoarAI : MonoBehaviour
         }
     }
 
+    private bool isFadingOut = false;
+
     private System.Collections.IEnumerator FadeOutAndDestroy()
     {
+        if (isFadingOut) yield break;
+        isFadingOut = true;
+        
         agent.isStopped = true;
         agent.enabled = false;
         
         // Let the manager know it successfully fled
-        SendMessageUpwards("OnBoarFled", SendMessageOptions.DontRequireReceiver);
+        BoarHuntingManager manager = FindObjectOfType<BoarHuntingManager>();
+        if (manager != null)
+        {
+            manager.OnBoarFled();
+        }
+        else
+        {
+            SendMessageUpwards("OnBoarFled", SendMessageOptions.DontRequireReceiver);
+        }
         
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         float fadeTime = 1.0f;

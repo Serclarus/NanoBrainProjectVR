@@ -27,6 +27,16 @@ public class ShootingRangeManager : MonoBehaviour
     [Tooltip("Optional: Text element to display the timer.")]
     public TMP_Text statusText;
 
+    [Header("Start Button")]
+    [Tooltip("The TextMeshPro on the physical start button to update (Start, 3, 2, 1, Running...)")]
+    public TMP_Text startButtonText;
+
+    [Header("Lighting Feedback")]
+    [Tooltip("Lights to change color based on game state.")]
+    public Light[] rangeLights;
+    public Color idleLightColor = Color.red;
+    public Color activeLightColor = Color.green;
+
     [Header("Audio Settings")]
     public AudioSource audioSource;
     [Tooltip("Sound played for each of the last 3 seconds of the game.")]
@@ -35,7 +45,9 @@ public class ShootingRangeManager : MonoBehaviour
     public AudioClip phaseChangeSound;
 
     private bool isGameActive = false;
+    private bool isCountingDown = false;
     private float currentTimer = 0f;
+    private float countdownTimer = 0f;
     private int lastTickSecond = -1;
     private bool isPhase2Active = false;
 
@@ -85,19 +97,36 @@ public class ShootingRangeManager : MonoBehaviour
         {
             audioSource = GetComponent<AudioSource>();
         }
+
+        SetLightsColor(idleLightColor);
     }
 
     [ContextMenu("Start Shooting Range")]
     public void StartRange()
     {
-        if (isGameActive) return;
+        if (isGameActive || isCountingDown) return;
 
+        // Reset the score whenever we press start
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.ResetCurrentScore();
+        }
+
+        isCountingDown = true;
+        countdownTimer = 3f; // 3 second countdown
+        lastTickSecond = 4; // Start out of bounds to guarantee the first tick plays
+    }
+
+    private void BeginActualGame()
+    {
         isGameActive = true;
         isShootingAllowed = true;
         currentTimer = gameDuration;
         lastTickSecond = Mathf.CeilToInt(currentTimer);
         isPhase2Active = false;
         pendingSwaps.Clear();
+
+        SetLightsColor(activeLightColor);
 
         // Initialize target distributions
         List<TargetMover> unassigned = new List<TargetMover>();
@@ -136,6 +165,32 @@ public class ShootingRangeManager : MonoBehaviour
 
     private void Update()
     {
+        if (isCountingDown)
+        {
+            countdownTimer -= Time.deltaTime;
+            int currentCount = Mathf.CeilToInt(countdownTimer);
+
+            // Play a tick sound every time the number changes
+            if (currentCount != lastTickSecond && currentCount > 0)
+            {
+                lastTickSecond = currentCount;
+                PlayCountdownTick();
+            }
+
+            if (startButtonText != null)
+            {
+                startButtonText.text = currentCount.ToString();
+            }
+
+            if (countdownTimer <= 0f)
+            {
+                isCountingDown = false;
+                if (startButtonText != null) startButtonText.text = "Running...";
+                BeginActualGame();
+            }
+            return;
+        }
+
         if (!isGameActive) return;
 
         currentTimer -= Time.deltaTime;
@@ -333,6 +388,13 @@ public class ShootingRangeManager : MonoBehaviour
     {
         isGameActive = false;
         isShootingAllowed = false;
+        
+        if (startButtonText != null)
+        {
+            startButtonText.text = "Start";
+        }
+
+        SetLightsColor(idleLightColor);
         PlayStateChangeSound();
         UpdateUI();
 
@@ -355,6 +417,18 @@ public class ShootingRangeManager : MonoBehaviour
         if (audioSource != null && phaseChangeSound != null)
         {
             audioSource.PlayOneShot(phaseChangeSound);
+        }
+    }
+
+    private void SetLightsColor(Color newColor)
+    {
+        if (rangeLights == null) return;
+        foreach (var light in rangeLights)
+        {
+            if (light != null)
+            {
+                light.color = newColor;
+            }
         }
     }
 

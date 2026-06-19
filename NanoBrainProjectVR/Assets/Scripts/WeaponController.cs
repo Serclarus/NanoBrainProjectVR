@@ -663,8 +663,6 @@ public class WeaponController : NetworkBehaviour
         RaycastHit closestSolidHit = new RaycastHit();
         float closestSolidDist = float.MaxValue;
         HittableSurface closestHittable = null;
-        bool isTerrainGround = false;
-        bool isTerrainTree = false;
 
         // Keep track of damage zones so we can apply damage AFTER the decal is spawned
         System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
@@ -720,31 +718,69 @@ public class WeaponController : NetworkBehaviour
             if (!currentHit.collider.isTrigger)
             {
                 HittableSurface hittable = currentHit.collider.GetComponentInParent<HittableSurface>();
-                Terrain terrain = currentHit.collider.GetComponentInParent<Terrain>();
 
-                if ((hittable != null || terrain != null) && currentHit.distance < closestSolidDist)
+                // A bullet should stop at ANY solid collider, even if it lacks a HittableSurface script!
+                if (currentHit.distance < closestSolidDist)
                 {
                     closestSolidDist = currentHit.distance;
                     closestSolidHit = currentHit;
                     closestHittable = hittable;
-                    
-                    // Identify if this is a Terrain (Dirt) or a painted Terrain Tree (Wood)
-                    isTerrainGround = (terrain != null && currentHit.collider is TerrainCollider);
-                    isTerrainTree = (terrain != null && !(currentHit.collider is TerrainCollider));
                 }
             }
         }
 
         // If we found a solid surface, prepare to spawn the decal and trigger legacy hit events
-        if (closestHittable != null || isTerrainGround || isTerrainTree)
+        if (closestSolidDist != float.MaxValue)
         {
             hitSomething = true;
             hitPoint = closestSolidHit.point;
             hitNormal = closestSolidHit.normal;
             
-            if (isTerrainTree) hitType = SurfaceType.Wood;
-            else if (isTerrainGround) hitType = SurfaceType.Dirt;
-            else if (closestHittable != null) hitType = closestHittable.surfaceType;
+            // Bulletproof check for Unity painted Terrain Trees: 
+            // Unity bakes tree colliders as CapsuleColliders directly onto the Terrain GameObject!
+            bool isPaintedTerrainTree = (closestSolidHit.collider is CapsuleCollider) && 
+                                        (closestSolidHit.collider.gameObject.GetComponent<TerrainCollider>() != null);
+
+            // Check for Physics Material override
+            bool hasWoodPhysicsMaterial = (closestSolidHit.collider.sharedMaterial != null && 
+                                           closestSolidHit.collider.sharedMaterial.name.ToLower().Contains("wood"));
+
+            if (hasWoodPhysicsMaterial || isPaintedTerrainTree)
+            {
+                hitType = SurfaceType.Wood;
+            }
+            else if (closestSolidHit.collider is TerrainCollider tCol)
+            {
+                // Unity absorbs tree colliders into the TerrainCollider!
+                // We can mathematically prove if we hit a tree by checking if the hit location is above the ground.
+                Terrain terrain = tCol.GetComponent<Terrain>();
+                if (terrain != null)
+                {
+                    float groundHeight = terrain.SampleHeight(closestSolidHit.point) + terrain.transform.position.y;
+                    
+                    // If the bullet hit something sticking at least 0.4 meters out of the ground, it's a tree trunk!
+                    if (closestSolidHit.point.y > groundHeight + 0.4f)
+                    {
+                        hitType = SurfaceType.Wood;
+                    }
+                    else
+                    {
+                        hitType = closestHittable != null ? closestHittable.surfaceType : SurfaceType.Dirt;
+                    }
+                }
+                else
+                {
+                    hitType = closestHittable != null ? closestHittable.surfaceType : SurfaceType.Dirt;
+                }
+            }
+            else
+            {
+                hitType = closestHittable != null ? closestHittable.surfaceType : SurfaceType.Default;
+            }
+            
+            Debug.Log($"<color=yellow>[Weapon Hit]</color> Hit Collider: <b>{closestSolidHit.collider.name}</b> on GameObject: <b>{closestSolidHit.collider.gameObject.name}</b>. " +
+                      $"PhysicsMat: {(closestSolidHit.collider.sharedMaterial != null ? closestSolidHit.collider.sharedMaterial.name : "None")}. " +
+                      $"Final HitType: <b>{hitType}</b>");
 
             // Trigger the old generic hit event
             if (closestHittable != null) closestHittable.OnHit(closestSolidHit);
