@@ -663,6 +663,8 @@ public class WeaponController : NetworkBehaviour
         RaycastHit closestSolidHit = new RaycastHit();
         float closestSolidDist = float.MaxValue;
         HittableSurface closestHittable = null;
+        bool isTerrainGround = false;
+        bool isTerrainTree = false;
 
         // Keep track of damage zones so we can apply damage AFTER the decal is spawned
         System.Collections.Generic.List<TargetDamageZone> zonesToDamage = new System.Collections.Generic.List<TargetDamageZone>();
@@ -718,25 +720,34 @@ public class WeaponController : NetworkBehaviour
             if (!currentHit.collider.isTrigger)
             {
                 HittableSurface hittable = currentHit.collider.GetComponentInParent<HittableSurface>();
-                if (hittable != null && currentHit.distance < closestSolidDist)
+                Terrain terrain = currentHit.collider.GetComponentInParent<Terrain>();
+
+                if ((hittable != null || terrain != null) && currentHit.distance < closestSolidDist)
                 {
                     closestSolidDist = currentHit.distance;
                     closestSolidHit = currentHit;
                     closestHittable = hittable;
+                    
+                    // Identify if this is a Terrain (Dirt) or a painted Terrain Tree (Wood)
+                    isTerrainGround = (terrain != null && currentHit.collider is TerrainCollider);
+                    isTerrainTree = (terrain != null && !(currentHit.collider is TerrainCollider));
                 }
             }
         }
 
         // If we found a solid surface, prepare to spawn the decal and trigger legacy hit events
-        if (closestHittable != null)
+        if (closestHittable != null || isTerrainGround || isTerrainTree)
         {
             hitSomething = true;
             hitPoint = closestSolidHit.point;
             hitNormal = closestSolidHit.normal;
-            hitType = closestHittable.surfaceType;
+            
+            if (isTerrainTree) hitType = SurfaceType.Wood;
+            else if (isTerrainGround) hitType = SurfaceType.Dirt;
+            else if (closestHittable != null) hitType = closestHittable.surfaceType;
 
             // Trigger the old generic hit event
-            closestHittable.OnHit(closestSolidHit);
+            if (closestHittable != null) closestHittable.OnHit(closestSolidHit);
 
             // Spawn hit effect locally with parent for the shooter
             if (HitEffectPoolManager.Instance != null)
