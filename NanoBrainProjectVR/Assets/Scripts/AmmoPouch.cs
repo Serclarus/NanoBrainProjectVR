@@ -120,7 +120,7 @@ public class AmmoPouch : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = false;
-            rb.velocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
 
