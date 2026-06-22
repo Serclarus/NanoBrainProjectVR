@@ -116,8 +116,8 @@ public class BoarAI : MonoBehaviour
             cachedFleeZones[i] = zoneObjs[i].GetComponent<Collider>();
         }
 
-        // Disable NavMeshAgent's automatic upright rotation so we can manually tilt on hills
-        agent.updateRotation = false;
+        // Ensure NavMeshAgent handles rotation natively for maximum performance
+        agent.updateRotation = true;
 
         ChangeState(BoarState.Wander);
     }
@@ -159,7 +159,6 @@ public class BoarAI : MonoBehaviour
         }
 
         HandleBoarAvoidance();
-        AlignToTerrain();
         UpdateAnimator();
     }
 
@@ -197,61 +196,7 @@ public class BoarAI : MonoBehaviour
         }
     }
 
-    private void AlignToTerrain()
-    {
-        if (agent == null) return;
 
-        // Determine forward direction (velocity if moving, otherwise current forward)
-        Vector3 direction = agent.velocity.sqrMagnitude > 0.1f ? agent.velocity.normalized : transform.forward;
-        direction.y = 0; // Keep horizontal
-
-        if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
-
-        // Raycast down to find the slope normal
-        Vector3 rayStart = transform.position + Vector3.up * 1.5f;
-        
-        // Draw a red line showing the raycast in the Scene View!
-        Debug.DrawRay(rayStart, Vector3.down * 3f, Color.red);
-        
-        // Use ~0 to hit EVERY single layer (just in case the Terrain is on a weird layer)
-        // We use QueryTriggerInteraction.Ignore so it doesn't accidentally tilt when touching FleeZones!
-        RaycastHit[] hits = Physics.RaycastAll(rayStart, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore);
-        
-        bool foundGround = false;
-        Vector3 groundNormal = Vector3.up;
-        float closestDist = float.MaxValue;
-
-        // Find the closest hit that isn't the boar itself
-        foreach (RaycastHit hit in hits)
-        {
-            // Ignore if we hit our own body/child colliders!
-            if (!hit.collider.transform.IsChildOf(transform) && hit.collider.gameObject != gameObject)
-            {
-                if (hit.distance < closestDist)
-                {
-                    closestDist = hit.distance;
-                    groundNormal = hit.normal;
-                    foundGround = true;
-                    // Draw a green line showing the Normal it found!
-                    Debug.DrawRay(hit.point, hit.normal * 2f, Color.green);
-                }
-            }
-        }
-
-        if (foundGround)
-        {
-            // Create a rotation that looks forward but leans to match the ground
-            Quaternion targetRotation = Quaternion.LookRotation(direction, groundNormal);
-            // Smoothly rotate into the new angle
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
-        }
-        else
-        {
-            // Fallback to flat ground
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 8f);
-        }
-    }
 
     private void CheckHealthStatus()
     {
