@@ -85,6 +85,17 @@ public class BodyFollower : MonoBehaviour
             // If they are looking straight UP, head.up points backward, so we reverse it.
             if (head.forward.y > 0) headForward = -headForward;
         }
+        else
+        {
+            // VR "Looking Between Legs" Fix!
+            // If the top of the headset is pointing towards the floor (head.up.y < 0), the player is upside down.
+            // When bending way over, the headset's forward vector physically points backwards between the legs,
+            // even though the player's chest is still facing forward! Inverting it fixes the 180 degree snap.
+            if (head.up.y < 0f)
+            {
+                headForward = -headForward;
+            }
+        }
         
         headForward.Normalize();
 
