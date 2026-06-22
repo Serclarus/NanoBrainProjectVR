@@ -3,7 +3,9 @@ using UnityEngine;
 public class VisualSlopeAligner : MonoBehaviour
 {
     [Tooltip("How fast the mesh adapts to the slope")]
-    public float tiltSpeed = 8f;
+    public float tiltSpeed = 4f;
+    [Tooltip("How smoothly it ignores small rocks and bumps (lower = smoother)")]
+    public float bumpSmoothing = 5f;
     [Tooltip("How far down to cast the ray to find the ground")]
     public float rayDistance = 3f;
     [Tooltip("Offset up from the pivot to start the raycast")]
@@ -13,6 +15,8 @@ public class VisualSlopeAligner : MonoBehaviour
 
     // Use RaycastNonAlloc to completely eliminate GC Allocation Spikes (VR Hourglass freezes)!
     private static RaycastHit[] hitBuffer = new RaycastHit[10];
+    
+    private Vector3 smoothedNormal = Vector3.up;
 
     private void Update()
     {
@@ -28,7 +32,7 @@ public class VisualSlopeAligner : MonoBehaviour
         int hitCount = Physics.RaycastNonAlloc(rayStart, Vector3.down, hitBuffer, rayDistance, groundMask, QueryTriggerInteraction.Ignore);
         
         bool foundGround = false;
-        Vector3 groundNormal = Vector3.up;
+        Vector3 currentGroundNormal = Vector3.up;
         float closestDist = float.MaxValue;
 
         for (int i = 0; i < hitCount; i++)
@@ -41,7 +45,7 @@ public class VisualSlopeAligner : MonoBehaviour
                 if (hit.distance < closestDist)
                 {
                     closestDist = hit.distance;
-                    groundNormal = hit.normal;
+                    currentGroundNormal = hit.normal;
                     foundGround = true;
                     // Draw a green line showing the Normal it found!
                     Debug.DrawRay(hit.point, hit.normal * 2f, Color.green);
@@ -51,14 +55,17 @@ public class VisualSlopeAligner : MonoBehaviour
 
         if (foundGround)
         {
+            // Smoothly average out the ground normal to completely ignore tiny rocks and bumps!
+            smoothedNormal = Vector3.Slerp(smoothedNormal, currentGroundNormal, Time.deltaTime * bumpSmoothing);
+
             // The magic: Calculate a rotation that faces the exact same direction as the Parent Brain, but tilts to match the hill!
             Vector3 forwardDirection = transform.parent.forward;
             forwardDirection.y = 0; // Keep the heading purely horizontal to avoid weird spin glitches
             
             if (forwardDirection.sqrMagnitude < 0.01f) forwardDirection = transform.parent.forward;
 
-            // Project the heading onto the slope to get the true "Nose" direction (pitched up or down)
-            Vector3 noseDirection = Vector3.ProjectOnPlane(forwardDirection, groundNormal).normalized;
+            // Project the heading onto the smoothed slope to get the true "Nose" direction (pitched up or down)
+            Vector3 noseDirection = Vector3.ProjectOnPlane(forwardDirection, smoothedNormal).normalized;
 
             // By forcing the Up vector to be Vector3.up (instead of groundNormal), 
             // Unity mathematically eliminates all sideways roll, leaving ONLY the forward/backward pitch!
