@@ -75,6 +75,19 @@ public class BodyFollower : MonoBehaviour
         Vector3 headForward = head.forward;
         headForward.y = 0; // Flatten the vector to the floor
 
+        // VR Look-Down Fix: If the player looks straight down at their chest/pouch, their 'forward' vector shrinks to zero!
+        if (headForward.sqrMagnitude < 0.01f)
+        {
+            // When looking down, the top of the head (head.up) actually points horizontally forward!
+            headForward = head.up;
+            headForward.y = 0;
+            
+            // If they are looking straight UP, head.up points backward, so we reverse it.
+            if (head.forward.y > 0) headForward = -headForward;
+        }
+        
+        headForward.Normalize();
+
         Vector3 combinedForward = headForward * headWeight;
 
         // If hands are assigned, offset the forward direction based on where the hands are physically held
