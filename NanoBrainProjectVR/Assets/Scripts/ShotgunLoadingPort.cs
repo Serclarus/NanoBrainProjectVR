@@ -32,7 +32,6 @@ public class ShotgunLoadingPort : MonoBehaviour
             if (shotgun.currentAmmo.Value < shotgun.maxAmmoCapacity)
             {
                 // 1. Force the player's hand to let go of the shell to prevent XR warnings
-                XRGrabInteractable grabItem = other.GetComponentInParent<XRGrabInteractable>();
                 if (grabItem != null && grabItem.isSelected)
                 {
                     grabItem.interactionManager.SelectCancel(grabItem.firstInteractorSelecting, grabItem);
