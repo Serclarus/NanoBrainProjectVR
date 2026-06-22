@@ -49,8 +49,8 @@ public class AmmoPouch : MonoBehaviour
     private void InitializePools()
     {
         // Create a hidden parent object to keep the hierarchy extremely clean
+        // We leave this at the ROOT of the scene, otherwise dropped magazines will move with the player!
         Transform poolParent = new GameObject("AmmoPouch_Pool").transform;
-        poolParent.SetParent(transform);
 
         foreach (var config in prewarmedPools)
         {
