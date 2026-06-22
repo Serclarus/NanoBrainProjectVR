@@ -57,7 +57,12 @@ public class VisualSlopeAligner : MonoBehaviour
             
             if (forwardDirection.sqrMagnitude < 0.01f) forwardDirection = transform.parent.forward;
 
-            Quaternion targetRotation = Quaternion.LookRotation(forwardDirection, groundNormal);
+            // Project the heading onto the slope to get the true "Nose" direction (pitched up or down)
+            Vector3 noseDirection = Vector3.ProjectOnPlane(forwardDirection, groundNormal).normalized;
+
+            // By forcing the Up vector to be Vector3.up (instead of groundNormal), 
+            // Unity mathematically eliminates all sideways roll, leaving ONLY the forward/backward pitch!
+            Quaternion targetRotation = Quaternion.LookRotation(noseDirection, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * tiltSpeed);
         }
         else
