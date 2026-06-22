@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 [RequireComponent(typeof(BoxCollider))]
 public class ShotgunLoadingPort : MonoBehaviour
@@ -18,6 +19,15 @@ public class ShotgunLoadingPort : MonoBehaviour
         bool isShell = other.CompareTag(shellTag) || (other.attachedRigidbody != null && other.attachedRigidbody.CompareTag(shellTag));
         if (isShell)
         {
+            XRGrabInteractable grabItem = other.GetComponentInParent<XRGrabInteractable>();
+
+            // If the shell is currently held by a Socket (like the Ammo Pouch), IGNORE IT!
+            // This prevents the shotgun from magically sucking ammo out of the pouch when they touch.
+            if (grabItem != null && grabItem.isSelected && grabItem.firstInteractorSelecting is XRSocketInteractor)
+            {
+                return;
+            }
+
             // Ensure the tube isn't already full
             if (shotgun.currentAmmo.Value < shotgun.maxAmmoCapacity)
             {
