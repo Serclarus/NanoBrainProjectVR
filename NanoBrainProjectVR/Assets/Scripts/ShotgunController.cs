@@ -255,6 +255,34 @@ public class ShotgunController : NetworkBehaviour
         SetSubInteractablesState(false);
 
         currentHoldingInteractor = null;
+
+        // --- NEW: Smart Ammo Pouch Logic for Dropping ---
+        AmmoPouch localPouch = args.interactorObject.transform.root.GetComponentInChildren<AmmoPouch>();
+        if (localPouch != null)
+        {
+            var interactors = args.interactorObject.transform.root.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>();
+            foreach (var interactor in interactors)
+            {
+                if (interactor.hasSelection)
+                {
+                    var grabbedObj = interactor.interactablesSelected[0].transform.gameObject;
+                    
+                    WeaponController wc = grabbedObj.GetComponent<WeaponController>();
+                    if (wc != null && wc.gameObject != this.gameObject && wc.magazinePrefab != null)
+                    {
+                        localPouch.SetMagazinePrefab(wc.magazinePrefab);
+                        break;
+                    }
+                    
+                    ShotgunController sc = grabbedObj.GetComponent<ShotgunController>();
+                    if (sc != null && sc != this && sc.magazinePrefab != null)
+                    {
+                        localPouch.SetMagazinePrefab(sc.magazinePrefab);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private void OnTriggerPulled(ActivateEventArgs args)

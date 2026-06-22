@@ -327,6 +327,34 @@ public class WeaponController : NetworkBehaviour
         currentHoldingInteractor = null;
 
         SetSubInteractablesState(false);
+
+        // --- NEW: Smart Ammo Pouch Logic for Dropping ---
+        AmmoPouch localPouch = args.interactorObject.transform.root.GetComponentInChildren<AmmoPouch>();
+        if (localPouch != null)
+        {
+            var interactors = args.interactorObject.transform.root.GetComponentsInChildren<XRBaseInputInteractor>();
+            foreach (var interactor in interactors)
+            {
+                if (interactor.hasSelection)
+                {
+                    var grabbedObj = interactor.interactablesSelected[0].transform.gameObject;
+                    
+                    WeaponController wc = grabbedObj.GetComponent<WeaponController>();
+                    if (wc != null && wc != this && wc.magazinePrefab != null)
+                    {
+                        localPouch.SetMagazinePrefab(wc.magazinePrefab);
+                        break;
+                    }
+                    
+                    ShotgunController sc = grabbedObj.GetComponent<ShotgunController>();
+                    if (sc != null && sc.gameObject != this.gameObject && sc.magazinePrefab != null)
+                    {
+                        localPouch.SetMagazinePrefab(sc.magazinePrefab);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private void OnMagazineInserted(SelectEnterEventArgs args)
