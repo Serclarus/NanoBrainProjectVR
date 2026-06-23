@@ -26,8 +26,8 @@ public class BoarAI : MonoBehaviour
     public float walkSpeed = 2f;
     [Tooltip("How fast the boar runs when scared")]
     public float runSpeed = 6f;
-    [Tooltip("How fast the boar runs when injured (bleeding out)")]
-    public float injuredRunSpeed = 3.5f;
+    //[Tooltip("How fast the boar runs when injured (bleeding out)")]
+    //public float injuredRunSpeed = 3.5f;
 
     private bool wasShot = false; // Tracks if the boar was damaged
     [Header("Health Integration")]
@@ -137,7 +137,7 @@ public class BoarAI : MonoBehaviour
         if (currentState == BoarState.Dead || currentState == BoarState.Flee || playerTransform == null) return;
 
         float dist = Vector3.Distance(transform.position, playerTransform.position);
-        if (dist <= hearingRadius)
+        if (dist <= detectionRadius)
         {
             ChangeState(BoarState.Flee);
         }

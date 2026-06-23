@@ -708,7 +708,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &103581072772281245
 Transform:
   m_ObjectHideFlags: 0
@@ -1261,7 +1261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2402539020
+  GlobalObjectIdHash: 625175394
   InScenePlacedSourceGlobalObjectIdHash: 625175394
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1301,9 +1301,9 @@ MonoBehaviour:
   shellEjectionForce: 3
   shellTorque: 1
   tier1_Shots1to3:
-    pitchRange: {x: 1, y: 2}
-    yawRange: {x: -0.2, y: 0.2}
-    rollRange: {x: -0.2, y: 0.2}
+    pitchRange: {x: 1.5, y: 2.2}
+    yawRange: {x: -0.1, y: 0.1}
+    rollRange: {x: -0.1, y: 0.1}
     backwardKick: 0.06
   tier2_Shots4to8:
     pitchRange: {x: 2, y: 4}
@@ -1327,7 +1327,7 @@ MonoBehaviour:
     type: 3}
   hitMask:
     serializedVersion: 2
-    m_Bits: 47283
+    m_Bits: 112819
   barrelPoint: {fileID: 4146045134738490839}
   weaponDamage: 50
   penetrationDepth: 0.5

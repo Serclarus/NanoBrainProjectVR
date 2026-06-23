@@ -156,18 +156,33 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
         type: 3}
+      propertyPath: looping
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
+      propertyPath: lengthInSec
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
       propertyPath: InitialModule.startSize.minScalar
       value: 0.24
       objectReference: {fileID: 0}
     - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
         type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 5
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
         type: 3}
       propertyPath: EmissionModule.rateOverTime.minMaxState
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4362116371752119908, guid: e9c83e9a0a8369e448fc041e44e27e79,
+        type: 3}
+      propertyPath: InitialModule.randomizeRotationDirection
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4478329714868143470, guid: e9c83e9a0a8369e448fc041e44e27e79,
         type: 3}

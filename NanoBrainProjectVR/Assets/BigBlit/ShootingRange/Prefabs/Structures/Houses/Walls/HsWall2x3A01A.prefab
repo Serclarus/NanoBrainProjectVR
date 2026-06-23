@@ -1,23 +1,11 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!65 &893738649812396246
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3502349244915126973}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 2, y: 3, z: 0.099999994}
-  m_Center: {x: 1, y: 1.5, z: -0.049999997}
 --- !u!1001 &4349265325268348908
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
@@ -28,32 +16,32 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.21998432
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.000000230968
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 4.04
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: -0.7071042
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: -0.70710945
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
@@ -68,7 +56,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -270
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a6b11cc6f53e7134d8ec207a89e05e09,
         type: 3}
@@ -91,6 +79,17 @@ PrefabInstance:
       value: 95
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a6b11cc6f53e7134d8ec207a89e05e09,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 893738649812396246}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a6b11cc6f53e7134d8ec207a89e05e09,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2412977485074448534}
   m_SourcePrefab: {fileID: 100100000, guid: a6b11cc6f53e7134d8ec207a89e05e09, type: 3}
 --- !u!1 &3502349244915126973 stripped
 GameObject:
@@ -98,3 +97,43 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 4349265325268348908}
   m_PrefabAsset: {fileID: 0}
+--- !u!65 &893738649812396246
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3502349244915126973}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 3, z: 0.099999994}
+  m_Center: {x: 1, y: 1.5, z: -0.049999997}
+--- !u!114 &2412977485074448534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3502349244915126973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66ef0c4fb84955f46b504ce8a136f4d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HittableSurface
+  surfaceType: 0
+  pointsAwarded: 0
+  scoreMap: {fileID: 0}
+  colorMappings: []
+  onHitEvent:
+    m_PersistentCalls:
+      m_Calls: []
