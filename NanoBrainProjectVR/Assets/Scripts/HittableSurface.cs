@@ -8,7 +8,8 @@ public enum SurfaceType
     Concrete,
     Dirt,
     Flesh,
-    Wood
+    Wood,
+    Brick
 }
 
 // This script merged both what a surface is, and what happens when it gets shot.
