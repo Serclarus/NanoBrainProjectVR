@@ -263,4 +263,38 @@ public class BoarHuntingManager : MonoBehaviour
 
         foreach (var btn in buttons) btn.interactable = true;
     }
+
+    // --- UI Button Methods ---
+    
+    public void RestartLevel()
+    {
+#if ENABLE_INPUT_SYSTEM
+        UnityEngine.XR.Interaction.Toolkit.ActionBasedContinuousMoveProvider moveProvider = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.ActionBasedContinuousMoveProvider>();
+        if (moveProvider != null)
+        {
+            moveProvider.enabled = true;
+        }
+#endif
+
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.FadeToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
+    }
+
+    public void ReturnToHub(string hubSceneName)
+    {
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.FadeToScene(hubSceneName);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(hubSceneName);
+        }
+    }
 }

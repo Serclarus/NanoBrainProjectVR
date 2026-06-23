@@ -176,11 +176,25 @@ public class TrainingGroundsManager : MonoBehaviour
             provider.enabled = true;
         }
 
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.FadeToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
     }
 
     public void ReturnToHub(string hubSceneName)
     {
-        UnityEngine.SceneManagement.SceneManager.LoadScene(hubSceneName);
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.FadeToScene(hubSceneName);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(hubSceneName);
+        }
     }
 }
