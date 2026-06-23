@@ -140,8 +140,8 @@ public class WeaponSlide : MonoBehaviour
             }
             else
             {
-                // If it's NOT locked back, they must pull it almost all the way to rack it!
-                if (!hasRackedThisPull && clampedPull >= rackDistance * 0.9f)
+                // If it's NOT locked back, they must pull it all the way to rack it!
+                if (!hasRackedThisPull && clampedPull >= rackDistance)
                 {
                     hasRackedThisPull = true;
                     weapon.RackSlide();

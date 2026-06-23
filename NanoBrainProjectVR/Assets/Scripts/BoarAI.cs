@@ -20,11 +20,16 @@ public class BoarAI : MonoBehaviour
     public Transform playerTransform;
     [Tooltip("How close the player needs to be before the boar runs away.")]
     public float detectionRadius = 15f;
-    [Tooltip("How far the boar tries to run when escaping.")]
-    public float fleeDistance = 30f;
-    [Tooltip("If the player shoots a gun within this radius, the boar will hear it and flee.")]
-    public float hearingRadius = 50f;
+    [Tooltip("How far the boar tries to run away at once")]
+    public float fleeDistance = 20f;
+    [Tooltip("How fast the boar walks")]
+    public float walkSpeed = 2f;
+    [Tooltip("How fast the boar runs when scared")]
+    public float runSpeed = 6f;
+    [Tooltip("How fast the boar runs when injured (bleeding out)")]
+    public float injuredRunSpeed = 3.5f;
 
+    private bool wasShot = false; // Tracks if the boar was damaged
     [Header("Health Integration")]
     public AnimalHealth healthScript;
     [Tooltip("Health percentage (0.0 to 1.0) at which the boar gets injured and slows down.")]
@@ -224,8 +229,8 @@ public class BoarAI : MonoBehaviour
         {
             ChangeState(BoarState.Flee);
         }
-        // If we ran far enough away, go back to wandering
-        else if (dist > detectionRadius * 1.5f && currentState == BoarState.Flee && !agent.pathPending && agent.remainingDistance < 2f)
+        // If we ran far enough away, go back to wandering (BUT ONLY if we were just spooked, NOT if we were shot!)
+        else if (!wasShot && dist > detectionRadius * 1.5f && currentState == BoarState.Flee && !agent.pathPending && agent.remainingDistance < 2f)
         {
             ChangeState(BoarState.Wander);
         }
@@ -270,8 +275,9 @@ public class BoarAI : MonoBehaviour
 
         fleeRecalculateTimer -= Time.deltaTime;
 
-        // Continuously update the flee target away from the player, but zig-zag randomly!
-        if (playerTransform != null && fleeRecalculateTimer <= 0f)
+        // Continuously update the flee target away from the player
+        // If the timer expires OR we reach our destination early, immediately pick a new spot so we never stop running!
+        if (playerTransform != null && (fleeRecalculateTimer <= 0f || (!agent.pathPending && agent.remainingDistance < 1f)))
         {
             fleeRecalculateTimer = Random.Range(1.5f, 3.0f); // Change direction every 1.5 to 3 seconds
 
@@ -390,6 +396,8 @@ public class BoarAI : MonoBehaviour
 
     public void OnDamaged()
     {
+        wasShot = true;
+
         // If we get shot (even from far away), instantly start running away!
         if (currentState != BoarState.Flee && currentState != BoarState.Dead)
         {
