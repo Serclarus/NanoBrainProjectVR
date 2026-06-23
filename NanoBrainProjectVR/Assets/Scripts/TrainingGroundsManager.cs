@@ -137,7 +137,32 @@ public class TrainingGroundsManager : MonoBehaviour
             {
                 accuracyText.text = string.Format("%{0:0}", accuracy);
             }
+
+            StartCoroutine(FadeInAndEnableButtons(victoryCanvas, 1f));
         }
+    }
+
+    private System.Collections.IEnumerator FadeInAndEnableButtons(GameObject canvasObj, float duration)
+    {
+        CanvasGroup cg = canvasObj.GetComponent<CanvasGroup>();
+        if (cg == null) cg = canvasObj.AddComponent<CanvasGroup>();
+        
+        UnityEngine.UI.Button[] buttons = canvasObj.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+        foreach (var btn in buttons) btn.interactable = false;
+
+        cg.alpha = 0f;
+        float time = 0;
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            cg.alpha = Mathf.Lerp(0f, 1f, time / duration);
+            yield return null;
+        }
+        cg.alpha = 1f;
+
+        yield return new WaitForSeconds(1f);
+
+        foreach (var btn in buttons) btn.interactable = true;
     }
 
     // --- UI Button Methods ---
