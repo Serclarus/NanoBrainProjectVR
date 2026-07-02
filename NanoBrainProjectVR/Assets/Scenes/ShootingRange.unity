@@ -891,7 +891,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &76454555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30648,7 +30648,9 @@ MonoBehaviour:
   - {fileID: 1959339390}
   - {fileID: 1352540885}
   statusText: {fileID: 622146613}
-  startButtonText: {fileID: 893085004}
+  startButtonTexts:
+  - {fileID: 893085004}
+  - {fileID: 1285169030}
   rangeLights:
   - {fileID: 0}
   - {fileID: 889585162}

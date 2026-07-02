@@ -28,6 +28,8 @@ public class PhysicalTouchButton : MonoBehaviour
     public Color connectedColor = new Color(0f, 2f, 0f, 1f); // HDR Green
 
     [Header("Visual Feedback (Optional)")]
+    [Tooltip("Enable this ONLY if this is the multiplayer connect button to show network colors.")]
+    public bool useNetworkColors = false;
     [Tooltip("Assign a TextMeshPro component (3D or UI) to change its color during connection")]
     public TMP_Text buttonText;
     private Color originalFaceColor;
@@ -37,7 +39,7 @@ public class PhysicalTouchButton : MonoBehaviour
 
     private void Start()
     {
-        if (buttonText != null)
+        if (buttonText != null && useNetworkColors)
         {
             // Save the original Face Color of the material, not the vertex color!
             originalFaceColor = buttonText.fontMaterial.GetColor(ShaderUtilities.ID_FaceColor);
@@ -49,7 +51,7 @@ public class PhysicalTouchButton : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (buttonText != null)
+        if (buttonText != null && useNetworkColors)
         {
             XRINetworkGameManager.CurrentConnectionState.Unsubscribe(OnConnectionStateChanged);
         }
@@ -98,14 +100,17 @@ public class PhysicalTouchButton : MonoBehaviour
             lastPressTime = Time.time;
             wasTouched = true; // Mark this specific button as the one that was pressed
             
-            // If the state is currently 'None' or 'Authenticated' (idle), pre-emptively turn it to the connecting color so it reacts instantly to the touch
-            if (buttonText != null && 
-               (XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None || 
-                XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.Authenticated))
+            if (useNetworkColors)
             {
-                Debug.Log("[ColorDebug] Preemptively turning FaceColor to Connecting!");
-                buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, connectingColor);
-                buttonText.UpdateMeshPadding();
+                // If the state is currently 'None' or 'Authenticated' (idle), pre-emptively turn it to the connecting color so it reacts instantly to the touch
+                if (buttonText != null && 
+                   (XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.None || 
+                    XRINetworkGameManager.CurrentConnectionState.Value == XRINetworkGameManager.ConnectionState.Authenticated))
+                {
+                    Debug.Log("[ColorDebug] Preemptively turning FaceColor to Connecting!");
+                    buttonText.fontMaterial.SetColor(ShaderUtilities.ID_FaceColor, connectingColor);
+                    buttonText.UpdateMeshPadding();
+                }
             }
 
             onButtonTouch.Invoke();

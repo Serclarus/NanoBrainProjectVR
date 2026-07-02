@@ -27,9 +27,10 @@ public class ShootingRangeManager : MonoBehaviour
     [Tooltip("Optional: Text element to display the timer.")]
     public TMP_Text statusText;
 
-    [Header("Start Button")]
-    [Tooltip("The TextMeshPro on the physical start button to update (Start, 3, 2, 1, Running...)")]
-    public TMP_Text startButtonText;
+    [Header("Start Buttons")]
+    [Tooltip("The TextMeshPro on the physical start buttons to update (Start, 3, 2, 1, Running...)")]
+    public TMP_Text[] startButtonTexts;
+    private Color originalTextColor = Color.white;
 
     [Header("Lighting Feedback")]
     [Tooltip("Lights to change color based on game state.")]
@@ -96,6 +97,11 @@ public class ShootingRangeManager : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
+        }
+
+        if (startButtonTexts != null && startButtonTexts.Length > 0 && startButtonTexts[0] != null)
+        {
+            originalTextColor = startButtonTexts[0].color;
         }
 
         SetLightsColor(idleLightColor);
@@ -177,15 +183,24 @@ public class ShootingRangeManager : MonoBehaviour
                 PlayCountdownTick();
             }
 
-            if (startButtonText != null)
+            if (startButtonTexts != null)
             {
-                startButtonText.text = currentCount.ToString();
+                foreach (var text in startButtonTexts)
+                {
+                    if (text != null) text.text = currentCount.ToString();
+                }
             }
 
             if (countdownTimer <= 0f)
             {
                 isCountingDown = false;
-                if (startButtonText != null) startButtonText.text = "Running...";
+                if (startButtonTexts != null)
+                {
+                    foreach (var text in startButtonTexts)
+                    {
+                        if (text != null) text.text = "Running...";
+                    }
+                }
                 BeginActualGame();
             }
             return;
@@ -389,9 +404,16 @@ public class ShootingRangeManager : MonoBehaviour
         isGameActive = false;
         isShootingAllowed = false;
         
-        if (startButtonText != null)
+        if (startButtonTexts != null)
         {
-            startButtonText.text = "Start";
+            foreach (var text in startButtonTexts)
+            {
+                if (text != null)
+                {
+                    text.text = "Start";
+                    text.color = originalTextColor;
+                }
+            }
         }
 
         SetLightsColor(idleLightColor);

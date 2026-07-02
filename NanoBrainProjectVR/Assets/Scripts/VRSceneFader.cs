@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Unity.Netcode;
 
 public class VRSceneFader : MonoBehaviour
 {
@@ -83,7 +84,14 @@ public class VRSceneFader : MonoBehaviour
         yield return StartCoroutine(FadeRoutine(0f, 1f, fadeToBlackDuration));
         
         // 2. ONLY once it is perfectly pitch black, load the next scene!
-        SceneManager.LoadScene(sceneName);
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+        else
+        {
+            SceneManager.LoadScene(sceneName);
+        }
     }
 
     /// <summary>
