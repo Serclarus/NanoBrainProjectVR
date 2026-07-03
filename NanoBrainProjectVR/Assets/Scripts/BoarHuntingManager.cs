@@ -15,6 +15,8 @@ public class BoarHuntingManager : MonoBehaviour
 
     [Header("UI Settings")]
     public Canvas endGameCanvas;
+    [Tooltip("How far in front of the player the End Game UI should appear")]
+    public float endGameUIDistance = 0.4f;
     public TMP_Text huntedText;
     public TMP_Text timeText;
     public TMP_Text accuracyText;
@@ -221,7 +223,7 @@ public class BoarHuntingManager : MonoBehaviour
                 flatForward.y = 0;
                 flatForward.Normalize();
                 
-                endGameCanvas.transform.position = mainCamera.transform.position + flatForward * 0.4f;
+                endGameCanvas.transform.position = mainCamera.transform.position + flatForward * endGameUIDistance;
                 endGameCanvas.transform.position = new Vector3(endGameCanvas.transform.position.x, mainCamera.transform.position.y, endGameCanvas.transform.position.z);
                 
                 endGameCanvas.transform.rotation = Quaternion.LookRotation(endGameCanvas.transform.position - mainCamera.transform.position);
@@ -265,6 +267,10 @@ public class BoarHuntingManager : MonoBehaviour
         
         UnityEngine.UI.Button[] buttons = canvasObj.GetComponentsInChildren<UnityEngine.UI.Button>(true);
         foreach (var btn in buttons) btn.interactable = false;
+        
+        // Disable physical VR colliders so hands don't instantly poke them!
+        Collider[] colliders = canvasObj.GetComponentsInChildren<Collider>(true);
+        foreach (var col in colliders) col.enabled = false;
 
         cg.alpha = 0f;
         float time = 0;
@@ -276,9 +282,11 @@ public class BoarHuntingManager : MonoBehaviour
         }
         cg.alpha = 1f;
 
-        yield return new WaitForSeconds(1f);
+        // Wait an extra 1.5 seconds before letting them click anything
+        yield return new WaitForSeconds(1.5f);
 
         foreach (var btn in buttons) btn.interactable = true;
+        foreach (var col in colliders) col.enabled = true;
     }
 
     // --- UI Button Methods ---

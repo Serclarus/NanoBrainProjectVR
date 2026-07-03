@@ -11,6 +11,8 @@ public class TrainingGroundsManager : MonoBehaviour
     [Header("UI Configuration")]
     [Tooltip("The parent canvas object for the victory screen")]
     public GameObject victoryCanvas;
+    [Tooltip("How far in front of the player the Victory UI should appear")]
+    public float victoryUIDistance = 0.7f;
     public TMP_Text timeText;
     public TMP_Text accuracyText;
     
@@ -115,7 +117,7 @@ public class TrainingGroundsManager : MonoBehaviour
             {
                 Transform head = Camera.main.transform;
                 // Place it in front of the face, but keep it level with the horizon so it's not tilted weirdly
-                Vector3 spawnPos = head.position + (head.forward * 0.7f);
+                Vector3 spawnPos = head.position + (head.forward * victoryUIDistance);
                 spawnPos.y = head.position.y; 
                 
                 victoryCanvas.transform.position = spawnPos;
@@ -149,6 +151,10 @@ public class TrainingGroundsManager : MonoBehaviour
         
         UnityEngine.UI.Button[] buttons = canvasObj.GetComponentsInChildren<UnityEngine.UI.Button>(true);
         foreach (var btn in buttons) btn.interactable = false;
+        
+        // Disable physical VR colliders so hands don't instantly poke them!
+        Collider[] colliders = canvasObj.GetComponentsInChildren<Collider>(true);
+        foreach (var col in colliders) col.enabled = false;
 
         cg.alpha = 0f;
         float time = 0;
@@ -160,9 +166,11 @@ public class TrainingGroundsManager : MonoBehaviour
         }
         cg.alpha = 1f;
 
-        yield return new WaitForSeconds(1f);
+        // Wait an extra 1.5 seconds before letting them click anything
+        yield return new WaitForSeconds(1.5f);
 
         foreach (var btn in buttons) btn.interactable = true;
+        foreach (var col in colliders) col.enabled = true;
     }
 
     // --- UI Button Methods ---
