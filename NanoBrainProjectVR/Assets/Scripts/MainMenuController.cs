@@ -31,7 +31,8 @@ public class MainMenuController : MonoBehaviour
     // Optional: An object that gets toggled when a preview is active
     private GameObject currentlyLinkedToggleObject;
 
-    private bool hasDisabledLocomotion = false;
+    private LocomotionProvider[] cachedProviders;
+    private CharacterController[] cachedControllers;
 
     private void Start()
     {
@@ -45,19 +46,32 @@ public class MainMenuController : MonoBehaviour
 
     private void Update()
     {
-        // Network Managers often spawn the player a split-second after the scene loads.
-        // We wait in Update until we actually find the player, and then instantly disable their movement!
-        if (!hasDisabledLocomotion)
+        // Keep searching until we actually find the player's movement scripts
+        if (cachedProviders == null || cachedProviders.Length == 0)
         {
-            var locomotionProviders = FindObjectsOfType<LocomotionProvider>();
-            if (locomotionProviders.Length > 0)
+            cachedProviders = FindObjectsOfType<LocomotionProvider>();
+        }
+        
+        if (cachedControllers == null || cachedControllers.Length == 0)
+        {
+            cachedControllers = FindObjectsOfType<CharacterController>();
+        }
+        
+        // Once found, RELENTLESSLY keep them disabled every single frame!
+        if (cachedProviders != null)
+        {
+            foreach (var provider in cachedProviders)
             {
-                foreach (var provider in locomotionProviders)
-                {
-                    provider.enabled = false;
-                }
-                hasDisabledLocomotion = true;
-                Debug.Log("[MainMenuController] Successfully disabled player movement!");
+                if (provider != null && provider.enabled) provider.enabled = false;
+            }
+        }
+        
+        // Also aggressively disable the CharacterController to physically paralyze the player's collision body!
+        if (cachedControllers != null)
+        {
+            foreach (var controller in cachedControllers)
+            {
+                if (controller != null && controller.enabled) controller.enabled = false;
             }
         }
     }
