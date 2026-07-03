@@ -31,6 +31,8 @@ public class MainMenuController : MonoBehaviour
     // Optional: An object that gets toggled when a preview is active
     private GameObject currentlyLinkedToggleObject;
 
+    private bool hasDisabledLocomotion = false;
+
     private void Start()
     {
         // Start the menu with the blank default skybox
@@ -39,12 +41,24 @@ public class MainMenuController : MonoBehaviour
             RenderSettings.skybox = defaultSkybox;
             DynamicGI.UpdateEnvironment(); // Force lighting to update to the new skybox
         }
+    }
 
-        // Disable all movement in the Main Menu so the player can't walk away from the UI!
-        var locomotionProviders = FindObjectsOfType<LocomotionProvider>(true);
-        foreach (var provider in locomotionProviders)
+    private void Update()
+    {
+        // Network Managers often spawn the player a split-second after the scene loads.
+        // We wait in Update until we actually find the player, and then instantly disable their movement!
+        if (!hasDisabledLocomotion)
         {
-            provider.enabled = false;
+            var locomotionProviders = FindObjectsOfType<LocomotionProvider>();
+            if (locomotionProviders.Length > 0)
+            {
+                foreach (var provider in locomotionProviders)
+                {
+                    provider.enabled = false;
+                }
+                hasDisabledLocomotion = true;
+                Debug.Log("[MainMenuController] Successfully disabled player movement!");
+            }
         }
     }
 
