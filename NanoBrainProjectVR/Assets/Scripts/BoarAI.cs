@@ -41,6 +41,8 @@ public class BoarAI : MonoBehaviour
     public string wanderAreaName = "Hover";
     [Tooltip("The exact name of the NavMesh area to use when fleeing")]
     public string fleeAreaName = "Flee";
+    [Tooltip("The exact name of the NavMesh area to use to get close to the player")]
+    public string closeAreaName = "CloseToPlayer";
 
     [Header("Animation States")]
     public Animator animator;
@@ -70,6 +72,9 @@ public class BoarAI : MonoBehaviour
 
     private int wanderAreaMask;
     private int fleeAreaMask;
+    private int closeAreaMask;
+    
+    private int wanderPathCount = 0;
     
     private Collider[] cachedFleeZones;
 
@@ -93,9 +98,11 @@ public class BoarAI : MonoBehaviour
         // Convert the string names into integer bitmasks that Unity's NavMesh system understands
         int wanderLayer = NavMesh.GetAreaFromName(wanderAreaName);
         int fleeLayer = NavMesh.GetAreaFromName(fleeAreaName);
+        int closeLayer = NavMesh.GetAreaFromName(closeAreaName);
         
         wanderAreaMask = (wanderLayer != -1) ? (1 << wanderLayer) : NavMesh.AllAreas;
         fleeAreaMask = (fleeLayer != -1) ? (1 << fleeLayer) : NavMesh.AllAreas;
+        closeAreaMask = (closeLayer != -1) ? (1 << closeLayer) : NavMesh.AllAreas;
 
         if (healthScript != null)
         {
@@ -256,10 +263,20 @@ public class BoarAI : MonoBehaviour
     }
 
     private float fleeRecalculateTimer = 0f;
+    private float totalFleeTime = 0f;
 
     private void UpdateFlee()
     {
+        totalFleeTime += Time.deltaTime;
+
         // Manually check if inside a FleeZone (Works even if the Boar doesn't have a Rigidbody!)
+        // ALSO check if it has been fleeing for more than 12 seconds, so they don't get stuck forever
+        if (totalFleeTime > 12f)
+        {
+            StartCoroutine(FadeOutAndDestroy());
+            return;
+        }
+
         if (cachedFleeZones != null)
         {
             foreach (var col in cachedFleeZones)
@@ -313,15 +330,35 @@ public class BoarAI : MonoBehaviour
             agent.isStopped = false;
             agent.speed = wanderSpeed;
             
+            wanderPathCount++;
+            
+            // Determine which mask to use for this wander path
+            int currentMask = wanderAreaMask;
+            
+            // Every 3rd path, try to use the CloseToPlayer area!
+            if (wanderPathCount >= 3)
+            {
+                currentMask = closeAreaMask;
+                wanderPathCount = 0; // Reset counter
+            }
+            
             // Pick a random point within the Wander Radius
             Vector3 randomDir = Random.insideUnitSphere * wanderRadius;
             randomDir += transform.position;
             NavMeshHit hit;
             
-            // Strictly enforce that the wander point is inside the Wander Area Mask!
-            if (NavMesh.SamplePosition(randomDir, out hit, wanderRadius, wanderAreaMask))
+            // Enforce that the wander point is inside the chosen Mask
+            if (NavMesh.SamplePosition(randomDir, out hit, wanderRadius, currentMask))
             {
                 agent.SetDestination(hit.position);
+            }
+            else if (currentMask == closeAreaMask)
+            {
+                // If it couldn't find a CloseToPlayer spot nearby, fallback to normal wandering
+                if (NavMesh.SamplePosition(randomDir, out hit, wanderRadius, wanderAreaMask))
+                {
+                    agent.SetDestination(hit.position);
+                }
             }
         }
         else if (newState == BoarState.Flee)
@@ -330,6 +367,7 @@ public class BoarAI : MonoBehaviour
             // Use injured speed if health is low, otherwise normal run speed
             agent.speed = isInjured ? injuredRunSpeed : normalRunSpeed;
             fleeRecalculateTimer = 0f; // Force immediate path calculation!
+            totalFleeTime = 0f; // Reset flee timer
             UpdateFlee();
         }
     }
