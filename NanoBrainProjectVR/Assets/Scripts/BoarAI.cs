@@ -499,11 +499,11 @@ public class BoarAI : MonoBehaviour
         BoarHuntingManager manager = FindObjectOfType<BoarHuntingManager>();
         if (manager != null)
         {
-            manager.OnBoarFled();
+            manager.OnBoarFled(gameObject);
         }
         else
         {
-            SendMessageUpwards("OnBoarFled", SendMessageOptions.DontRequireReceiver);
+            SendMessageUpwards("OnBoarFled", gameObject, SendMessageOptions.DontRequireReceiver);
         }
         
         Renderer[] renderers = GetComponentsInChildren<Renderer>();

@@ -125,12 +125,16 @@ public class BoarHuntingManager : MonoBehaviour
         }
     }
 
-    public void OnBoarFled()
+    public void OnBoarFled(GameObject fledBoar)
     {
         // Called via SendMessageUpwards from BoarAI
         if (gameEnded) return;
         fledBoars++;
-        // The boar will destroy itself, so we just remove nulls in the routine
+        // Instantly remove the boar from the active list so the spawner knows it is gone immediately!
+        if (fledBoar != null)
+        {
+            activeBoars.Remove(fledBoar);
+        }
         CheckEndCondition();
     }
 
