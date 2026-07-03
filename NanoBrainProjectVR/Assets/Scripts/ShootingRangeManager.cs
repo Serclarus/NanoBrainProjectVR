@@ -402,7 +402,7 @@ public class ShootingRangeManager : MonoBehaviour
     private void EndGame()
     {
         isGameActive = false;
-        isShootingAllowed = false;
+        isShootingAllowed = true; // Always allow shooting!
         
         if (startButtonTexts != null)
         {

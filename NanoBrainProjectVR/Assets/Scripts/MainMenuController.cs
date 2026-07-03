@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro; // Needed for changing button text
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -37,6 +38,13 @@ public class MainMenuController : MonoBehaviour
         {
             RenderSettings.skybox = defaultSkybox;
             DynamicGI.UpdateEnvironment(); // Force lighting to update to the new skybox
+        }
+
+        // Disable all movement in the Main Menu so the player can't walk away from the UI!
+        var locomotionProviders = FindObjectsOfType<LocomotionProvider>(true);
+        foreach (var provider in locomotionProviders)
+        {
+            provider.enabled = false;
         }
     }
 

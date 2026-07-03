@@ -10,6 +10,26 @@ public class SnapToGround : MonoBehaviour
 
     private void Awake()
     {
+        Snap();
+    }
+
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        Snap();
+    }
+
+    private void Snap()
+    {
         // Start the raycast slightly above the player's current position to ensure we don't start inside the floor
         Vector3 startPos = transform.position + Vector3.up * 2f;
         
