@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6359583399226072581}
   - component: {fileID: 8065415857504276896}
   - component: {fileID: 5191220681413010794}
+  - component: {fileID: -4532981887020371122}
   m_Layer: 0
   m_Name: M_Realistic21_9
   m_TagString: Untagged
@@ -91,3 +92,26 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &-4532981887020371122
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5983621188396975295}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.3737653
+  m_Height: 5.9971147
+  m_Direction: 1
+  m_Center: {x: 0.004108548, y: 2.9985573, z: 0.06813452}
