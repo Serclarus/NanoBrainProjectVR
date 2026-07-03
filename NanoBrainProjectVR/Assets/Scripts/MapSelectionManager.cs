@@ -86,6 +86,22 @@ public class MapSelectionManager : MonoBehaviour
     private void Update()
     {
         // Keyboard shortcuts have been moved to OperatorControls.cs
+
+        // Disable all movement in the Main Menu so the player can't walk away from the UI!
+        // We must search the entire scene every frame to catch dynamically spawned Network Players
+        // or offline dummy objects.
+        var providers = FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>();
+        foreach (var provider in providers)
+        {
+            if (provider != null && provider.enabled) provider.enabled = false;
+        }
+        
+        // Aggressively paralyze the physical collision capsule so movement is absolutely impossible
+        var controllers = FindObjectsOfType<CharacterController>();
+        foreach (var controller in controllers)
+        {
+            if (controller != null && controller.enabled) controller.enabled = false;
+        }
     }
 
     private float lastSwapTime = -10f;

@@ -31,9 +31,6 @@ public class MainMenuController : MonoBehaviour
     // Optional: An object that gets toggled when a preview is active
     private GameObject currentlyLinkedToggleObject;
 
-    private LocomotionProvider[] cachedProviders;
-    private CharacterController[] cachedControllers;
-
     private void Start()
     {
         // Start the menu with the blank default skybox
@@ -46,33 +43,19 @@ public class MainMenuController : MonoBehaviour
 
     private void Update()
     {
-        // Keep searching until we actually find the player's movement scripts
-        if (cachedProviders == null || cachedProviders.Length == 0)
+        // Do NOT cache the result! If a dummy player exists in the scene, the cache will latch onto the dummy
+        // and completely ignore the real player when they spawn! We must search the entire scene every frame!
+        
+        var providers = FindObjectsOfType<LocomotionProvider>();
+        foreach (var provider in providers)
         {
-            cachedProviders = FindObjectsOfType<LocomotionProvider>();
+            if (provider != null && provider.enabled) provider.enabled = false;
         }
         
-        if (cachedControllers == null || cachedControllers.Length == 0)
+        var controllers = FindObjectsOfType<CharacterController>();
+        foreach (var controller in controllers)
         {
-            cachedControllers = FindObjectsOfType<CharacterController>();
-        }
-        
-        // Once found, RELENTLESSLY keep them disabled every single frame!
-        if (cachedProviders != null)
-        {
-            foreach (var provider in cachedProviders)
-            {
-                if (provider != null && provider.enabled) provider.enabled = false;
-            }
-        }
-        
-        // Also aggressively disable the CharacterController to physically paralyze the player's collision body!
-        if (cachedControllers != null)
-        {
-            foreach (var controller in cachedControllers)
-            {
-                if (controller != null && controller.enabled) controller.enabled = false;
-            }
+            if (controller != null && controller.enabled) controller.enabled = false;
         }
     }
 
