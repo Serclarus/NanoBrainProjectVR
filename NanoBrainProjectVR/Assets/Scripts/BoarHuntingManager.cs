@@ -63,21 +63,35 @@ public class BoarHuntingManager : MonoBehaviour
 
     private IEnumerator SpawnRoutine()
     {
+        maxBoarsPerSession = 5;
+        
         // 1. Wait 15 seconds, then spawn the 3rd boar unconditionally
         yield return new WaitForSeconds(15f);
-        SpawnBoar();
-
-        // 2. Keep checking if only 1 boar is left
-        while (totalSpawned < maxBoarsPerSession)
+        
+        // Only spawn the 15-second boar if we haven't already hit the limit
+        if (huntedBoars + fledBoars + activeBoars.Count < maxBoarsPerSession)
         {
-            // Clean up list in case boars were destroyed unexpectedly
-            activeBoars.RemoveAll(b => b == null);
+            SpawnBoar();
+        }
 
+        // 2. Keep checking if we need to spawn more
+        while (true)
+        {
+            // Clean up list just in case
+            activeBoars.RemoveAll(b => b == null);
+            
+            if (huntedBoars + fledBoars >= maxBoarsPerSession)
+            {
+                break; // Game is over!
+            }
+
+            // If there's 1 or 0 boars on the map, spawn a new one to replace it
             if (activeBoars.Count <= 1)
             {
-                // Wait 7 seconds before spawning new one
                 yield return new WaitForSeconds(7f);
-                if (totalSpawned < maxBoarsPerSession)
+                
+                // Bulletproof check: If the total number of boars (dead + fled + currently alive) is less than 5, spawn a new one!
+                if (huntedBoars + fledBoars + activeBoars.Count < maxBoarsPerSession)
                 {
                     SpawnBoar();
                 }
@@ -88,7 +102,6 @@ public class BoarHuntingManager : MonoBehaviour
 
     private void SpawnBoar()
     {
-        if (totalSpawned >= maxBoarsPerSession) return;
         if (boarPrefab == null || spawnPoints.Length == 0) return;
 
         Transform chosenPoint = GetBestSpawnPoint();
