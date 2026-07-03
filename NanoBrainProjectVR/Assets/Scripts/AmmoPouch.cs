@@ -89,9 +89,10 @@ public class AmmoPouch : MonoBehaviour
         for (int i = 0; i < checkCount; i++)
         {
             GameObject candidate = ammoPools[prefab].Dequeue();
-            ammoPools[prefab].Enqueue(candidate); // Keep the circle going
 
-            if (candidate == null) continue;
+            if (candidate == null) continue; // Optimize: Do NOT put destroyed/null objects back in the queue!
+            
+            ammoPools[prefab].Enqueue(candidate); // Keep the circle going
 
             XRGrabInteractable grab = candidate.GetComponent<XRGrabInteractable>();
             
@@ -119,9 +120,16 @@ public class AmmoPouch : MonoBehaviour
         Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = false;
+            rb.isKinematic = true; // FORCE kinematic so it doesn't explode in physics calculations before socket grabs it!
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+        }
+
+        // REFILL the magazine so the player doesn't pull out an empty one!
+        Magazine mag = ammoInstance.GetComponent<Magazine>();
+        if (mag != null)
+        {
+            mag.Refill();
         }
 
         ammoInstance.SetActive(true);

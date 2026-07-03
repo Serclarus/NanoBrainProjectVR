@@ -137,16 +137,21 @@ public class Magazine : NetworkBehaviour
     private IEnumerator DespawnRoutine()
     {
         yield return new WaitForSeconds(despawnDelay);
+        
         if (IsSpawned)
         {
             if (IsOwner)
             {
+                // If it was legitimately spawned over the network, let the server handle the cleanup
                 RequestDespawnRpc();
             }
         }
         else
         {
-            Destroy(gameObject); // Fallback if not networked yet
+            // PERFECT OBJECT POOLING:
+            // Instead of destroying the local magazine, we just hide it!
+            // It stays in the Ammo Pouch's circular queue, and the pouch will recycle it next time!
+            gameObject.SetActive(false); 
         }
     }
 
@@ -154,6 +159,24 @@ public class Magazine : NetworkBehaviour
     private void RequestDespawnRpc()
     {
         NetworkObject.Despawn();
+    }
+
+    /// <summary>
+    /// Refills the magazine back to full capacity and stops it from despawning!
+    /// </summary>
+    public void Refill()
+    {
+        if (IsSpawned && !IsOwner) return;
+
+        currentAmmo.Value = maxAmmo > 0 ? maxAmmo : initialAmmo;
+        
+        if (despawnCoroutine != null)
+        {
+            StopCoroutine(despawnCoroutine);
+            despawnCoroutine = null;
+        }
+
+        UpdateVisuals();
     }
 
     /// <summary>
