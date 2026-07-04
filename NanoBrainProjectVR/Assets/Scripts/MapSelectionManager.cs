@@ -81,6 +81,21 @@ public class MapSelectionManager : MonoBehaviour
                 listener.buttonIndex = i;
             }
         }
+        
+        // 3. Automatically host a local server so the Operator Dashboard works perfectly out-of-the-box
+        Invoke(nameof(AutoHostLocal), 1f); // Wait 1 second to ensure NetworkManager is fully awake
+    }
+    
+    private void AutoHostLocal()
+    {
+        if (Unity.Netcode.NetworkManager.Singleton != null && !Unity.Netcode.NetworkManager.Singleton.IsListening)
+        {
+            if (XRMultiplayer.XRINetworkGameManager.Instance != null)
+            {
+                Debug.Log("[MapSelectionManager] Auto-joining or hosting Relay Lobby...");
+                XRMultiplayer.XRINetworkGameManager.Instance.QuickJoinLobby();
+            }
+        }
     }
 
     private void Update()

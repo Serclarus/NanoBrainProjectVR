@@ -18,6 +18,7 @@ public class OperatorDashboard : MonoBehaviour
     private Canvas dashboardCanvas;
     private Camera pcCamera;
     private Transform vrTargetHead;
+    private UnityEngine.UI.Text connectionStatusText;
 
     private void Awake()
     {
@@ -27,10 +28,32 @@ public class OperatorDashboard : MonoBehaviour
 
     private void Start()
     {
-        // Only run this system on the server/host (the PC)
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        StartCoroutine(InitializeDashboardRoutine());
+    }
+
+    private IEnumerator InitializeDashboardRoutine()
+    {
+        // Wait a brief moment to ensure XR and Network systems have started
+        yield return new WaitForSeconds(0.5f);
+
+        // Determine if we are running in VR
+        bool isVRActive = false;
+        var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
+        UnityEngine.SubsystemManager.GetInstances(xrDisplays);
+        foreach (var display in xrDisplays)
         {
+            if (display.running) isVRActive = true;
+        }
+
+        // If no VR headset is rendering, we assume this is the PC Operator!
+        if (!isVRActive)
+        {
+            Debug.Log("[OperatorDashboard] No VR headset detected. Starting Operator Dashboard!");
             SetupPCEnvironment();
+        }
+        else
+        {
+            Debug.Log("[OperatorDashboard] VR Headset detected. Operator Dashboard will remain hidden.");
         }
     }
 
@@ -75,6 +98,10 @@ public class OperatorDashboard : MonoBehaviour
         // Add a Title
         CreateText(panelObj.transform, "OPERATOR DASHBOARD", new Vector2(0, 200), 24);
 
+        // Add Connection Status Text
+        connectionStatusText = CreateText(panelObj.transform, "Status: Waiting...", new Vector2(0, 160), 18);
+        connectionStatusText.color = Color.yellow;
+
         // Create Map Loading Buttons
         float yOffset = 100f;
         foreach (string mapName in mapNames)
@@ -84,7 +111,8 @@ public class OperatorDashboard : MonoBehaviour
         }
 
         // Create Game Action Buttons
-        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 40f), ResetCurrentMap);
+        CreateButton(panelObj.transform, "Retry Connection", new Vector2(0, yOffset - 40f), RetryConnection);
+        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 100f), ResetCurrentMap);
         
         CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -300), 16);
     }
@@ -107,7 +135,7 @@ public class OperatorDashboard : MonoBehaviour
         CreateText(btnObj.transform, buttonText, Vector2.zero, 18);
     }
 
-    private void CreateText(Transform parent, string msg, Vector2 anchoredPos, int fontSize)
+    private UnityEngine.UI.Text CreateText(Transform parent, string msg, Vector2 anchoredPos, int fontSize)
     {
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(parent, false);
@@ -123,16 +151,34 @@ public class OperatorDashboard : MonoBehaviour
         txt.fontSize = fontSize;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
+        
+        return txt;
     }
 
     private void Update()
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer || !enableSpectatorCamera || pcCamera == null) return;
+        // 1. Update Connection Status UI
+        if (connectionStatusText != null && XRINetworkGameManager.Instance != null)
+        {
+            var state = XRINetworkGameManager.CurrentConnectionState.Value;
+            connectionStatusText.text = $"Status: {state}";
+            
+            if (state == XRINetworkGameManager.ConnectionState.Connected)
+                connectionStatusText.color = Color.green;
+            else if (state == XRINetworkGameManager.ConnectionState.Connecting)
+                connectionStatusText.color = Color.yellow;
+            else
+                connectionStatusText.color = Color.red;
+        }
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || !enableSpectatorCamera || pcCamera == null) return;
 
         // 3. Find the VR player's head over the network
         if (vrTargetHead == null)
         {
-            // Specifically look for the Client's player avatar, NOT the local PC host avatar!
+            // We want to spectate the VR player.
+            // If the PC is the Host, the VR player is a Client. If the PC is a Client, the VR player is the Host (or another client).
+            // So we just look for ANY player that is NOT the local PC player.
             foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
             {
                 if (client.ClientId != NetworkManager.Singleton.LocalClientId) // Don't spectate yourself
@@ -172,5 +218,14 @@ public class OperatorDashboard : MonoBehaviour
     {
         string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         LoadMap(currentScene);
+    }
+    
+    private void RetryConnection()
+    {
+        if (XRINetworkGameManager.Instance != null && Unity.Netcode.NetworkManager.Singleton != null && !Unity.Netcode.NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log("[OperatorDashboard] Retrying Relay Connection...");
+            XRINetworkGameManager.Instance.QuickJoinLobby();
+        }
     }
 }
