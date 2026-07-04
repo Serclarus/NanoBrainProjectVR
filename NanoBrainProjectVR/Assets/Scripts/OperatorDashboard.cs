@@ -39,7 +39,7 @@ public class OperatorDashboard : MonoBehaviour
         // Determine if we are running in VR
         bool isVRActive = false;
         var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
-        UnityEngine.SubsystemManager.GetInstances(xrDisplays);
+        UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
         foreach (var display in xrDisplays)
         {
             if (display.running) isVRActive = true;
