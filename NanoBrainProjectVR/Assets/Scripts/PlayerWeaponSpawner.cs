@@ -3,8 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Spawns networked weapons when the host connects.
-/// This is a plain MonoBehaviour — it does NOT need a NetworkObject on the VR rig.
-/// Attach it anywhere on your VR rig hierarchy.
+/// This is a plain MonoBehaviour — no NetworkObject needed on the VR rig.
 /// </summary>
 public class PlayerWeaponSpawner : MonoBehaviour
 {
@@ -15,39 +14,32 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
     private bool hasSpawned = false;
 
-    private void OnEnable()
-    {
-        // Wait for NetworkManager to exist, then subscribe
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnServerStarted += OnServerStarted;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
-        }
-    }
-
-    /// <summary>
-    /// Called the instant the local machine successfully starts as Host/Server.
-    /// </summary>
-    private void OnServerStarted()
+    private void Update()
     {
         if (hasSpawned) return;
+
+        // Wait until NetworkManager exists and we are running as the Server/Host
+        if (NetworkManager.Singleton == null) return;
+        if (!NetworkManager.Singleton.IsServer) return;
+        if (!NetworkManager.Singleton.IsListening) return;
+
         hasSpawned = true;
 
-        Debug.Log("<color=green>[WeaponSpawner]</color> Server started — spawning weapons now.");
+        Debug.Log("<color=green>[WeaponSpawner]</color> Server is running — spawning weapons now.");
 
-        SpawnWeapon(riflePrefab);
-        SpawnWeapon(shotgunPrefab);
-        SpawnWeapon(pistolPrefab);
+        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
+
+        if (holsters == null)
+        {
+            Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> No PlayerHolsterSystem found. Weapons will spawn at player position.");
+        }
+
+        SpawnWeapon(riflePrefab, holsters);
+        SpawnWeapon(shotgunPrefab, holsters);
+        SpawnWeapon(pistolPrefab, holsters);
     }
 
-    private void SpawnWeapon(GameObject prefab)
+    private void SpawnWeapon(GameObject prefab, PlayerHolsterSystem holsters)
     {
         if (prefab == null)
         {
@@ -55,13 +47,11 @@ public class PlayerWeaponSpawner : MonoBehaviour
             return;
         }
 
-        // Find the matching holster socket so the weapon appears in the right place
         Vector3 pos = transform.position;
         Quaternion rot = transform.rotation;
 
-        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
+        // Try to place weapon at the correct holster socket
         WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
-
         if (holsters != null && autoReturn != null)
         {
             if (autoReturn.slotType == WeaponSlotType.Rifle && holsters.rightShoulderSocket != null)
@@ -86,7 +76,7 @@ public class PlayerWeaponSpawner : MonoBehaviour
         NetworkObject netObj = weapon.GetComponent<NetworkObject>();
         if (netObj == null)
         {
-            Debug.LogError($"<color=red>[WeaponSpawner]</color> {prefab.name} has no NetworkObject! Cannot network-spawn it.");
+            Debug.LogError($"<color=red>[WeaponSpawner]</color> {prefab.name} has no NetworkObject! Cannot spawn on network.");
             Destroy(weapon);
             return;
         }
