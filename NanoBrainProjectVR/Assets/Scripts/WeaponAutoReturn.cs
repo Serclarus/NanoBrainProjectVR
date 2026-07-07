@@ -66,7 +66,24 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        StartCoroutine(TryFindSocketAndSlotRoutine());
+        // StartCoroutine(TryFindSocketAndSlotRoutine());
+        
+        // Instead of forcefully teleporting and bypassing XRI, 
+        // we just freeze the weapon in mid-air exactly where the spawner placed it.
+        // The XRSocketInteractor will naturally detect it inside its trigger collider
+        // and safely grab it on the next physics frame!
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
+
+        // We also disable the NetworkPhysicsInteractable spawn lock so it doesn't fight the socket
+        var netPhysics = GetComponent<XRMultiplayer.NetworkPhysicsInteractable>();
+        if (netPhysics != null)
+        {
+            netPhysics.spawnLocked = false;
+        }
     }
 
     private IEnumerator TryFindSocketAndSlotRoutine()
