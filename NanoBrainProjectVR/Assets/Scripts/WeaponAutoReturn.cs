@@ -212,13 +212,12 @@ public class WeaponAutoReturn : NetworkBehaviour
                 Debug.LogError($"<color=red>[WeaponAutoReturn] CRASH!</color> Exception thrown during SelectEnter for {gameObject.name}: {e.Message}\n{e.StackTrace}");
             }
 
-            // Wait 1 frame for XRI to update, THEN re-enable network transform so it syncs the correct socketed position
+            // Wait 1 frame for XRI to update its selection state
             yield return new WaitForEndOfFrame();
 
-            if (clientNetTransform != null)
-            {
-                clientNetTransform.enabled = true;
-            }
+            // NOTE: We intentionally do NOT re-enable the ClientNetworkTransform here!
+            // The socket is now controlling the weapon's position. The NetworkPhysicsInteractable 
+            // script will re-enable it automatically when the player grabs the weapon.
             
             if (!homeSocket.hasSelection || (UnityEngine.Object)homeSocket.interactablesSelected[0] != (UnityEngine.Object)grabInteractable)
             {
