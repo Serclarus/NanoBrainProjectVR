@@ -1,96 +1,71 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-[Tooltip("Attach this to your Network Player Prefab so each player spawns with their own set of weapons!")]
+[RequireComponent(typeof(NetworkObject))]
+[Tooltip("Attach this directly to your VR Rig in the Scene (e.g., XR Interaction Setup)")]
 public class PlayerWeaponSpawner : NetworkBehaviour
 {
-    [Header("Weapons to Spawn")]
-    [Tooltip("The networked prefab of the Rifle")]
+    [Header("Networked Weapon Prefabs")]
     public GameObject riflePrefab;
-    
-    [Tooltip("The networked prefab of the Shotgun")]
     public GameObject shotgunPrefab;
-    
-    [Tooltip("The networked prefab of the Pistol")]
     public GameObject pistolPrefab;
-
-    private void Start()
-    {
-        if (GetComponent<NetworkObject>() == null)
-        {
-            Debug.LogError("<color=red><b>[CRITICAL ERROR]</b></color> PlayerWeaponSpawner requires a NetworkObject component on this GameObject to function! Please click 'Add Component' and add a NetworkObject!");
-        }
-    }
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired for {gameObject.name}! IsOwner: {IsOwner}, IsServer: {IsServer}");
+        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired! Server Status: {IsServer}");
 
-        // The SERVER dictates the weapons for EVERY player!
-        // When ANY player's body spawns on the network, the Server automatically creates weapons for that body!
-        if (IsServer)
+        // Only the Server has the authority to spawn physical networked weapons for the players
+        if (!IsServer) return;
+
+        Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> Automatically generating weapons for Player {OwnerClientId}...");
+
+        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
+        
+        if (holsters == null)
         {
-            Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> SERVER: Automatically generating networked weapons for Player {OwnerClientId}...");
-            SpawnWeapon(riflePrefab, false, OwnerClientId);
-            SpawnWeapon(shotgunPrefab, false, OwnerClientId);
-            SpawnWeapon(pistolPrefab, false, OwnerClientId);
+            Debug.LogError("<color=red>[CRITICAL ERROR]</color> Could not find PlayerHolsterSystem anywhere inside this VR Rig! Weapons cannot be holstered!");
         }
+
+        SpawnWeapon(riflePrefab, holsters != null ? holsters.rightShoulderSocket : null);
+        SpawnWeapon(shotgunPrefab, holsters != null ? holsters.leftShoulderSocket : null);
+        SpawnWeapon(pistolPrefab, holsters != null ? holsters.rightBeltSocket : null);
     }
 
-    private GameObject SpawnWeapon(GameObject prefab, bool isOffline, ulong specificOwnerId = 0)
+    private void SpawnWeapon(GameObject prefab, XRSocketInteractor targetSocket)
     {
         if (prefab == null)
         {
-            Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> FAILED TO SPAWN! The weapon prefab slot is EMPTY in the Inspector! Did you forget to apply your Prefab Overrides?");
-            return null;
+            Debug.LogWarning("<color=yellow>[PlayerWeaponSpawner]</color> A weapon prefab is missing in the inspector! Skipping.");
+            return;
         }
 
         Vector3 spawnPos = transform.position;
         Quaternion spawnRot = transform.rotation;
 
-        PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>(true);
-        if (holsters != null)
+        if (targetSocket != null)
         {
-            WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
-            if (autoReturn != null)
-            {
-                if (autoReturn.slotType == WeaponSlotType.Rifle && holsters.rightShoulderSocket != null)
-                {
-                    spawnPos = holsters.rightShoulderSocket.transform.position;
-                    spawnRot = holsters.rightShoulderSocket.transform.rotation;
-                }
-                else if (autoReturn.slotType == WeaponSlotType.Shotgun && holsters.leftShoulderSocket != null)
-                {
-                    spawnPos = holsters.leftShoulderSocket.transform.position;
-                    spawnRot = holsters.leftShoulderSocket.transform.rotation;
-                }
-                else if (autoReturn.slotType == WeaponSlotType.Pistol && holsters.rightBeltSocket != null)
-                {
-                    spawnPos = holsters.rightBeltSocket.transform.position;
-                    spawnRot = holsters.rightBeltSocket.transform.rotation;
-                }
-            }
+            spawnPos = targetSocket.transform.position;
+            spawnRot = targetSocket.transform.rotation;
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow>[PlayerWeaponSpawner]</color> Socket for {prefab.name} is missing or HolsterSystem wasn't found! Spawning at feet.");
         }
 
         GameObject spawnedWeapon = Instantiate(prefab, spawnPos, spawnRot);
         
-        if (!isOffline)
+        NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
+        if (netObj != null)
         {
-            NetworkObject netObj = spawnedWeapon.GetComponent<NetworkObject>();
-            if (netObj != null)
-            {
-                ulong finalOwnerId = IsServer && specificOwnerId == 0 ? OwnerClientId : specificOwnerId;
-                netObj.SpawnWithOwnership(finalOwnerId);
-                
-                spawnedWeapon.name = $"{prefab.name}_Player_{finalOwnerId}";
-                Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Spawned {spawnedWeapon.name} and gave ownership to Client ID {finalOwnerId}");
-            }
-            else
-            {
-                Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> {prefab.name} does not have a NetworkObject attached!");
-            }
+            netObj.SpawnWithOwnership(OwnerClientId);
+            spawnedWeapon.name = $"{prefab.name}_Player_{OwnerClientId}";
+            Debug.Log($"<color=cyan>[PlayerWeaponSpawner]</color> Successfully spawned and networked {spawnedWeapon.name}!");
         }
-        
-        return spawnedWeapon;
+        else
+        {
+            Debug.LogError($"<color=red>[PlayerWeaponSpawner]</color> {prefab.name} is missing a NetworkObject component! It cannot be spawned on the network!");
+            Destroy(spawnedWeapon);
+        }
     }
 }
