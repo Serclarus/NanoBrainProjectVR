@@ -60,7 +60,7 @@ public class PlayerWeaponSpawner : MonoBehaviour
         Quaternion rot = transform.rotation;
 
         PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
-        AutoReturnToHolster autoReturn = prefab.GetComponent<AutoReturnToHolster>();
+        WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
 
         if (holsters != null && autoReturn != null)
         {
