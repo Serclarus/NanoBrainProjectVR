@@ -2,8 +2,9 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Spawns networked weapons when the host connects.
-/// This is a plain MonoBehaviour — no NetworkObject needed on the VR rig.
+/// Spawns networked weapons when connected to the network.
+/// Plain MonoBehaviour — no NetworkObject needed on the VR rig.
+/// Works with both Client-Server AND Distributed Authority topologies.
 /// </summary>
 public class PlayerWeaponSpawner : MonoBehaviour
 {
@@ -14,18 +15,21 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
     private bool hasSpawned = false;
 
+    private void Start()
+    {
+        Debug.Log("<color=green>[WeaponSpawner]</color> Script is ALIVE on: " + gameObject.name);
+    }
+
     private void Update()
     {
         if (hasSpawned) return;
-
-        // Wait until NetworkManager exists and we are running as the Server/Host
         if (NetworkManager.Singleton == null) return;
-        if (!NetworkManager.Singleton.IsServer) return;
         if (!NetworkManager.Singleton.IsListening) return;
+        if (!NetworkManager.Singleton.IsConnectedClient) return;
 
         hasSpawned = true;
 
-        Debug.Log("<color=green>[WeaponSpawner]</color> Server is running — spawning weapons now.");
+        Debug.Log("<color=green>[WeaponSpawner]</color> Connected to network — spawning weapons now.");
 
         PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
 
@@ -50,7 +54,6 @@ public class PlayerWeaponSpawner : MonoBehaviour
         Vector3 pos = transform.position;
         Quaternion rot = transform.rotation;
 
-        // Try to place weapon at the correct holster socket
         WeaponAutoReturn autoReturn = prefab.GetComponent<WeaponAutoReturn>();
         if (holsters != null && autoReturn != null)
         {
