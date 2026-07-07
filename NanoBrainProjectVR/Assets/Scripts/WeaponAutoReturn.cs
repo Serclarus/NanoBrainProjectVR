@@ -134,17 +134,31 @@ public class WeaponAutoReturn : NetworkBehaviour
     private IEnumerator ForceSlotWeaponRoutine()
     {
         // INSTANT PHYSICS FREEZE AND INTERACTION DISABLE:
-        // Before we wait for the network, we MUST freeze the weapon AND disable interaction!
-        // Otherwise, as your VR Headset snaps your body to your real-world height, 
-        // your Belt socket sweeps through the air and steals it!
         Rigidbody rb = GetComponent<Rigidbody>();
         bool wasKinematic = false;
         if (rb != null)
         {
             wasKinematic = rb.isKinematic;
-            rb.isKinematic = true; // Freeze it in mid-air instantly
+            rb.isKinematic = true;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.constraints = RigidbodyConstraints.None; // Unlock FreezeAll from spawnLocked!
+        }
+
+        // DISABLE ClientNetworkTransform so it stops fighting the socket position!
+        var clientNetTransform = GetComponent<Unity.Netcode.Components.NetworkTransform>();
+        bool hadNetTransform = false;
+        if (clientNetTransform != null)
+        {
+            hadNetTransform = clientNetTransform.enabled;
+            clientNetTransform.enabled = false;
+        }
+
+        // Unlock spawnLocked on NetworkPhysicsInteractable so constraints don't re-freeze
+        var netPhysics = GetComponent<XRMultiplayer.NetworkPhysicsInteractable>();
+        if (netPhysics != null)
+        {
+            netPhysics.spawnLocked = false;
         }
         
         // COMPLETELY DISABLE THE GRAB SO NO OTHER SOCKET CAN STEAL IT!
@@ -163,16 +177,14 @@ public class WeaponAutoReturn : NetworkBehaviour
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {gameObject.name} teleported to {homeSocket.name}, but the socket has NO Interaction Manager assigned! It will fall to the floor!");
                 if (rb != null) rb.isKinematic = wasKinematic;
                 if (grabInteractable != null) grabInteractable.enabled = true;
+                if (clientNetTransform != null) clientNetTransform.enabled = hadNetTransform;
                 yield break;
             }
 
-            // EXTREMELY IMPORTANT FIX:
             // Force the weapon to use the EXACT same Interaction Manager as the socket.
             if (grabInteractable.interactionManager != homeSocket.interactionManager)
             {
                 grabInteractable.interactionManager = homeSocket.interactionManager;
-                
-                // Manually force XRI to register it IMMEDIATELY so we don't have to wait for XRI's internal loops!
                 homeSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
             }
 
@@ -193,7 +205,6 @@ public class WeaponAutoReturn : NetworkBehaviour
             
             try
             {
-                // Force the Interaction Manager to link them
                 homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
             }
             catch (System.Exception e)
@@ -201,12 +212,17 @@ public class WeaponAutoReturn : NetworkBehaviour
                 Debug.LogError($"<color=red>[WeaponAutoReturn] CRASH!</color> Exception thrown during SelectEnter for {gameObject.name}: {e.Message}\n{e.StackTrace}");
             }
 
-            // VERIFICATION: Did the socket actually accept it?
-            yield return new WaitForEndOfFrame(); // Wait 1 frame for XRI to update its selection state
+            // Wait 1 frame for XRI to update, THEN re-enable network transform so it syncs the correct socketed position
+            yield return new WaitForEndOfFrame();
+
+            if (clientNetTransform != null)
+            {
+                clientNetTransform.enabled = true;
+            }
             
             if (!homeSocket.hasSelection || (UnityEngine.Object)homeSocket.interactablesSelected[0] != (UnityEngine.Object)grabInteractable)
             {
-                Debug.LogError($"<color=red>[WeaponAutoReturn] REJECTION!</color> {gameObject.name} tried to slot into {homeSocket.name}, but the Socket REJECTED IT! It has now fallen down! Please check your 'Interaction Layer Mask' on the {homeSocket.name}!");
+                Debug.LogError($"<color=red>[WeaponAutoReturn] REJECTION!</color> {gameObject.name} tried to slot into {homeSocket.name}, but the Socket REJECTED IT! Please check your 'Interaction Layer Mask' on the {homeSocket.name}!");
             }
             else
             {
