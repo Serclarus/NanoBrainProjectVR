@@ -33,6 +33,10 @@ public class MapSelectionManager : MonoBehaviour
     [Tooltip("The default blank skybox when no map is previewed")]
     public Material defaultSkybox;
 
+    [Header("UI Settings")]
+    [Tooltip("Text element to display server connection status")]
+    public TMP_Text connectionStatusText;
+
     [Header("Layer Culling Setup")]
     [Tooltip("If true, swaps layers to hide maps instead of deactivating them (prevents lag spikes)")]
     public bool useLayerCulling = true;
@@ -100,6 +104,24 @@ public class MapSelectionManager : MonoBehaviour
 
     private void Update()
     {
+        // Update connection status text
+        if (connectionStatusText != null && XRMultiplayer.XRINetworkGameManager.Instance != null)
+        {
+            var state = XRMultiplayer.XRINetworkGameManager.CurrentConnectionState.Value;
+            if (state == XRMultiplayer.XRINetworkGameManager.ConnectionState.Connected)
+            {
+                connectionStatusText.text = "<color=green>Connected to Server</color>";
+            }
+            else if (state == XRMultiplayer.XRINetworkGameManager.ConnectionState.Connecting)
+            {
+                connectionStatusText.text = "<color=yellow>Joining Server...</color>";
+            }
+            else
+            {
+                connectionStatusText.text = "<color=red>Disconnected</color>";
+            }
+        }
+
         // Keyboard shortcuts have been moved to OperatorControls.cs
 
         // Disable all movement in the Main Menu so the player can't walk away from the UI!
