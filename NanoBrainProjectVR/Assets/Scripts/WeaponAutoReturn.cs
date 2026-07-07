@@ -198,8 +198,15 @@ public class WeaponAutoReturn : NetworkBehaviour
             transform.position = homeSocket.transform.position;
             transform.rotation = homeSocket.transform.rotation;
 
-            // Restore physics to XRI's control exactly before we slot it
-            if (rb != null) rb.isKinematic = wasKinematic;
+            // CRITICAL FIX: Do NOT restore wasKinematic here!
+            // Leave it as true so gravity/physics cannot pull it out of the socket.
+            // XRI will automatically handle the kinematic state when the player grabs it with their hand.
+            if (rb != null) 
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true; 
+            }
 
             Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Teleporting {gameObject.name} to {homeSocket.name} at World Position: {homeSocket.transform.position}. Forcing SelectEnter...");
             
