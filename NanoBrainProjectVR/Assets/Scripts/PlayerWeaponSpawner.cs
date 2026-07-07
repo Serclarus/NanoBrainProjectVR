@@ -14,64 +14,18 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     [Tooltip("The networked prefab of the Pistol")]
     public GameObject pistolPrefab;
 
-    private GameObject offlineRifle;
-    private GameObject offlineShotgun;
-    private GameObject offlinePistol;
-
-    private void Start()
-    {
-        // If the game starts without the network running, spawn offline weapons immediately!
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-        {
-            offlineRifle = SpawnWeapon(riflePrefab, true);
-            offlineShotgun = SpawnWeapon(shotgunPrefab, true);
-            offlinePistol = SpawnWeapon(pistolPrefab, true);
-        }
-    }
-
     public override void OnNetworkSpawn()
     {
         Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired for {gameObject.name}! IsOwner: {IsOwner}, IsServer: {IsServer}");
 
-        // The network just connected! 
-        // We MUST destroy the temporary offline weapons. If NGO auto-spawned them, we must use Despawn!
-        DestroyOfflineWeapon(offlineRifle);
-        DestroyOfflineWeapon(offlineShotgun);
-        DestroyOfflineWeapon(offlinePistol);
-
-        // NGO BUG FIX: Clients cannot reliably send RPCs during their initial connection sweep!
-        // Instead of the Client asking for weapons, the SERVER must automatically issue weapons
-        // to EVERY player the instant their player rig officially spawns on the server!
+        // The SERVER dictates the weapons for EVERY player!
+        // When ANY player's body spawns on the network, the Server automatically creates weapons for that body!
         if (IsServer)
         {
             Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> SERVER: Automatically generating networked weapons for Player {OwnerClientId}...");
             SpawnWeapon(riflePrefab, false, OwnerClientId);
             SpawnWeapon(shotgunPrefab, false, OwnerClientId);
             SpawnWeapon(pistolPrefab, false, OwnerClientId);
-        }
-    }
-
-    private void DestroyOfflineWeapon(GameObject offlineWeapon)
-    {
-        if (offlineWeapon != null)
-        {
-            NetworkObject no = offlineWeapon.GetComponent<NetworkObject>();
-            if (no != null && no.IsSpawned)
-            {
-                if (IsServer)
-                {
-                    no.Despawn();
-                }
-                else
-                {
-                    // Clients cannot despawn network objects! We just hide/disable them locally so they don't interfere.
-                    offlineWeapon.SetActive(false);
-                }
-            }
-            else
-            {
-                Destroy(offlineWeapon);
-            }
         }
     }
 

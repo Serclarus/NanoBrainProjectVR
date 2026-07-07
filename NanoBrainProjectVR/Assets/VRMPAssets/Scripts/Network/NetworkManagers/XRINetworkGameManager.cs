@@ -270,6 +270,18 @@ namespace XRMultiplayer
         {
             NetworkManager.Singleton.OnClientStopped += LocalClientStopped;
             NetworkManager.Singleton.OnSessionOwnerPromoted += SessionOwnerPromoted;
+            NetworkManager.Singleton.OnClientConnectedCallback += (id) => 
+            {
+                // If we are the local client, forcefully complete the connection sequence.
+                // This fixes the bug where spectator clients (no Player Prefab) get stuck in the Connecting UI!
+                if (id == NetworkManager.Singleton.LocalClientId)
+                {
+                    LocalId = id;
+                    m_ConnectionState.Value = ConnectionState.Connected;
+                    PlayerHudNotification.Instance.ShowText($"<b>Status:</b> Connected");
+                    Utils.Log($"{k_DebugPrepend}Local Client Connected with ID: {id}", 0);
+                }
+            };
         }
 
         void SessionOwnerPromoted(ulong sessionOwnerId)
