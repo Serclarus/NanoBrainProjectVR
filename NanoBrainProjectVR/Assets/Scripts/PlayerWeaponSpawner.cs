@@ -14,6 +14,14 @@ public class PlayerWeaponSpawner : NetworkBehaviour
     [Tooltip("The networked prefab of the Pistol")]
     public GameObject pistolPrefab;
 
+    private void Start()
+    {
+        if (GetComponent<NetworkObject>() == null)
+        {
+            Debug.LogError("<color=red><b>[CRITICAL ERROR]</b></color> PlayerWeaponSpawner requires a NetworkObject component on this GameObject to function! Please click 'Add Component' and add a NetworkObject!");
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         Debug.Log($"<color=green>[PlayerWeaponSpawner]</color> OnNetworkSpawn fired for {gameObject.name}! IsOwner: {IsOwner}, IsServer: {IsServer}");
