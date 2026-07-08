@@ -33,9 +33,17 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        // When a new scene loads, reset so we automatically respawn fresh weapons for the new scene!
+        // Wait 1.5 seconds for Netcode (NGO) to completely finish its Scene Synchronization
+        // before we try to spawn the new weapons!
+        StartCoroutine(WaitAndRespawnRoutine(scene.name));
+    }
+
+    private System.Collections.IEnumerator WaitAndRespawnRoutine(string sceneName)
+    {
+        yield return new WaitForSeconds(1.5f);
+        
         hasSpawned = false;
-        Debug.Log($"<color=cyan>[WeaponSpawner]</color> New scene loaded ({scene.name}). Spawner reset and ready to spawn fresh weapons.");
+        Debug.Log($"<color=cyan>[WeaponSpawner]</color> New scene fully stabilized ({sceneName}). Spawner reset and ready to spawn fresh weapons.");
     }
 
     private void Update()
