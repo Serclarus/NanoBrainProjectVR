@@ -49,9 +49,24 @@ public class PlayerWeaponSpawner : MonoBehaviour
     private void Update()
     {
         if (hasSpawned) return;
-        if (NetworkManager.Singleton == null) return;
-        if (!NetworkManager.Singleton.IsListening) return;
-        if (!NetworkManager.Singleton.IsConnectedClient) return;
+        
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogWarning("<color=orange>[WeaponSpawner]</color> Waiting: NetworkManager.Singleton is NULL!");
+            return;
+        }
+        
+        if (!NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogWarning("<color=orange>[WeaponSpawner]</color> Waiting: Network is not listening yet!");
+            return;
+        }
+        
+        if (!NetworkManager.Singleton.IsConnectedClient)
+        {
+            Debug.LogWarning("<color=orange>[WeaponSpawner]</color> Waiting: Not a connected client yet!");
+            return;
+        }
 
         hasSpawned = true;
 
