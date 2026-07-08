@@ -21,6 +21,23 @@ public class PlayerWeaponSpawner : MonoBehaviour
         Debug.Log("<color=green>[WeaponSpawner]</color> Script is ALIVE on: " + gameObject.name);
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // When a new scene loads, reset so we automatically respawn fresh weapons for the new scene!
+        hasSpawned = false;
+        Debug.Log($"<color=cyan>[WeaponSpawner]</color> New scene loaded ({scene.name}). Spawner reset and ready to spawn fresh weapons.");
+    }
+
     private void Update()
     {
         if (hasSpawned) return;
@@ -98,14 +115,8 @@ public class PlayerWeaponSpawner : MonoBehaviour
             return;
         }
 
-        // Tell Netcode for GameObjects NOT to destroy this object when loading a new scene!
-        netObj.DestroyWithScene = false;
-
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
-
-        // Tell Unity NOT to destroy this object when loading a new scene!
-        DontDestroyOnLoad(weapon);
 
         Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} and explicitly wired it to its socket!");
     }
