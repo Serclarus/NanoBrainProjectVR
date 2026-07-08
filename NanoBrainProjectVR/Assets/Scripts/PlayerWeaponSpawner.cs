@@ -101,6 +101,9 @@ public class PlayerWeaponSpawner : MonoBehaviour
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
 
+        // Persist the weapons across scene loads!
+        DontDestroyOnLoad(weapon);
+
         Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} and explicitly wired it to its socket!");
     }
 }
