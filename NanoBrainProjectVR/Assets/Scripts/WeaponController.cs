@@ -108,6 +108,9 @@ public class WeaponController : NetworkBehaviour
     public NetworkVariable<bool> isSlideLockedBack = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     private Magazine currentMagazine;
+    public NetworkVariable<NetworkObjectReference> syncedMagazine = new NetworkVariable<NetworkObjectReference>();
+    public NetworkVariable<bool> syncedIsHeld = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    
     public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Visual Effects")]
@@ -244,6 +247,8 @@ public class WeaponController : NetworkBehaviour
     private void OnWeaponGrabbed(SelectEnterEventArgs args)
     {
         isHeld = true;
+        if (IsOwner) syncedIsHeld.Value = true;
+        
         IXRSelectInteractor interactor = args.interactorObject;
 
         // Only activate sub-interactables if grabbed by a HAND (Direct/Ray interactor), NOT a Socket!
@@ -323,7 +328,8 @@ public class WeaponController : NetworkBehaviour
     private void OnWeaponDropped(SelectExitEventArgs args)
     {
         isHeld = false;
-        isTriggerHeld = false;
+        if (IsOwner) syncedIsHeld.Value = false;
+        
         currentHoldingInteractor = null;
 
         SetSubInteractablesState(false);
@@ -364,15 +370,21 @@ public class WeaponController : NetworkBehaviour
         {
             currentMagazine = mag;
             
-            // Fix: If the weapon is NOT currently held by a hand (e.g. resting on a shoulder),
+            // Sync to all clients so they know this magazine is inside this gun
+            if (IsOwner)
+            {
+                NetworkObject netObj = mag.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    syncedMagazine.Value = new NetworkObjectReference(netObj);
+                }
+            }
+            
             // instantly disable the new magazine's colliders so it cannot be accidentally grabbed!
-            if (!isHeld)
+            if (!grabInteractable.isSelected)
             {
                 var cols = currentMagazine.GetComponentsInChildren<Collider>();
-                foreach (var col in cols)
-                {
-                    col.enabled = false;
-                }
+                foreach (Collider c in cols) c.enabled = false;
             }
         }
     }
@@ -380,6 +392,10 @@ public class WeaponController : NetworkBehaviour
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
         currentMagazine = null;
+        if (IsOwner)
+        {
+            syncedMagazine.Value = new NetworkObjectReference(); // Empty reference
+        }
     }
 
     private void OnTriggerDown(ActivateEventArgs args)
@@ -419,10 +435,53 @@ public class WeaponController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        isChambered.OnValueChanged += OnChamberedChanged;
+        isSlideLockedBack.OnValueChanged += OnSlideLockChanged;
+        currentAmmo.OnValueChanged += OnAmmoChanged;
+        chamberState.OnValueChanged += OnChamberStateChanged;
+        
+        syncedMagazine.OnValueChanged += OnSyncedMagazineChanged;
+        syncedIsHeld.OnValueChanged += OnSyncedIsHeldChanged;
+
+        UpdateWeaponVisuals();
 
         if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        isChambered.OnValueChanged -= OnChamberedChanged;
+        isSlideLockedBack.OnValueChanged -= OnSlideLockChanged;
+        currentAmmo.OnValueChanged -= OnAmmoChanged;
+        chamberState.OnValueChanged -= OnChamberStateChanged;
+        
+        syncedMagazine.OnValueChanged -= OnSyncedMagazineChanged;
+        syncedIsHeld.OnValueChanged -= OnSyncedIsHeldChanged;
+    }
+    
+    private void OnSyncedMagazineChanged(NetworkObjectReference oldMag, NetworkObjectReference newMag)
+    {
+        // When the server puts a mag in the gun, sync it to the clients!
+        if (newMag.TryGet(out NetworkObject netObj))
+        {
+            currentMagazine = netObj.GetComponent<Magazine>();
+            SetSubInteractablesState(isHeld || syncedIsHeld.Value); // Refresh the colliders!
+        }
+        else
+        {
+            currentMagazine = null;
+        }
+    }
+
+    private void OnSyncedIsHeldChanged(bool oldVal, bool newVal)
+    {
+        if (!IsOwner)
+        {
+            SetSubInteractablesState(newVal);
         }
     }
 

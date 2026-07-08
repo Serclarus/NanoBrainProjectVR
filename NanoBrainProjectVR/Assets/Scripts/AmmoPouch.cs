@@ -67,6 +67,11 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // Create a hidden parent object to keep the hierarchy extremely clean
         // We leave this at the ROOT of the scene, otherwise dropped magazines will move with the player!
         Transform poolParent = new GameObject("AmmoPouch_Pool").transform;
+        
+        // CRITICAL FIX: Make the Ammo Pool survive scene transitions!
+        // Without this, the Lobby's pool gets destroyed when loading Boar Hunting,
+        // forcing the AmmoPouch to desperately instantiate broken, offset fallback magazines!
+        DontDestroyOnLoad(poolParent.gameObject);
 
         foreach (var config in prewarmedPools)
         {
