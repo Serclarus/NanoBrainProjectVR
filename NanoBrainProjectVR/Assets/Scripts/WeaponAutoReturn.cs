@@ -135,7 +135,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             if (homeSocket != null)
             {
                 Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> Found home socket for {gameObject.name}. Forcing slot routine...");
-                yield return StartCoroutine(ForceSlotWeaponRoutine());
+                yield return StartCoroutine(TryFindSocketAndSlotRoutine());
             }
             else
             {
@@ -173,7 +173,7 @@ public class WeaponAutoReturn : NetworkBehaviour
         if (homeSocket != null)
         {
             Debug.Log($"Weapon Auto-Returned to {slotType} Holster!");
-            yield return StartCoroutine(ForceSlotWeaponRoutine());
+            yield return StartCoroutine(TryFindSocketAndSlotRoutine());
         }
     }
 }
