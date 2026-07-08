@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 /// <summary>
 /// Spawns networked weapons when connected to the network.
