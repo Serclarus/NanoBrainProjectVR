@@ -5,10 +5,8 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables; // Needed for XRI 3.0+
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using Unity.Netcode;
 
-using UnityEngine.XR.Interaction.Toolkit.Filtering;
-
 [RequireComponent(typeof(XRGrabInteractable))]
-public class Magazine : NetworkBehaviour, IXRSelectFilter, IXRHoverFilter
+public class Magazine : NetworkBehaviour
 {
     [Header("Ammo Settings")]
     [Tooltip("Maximum amount of bullets this magazine can hold.")]
@@ -35,18 +33,11 @@ public class Magazine : NetworkBehaviour, IXRSelectFilter, IXRHoverFilter
     private Coroutine despawnCoroutine;
     private bool isHeld = false;
 
-    // Interface requirement
-    public bool canProcess => true;
-
     private void Awake()
     {
         grabInteractable = GetComponent<XRGrabInteractable>();
         grabInteractable.selectEntered.AddListener(OnGrabbedOrSocketed);
         grabInteractable.selectExited.AddListener(OnDropped);
-        
-        // Add ourselves as a filter so we can intelligently reject accidental grabs
-        grabInteractable.selectFilters.Add(this);
-        grabInteractable.hoverFilters.Add(this);
     }
 
     public override void OnDestroy()
@@ -57,44 +48,7 @@ public class Magazine : NetworkBehaviour, IXRSelectFilter, IXRHoverFilter
         {
             grabInteractable.selectEntered.RemoveListener(OnGrabbedOrSocketed);
             grabInteractable.selectExited.RemoveListener(OnDropped);
-            grabInteractable.selectFilters.Remove(this);
-            grabInteractable.hoverFilters.Remove(this);
         }
-    }
-
-    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
-    {
-        return IsInteractionAllowed(interactor);
-    }
-
-    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
-    {
-        return IsInteractionAllowed(interactor);
-    }
-
-    private bool IsInteractionAllowed(IXRInteractor interactor)
-    {
-        // 1. Sockets (like the weapon's magazine well or the ammo pouch) can always interact!
-        if (interactor is XRSocketInteractor) return true;
-
-        // 2. It's a hand interactor! Is our weapon currently holstered?
-        WeaponController weapon = GetComponentInParent<WeaponController>();
-        if (weapon != null)
-        {
-            XRGrabInteractable weaponGrab = weapon.GetComponent<XRGrabInteractable>();
-            if (weaponGrab != null && weaponGrab.isSelected)
-            {
-                // Who is holding the weapon? If it's a Holster Socket, REJECT THE HAND!
-                IXRSelectInteractor weaponHolder = weaponGrab.interactorsSelecting[0];
-                if (weaponHolder is XRSocketInteractor)
-                {
-                    return false; // Weapon is holstered! You must grab the weapon, not the mag!
-                }
-            }
-        }
-        
-        // Weapon is NOT holstered (it's in your hands, or on the ground). You can grab the mag!
-        return true;
     }
 
     public override void OnNetworkSpawn()
