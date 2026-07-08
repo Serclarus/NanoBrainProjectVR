@@ -420,7 +420,7 @@ public class WeaponController : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
-        if (IsServer && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
         }
