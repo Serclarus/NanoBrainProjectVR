@@ -86,9 +86,6 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
-        
-        // Prevent weapons from being destroyed when loading into a new scene (like Boar Hunting)
-        DontDestroyOnLoad(weapon);
 
         Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} at {pos}");
     }
