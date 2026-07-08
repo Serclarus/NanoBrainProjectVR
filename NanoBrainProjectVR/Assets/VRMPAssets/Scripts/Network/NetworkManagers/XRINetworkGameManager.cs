@@ -204,13 +204,17 @@ namespace XRMultiplayer
         protected virtual async void Awake()
         {
             // Check for existing singleton reference. If once already exists early out.
-            if (s_Instance != null)
+            if (s_Instance != null && s_Instance != this)
             {
                 Utils.Log($"{k_DebugPrepend}Duplicate XRINetworkGameManager found, destroying.", 2);
                 Destroy(gameObject);
                 return;
             }
             s_Instance = this;
+            
+            // Critical Fix: Prevent this manager from being destroyed when scenes change.
+            // If it is destroyed, its OnDestroy method maliciously shuts down the NetworkManager!
+            DontDestroyOnLoad(gameObject);
 
             // Check for Lobby Manager, if none exist, early out.
             if (TryGetComponent(out m_SessionManager) && TryGetComponent(out m_AuthenticationManager))
