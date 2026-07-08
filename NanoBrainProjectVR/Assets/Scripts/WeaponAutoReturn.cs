@@ -17,7 +17,7 @@ public class WeaponAutoReturn : NetworkBehaviour
     public float returnDelay = 3.0f;
 
     private XRGrabInteractable grabInteractable;
-    private XRSocketInteractor homeSocket;
+    public XRSocketInteractor homeSocket;
     private Coroutine returnRoutine;
 
     private void Awake()
@@ -66,7 +66,7 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        // IMMEDIATELY FREEZE so they don't fall through the floor while we search!
+        // IMMEDIATELY FREEZE so they don't fall through the floor while we wait for the spawner to wire us up!
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -80,95 +80,80 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private IEnumerator NativeSlotRoutine()
     {
-        PlayerHolsterSystem myHolsters = null;
-        bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
-        float timeout = 5f;
-
-        while (myHolsters == null && timeout > 0f)
+        // Wait until the PlayerWeaponSpawner injects our homeSocket!
+        float timeout = 2f;
+        while (homeSocket == null && timeout > 0f)
         {
+            yield return new WaitForEndOfFrame();
+            timeout -= Time.deltaTime;
+        }
+
+        if (homeSocket == null)
+        {
+            // If the spawner didn't inject it (maybe the user spawned it manually from an admin menu?)
+            // Fallback: manually find our holster!
             PlayerHolsterSystem[] allHolsters = FindObjectsOfType<PlayerHolsterSystem>();
             foreach (var holsters in allHolsters)
             {
-                if (isOffline)
+                NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
+                if (holsterNetObj == null) 
                 {
-                    myHolsters = holsters;
+                    // It's the local VR rig!
+                    if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
+                    else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
+                    else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
                     break;
                 }
-                else
-                {
-                    NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
-                    
-                    // If the holster has a NetworkObject, check if we own it
-                    if (holsterNetObj != null && holsterNetObj.OwnerClientId == this.OwnerClientId)
-                    {
-                        myHolsters = holsters;
-                        break;
-                    }
-                    // If the holster has NO NetworkObject, it must be the local VR Rig!
-                    // If we are the owner of this weapon, this local rig is ours!
-                    else if (holsterNetObj == null && IsOwner)
-                    {
-                        myHolsters = holsters;
-                        break;
-                    }
-                }
-            }
-
-            if (myHolsters == null)
-            {
-                yield return new WaitForSeconds(0.2f);
-                timeout -= 0.2f;
             }
         }
 
-        if (myHolsters != null)
-        {
-            if (slotType == WeaponSlotType.Rifle) homeSocket = myHolsters.rightShoulderSocket;
-            else if (slotType == WeaponSlotType.Shotgun) homeSocket = myHolsters.leftShoulderSocket;
-            else if (slotType == WeaponSlotType.Pistol) homeSocket = myHolsters.rightBeltSocket;
-
             if (homeSocket != null)
             {
-                // Un-lock network spawn constraints so the socket can move it
                 var netPhysics = GetComponent<XRMultiplayer.NetworkPhysicsInteractable>();
                 if (netPhysics != null) netPhysics.spawnLocked = false;
 
-                // Make the weapon physics-dead so it CANNOT fall
+                // Stop our script from fighting XRI
+                grabInteractable.enabled = false;
+                yield return new WaitForEndOfFrame();
+
+                if (grabInteractable.interactionManager != homeSocket.interactionManager)
+                {
+                    grabInteractable.interactionManager = homeSocket.interactionManager;
+                }
+
+                // Snap the physical position immediately
+                Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
+                transform.position = attach.position;
+                transform.rotation = attach.rotation;
+
+                // Lock it completely so XRI doesn't fumble the grab
                 Rigidbody rb = GetComponent<Rigidbody>();
                 if (rb != null)
                 {
                     rb.isKinematic = true;
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
-                    rb.constraints = RigidbodyConstraints.None;
                 }
 
-                // Snap perfectly to the socket attach transform so the Trigger detects it
-                Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
-                transform.position = attach.position;
-                transform.rotation = attach.rotation;
-                
-                Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Snapped {gameObject.name} perfectly to {homeSocket.name}. Waiting for native XR socket grab...");
+                grabInteractable.enabled = true;
+                yield return new WaitForEndOfFrame();
+
+                // Logically force the socket to grab the weapon!
+                try
+                {
+                    homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+                    Debug.Log($"<color=green>[WeaponAutoReturn]</color> Logically spawned and locked {gameObject.name} into {homeSocket.name}!");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"<color=red>[WeaponAutoReturn]</color> SelectEnter failed: {e.Message}");
+                }
             }
-        }
     }
 
     private void Update()
     {
-        // If we have a home socket but XRI hasn't organically grabbed us yet, 
-        // FORCE our position to stay exactly inside the socket's trigger so it CAN'T miss us!
-        if (homeSocket != null && !homeSocket.hasSelection && grabInteractable != null && !grabInteractable.isSelected)
-        {
-            Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
-            transform.position = attach.position;
-            transform.rotation = attach.rotation;
-            
-            Rigidbody rb = GetComponent<Rigidbody>();
-            if (rb != null && !rb.isKinematic)
-            {
-                rb.isKinematic = true; // Reinforce gravity lock
-            }
-        }
+        // The Update loop is no longer needed since we are using logical SelectEnter!
     }
 
     private void OnGrabbed(SelectEnterEventArgs args)
@@ -195,7 +180,15 @@ public class WeaponAutoReturn : NetworkBehaviour
         {
             Debug.Log($"Weapon Auto-Returned to {slotType} Holster!");
             
-            // Just drop it exactly on the socket attach transform and let XRI grab it natively again!
+            // Logically return the weapon directly to the socket!
+            grabInteractable.enabled = false;
+            yield return new WaitForEndOfFrame();
+
+            if (grabInteractable.interactionManager != homeSocket.interactionManager)
+            {
+                grabInteractable.interactionManager = homeSocket.interactionManager;
+            }
+
             Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
             transform.position = attach.position;
             transform.rotation = attach.rotation;
@@ -206,6 +199,18 @@ public class WeaponAutoReturn : NetworkBehaviour
                 rb.isKinematic = true;
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
+            }
+
+            grabInteractable.enabled = true;
+            yield return new WaitForEndOfFrame();
+
+            try
+            {
+                homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> SelectEnter failed during auto-return: {e.Message}");
             }
         }
     }

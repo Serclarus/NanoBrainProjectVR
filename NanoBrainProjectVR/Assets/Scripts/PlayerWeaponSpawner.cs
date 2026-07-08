@@ -76,6 +76,19 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         GameObject weapon = Instantiate(prefab, pos, rot);
 
+        WeaponAutoReturn spawnedAutoReturn = weapon.GetComponent<WeaponAutoReturn>();
+        XRSocketInteractor targetSocket = null;
+
+        if (holsters != null && spawnedAutoReturn != null)
+        {
+            if (spawnedAutoReturn.slotType == WeaponSlotType.Rifle) targetSocket = holsters.rightShoulderSocket;
+            else if (spawnedAutoReturn.slotType == WeaponSlotType.Shotgun) targetSocket = holsters.leftShoulderSocket;
+            else if (spawnedAutoReturn.slotType == WeaponSlotType.Pistol) targetSocket = holsters.rightBeltSocket;
+            
+            // Inject the exact socket into the script!
+            spawnedAutoReturn.homeSocket = targetSocket;
+        }
+
         NetworkObject netObj = weapon.GetComponent<NetworkObject>();
         if (netObj == null)
         {
@@ -87,6 +100,6 @@ public class PlayerWeaponSpawner : MonoBehaviour
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
 
-        Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} at {pos}");
+        Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} and explicitly wired it to its socket!");
     }
 }
