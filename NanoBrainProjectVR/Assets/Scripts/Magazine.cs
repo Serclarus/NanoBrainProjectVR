@@ -96,8 +96,6 @@ public class Magazine : NetworkBehaviour, IXRSelectFilter, IXRHoverFilter
         // Weapon is NOT holstered (it's in your hands, or on the ground). You can grab the mag!
         return true;
     }
-        }
-    }
 
     public override void OnNetworkSpawn()
     {
