@@ -435,15 +435,9 @@ public class WeaponController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        isChambered.OnValueChanged += OnChamberedChanged;
-        isSlideLockedBack.OnValueChanged += OnSlideLockChanged;
-        currentAmmo.OnValueChanged += OnAmmoChanged;
-        chamberState.OnValueChanged += OnChamberStateChanged;
         
         syncedMagazine.OnValueChanged += OnSyncedMagazineChanged;
         syncedIsHeld.OnValueChanged += OnSyncedIsHeldChanged;
-
-        UpdateWeaponVisuals();
 
         if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
@@ -454,10 +448,6 @@ public class WeaponController : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
-        isChambered.OnValueChanged -= OnChamberedChanged;
-        isSlideLockedBack.OnValueChanged -= OnSlideLockChanged;
-        currentAmmo.OnValueChanged -= OnAmmoChanged;
-        chamberState.OnValueChanged -= OnChamberStateChanged;
         
         syncedMagazine.OnValueChanged -= OnSyncedMagazineChanged;
         syncedIsHeld.OnValueChanged -= OnSyncedIsHeldChanged;
