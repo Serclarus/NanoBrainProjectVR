@@ -40,7 +40,6 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         {
             // FORCE disable XRI's native fake meshes to prevent floating offset visuals!
             socketInteractor.showInteractableHoverMeshes = false;
-            socketInteractor.showInteractableSelectionMeshes = false;
 
             socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
             // Add ourselves as a filter so we can reject native trigger grabs (like the Shotgun loading port!)
