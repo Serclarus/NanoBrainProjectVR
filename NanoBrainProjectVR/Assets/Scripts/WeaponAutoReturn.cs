@@ -66,7 +66,15 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        // Give XRI and Physics a moment to stabilize before freezing
+        // IMMEDIATELY FREEZE so they don't fall through the floor while we search!
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         StartCoroutine(NativeSlotRoutine());
     }
 
@@ -89,7 +97,16 @@ public class WeaponAutoReturn : NetworkBehaviour
                 else
                 {
                     NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
+                    
+                    // If the holster has a NetworkObject, check if we own it
                     if (holsterNetObj != null && holsterNetObj.OwnerClientId == this.OwnerClientId)
+                    {
+                        myHolsters = holsters;
+                        break;
+                    }
+                    // If the holster has NO NetworkObject, it must be the local VR Rig!
+                    // If we are the owner of this weapon, this local rig is ours!
+                    else if (holsterNetObj == null && IsOwner)
                     {
                         myHolsters = holsters;
                         break;
