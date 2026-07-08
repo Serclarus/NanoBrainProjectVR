@@ -13,7 +13,7 @@ public struct AmmoPoolConfig
 }
 
 [RequireComponent(typeof(XRSocketInteractor))]
-public class AmmoPouch : MonoBehaviour
+public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 {
     [Tooltip("The Magazine prefab that this pouch will currently dispense. This is updated dynamically by the WeaponController!")]
     public GameObject magazinePrefab;
@@ -27,12 +27,19 @@ public class AmmoPouch : MonoBehaviour
     private XRSocketInteractor socketInteractor;
     private bool isRefilling = false;
 
+    // We use this to only allow the code-driven SelectEnter to succeed!
+    private bool allowProgrammaticGrab = false;
+
+    public bool canProcess => true;
+
     private void Awake()
     {
         socketInteractor = GetComponent<XRSocketInteractor>();
         if (socketInteractor != null)
         {
             socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
+            // Add ourselves as a filter so we can reject native trigger grabs (like the Shotgun loading port!)
+            socketInteractor.selectFilters.Add(this);
         }
 
         InitializePools();
@@ -43,7 +50,15 @@ public class AmmoPouch : MonoBehaviour
         if (socketInteractor != null)
         {
             socketInteractor.selectExited.RemoveListener(OnItemRemovedFromSocket);
+            socketInteractor.selectFilters.Remove(this);
         }
+    }
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        // Only allow a grab if our Refill routine is forcing it!
+        // This prevents the Ammo Pouch from organically sucking up dropped shotguns!
+        return allowProgrammaticGrab;
     }
 
     private void InitializePools()
@@ -202,7 +217,10 @@ public class AmmoPouch : MonoBehaviour
 
         if (ammoInteractable != null && socketInteractor.interactionManager != null)
         {
+            // Temporarily bypass our own filter to forcefully inject the ammo!
+            allowProgrammaticGrab = true;
             socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, (IXRSelectInteractable)ammoInteractable);
+            allowProgrammaticGrab = false;
         }
 
         isRefilling = false;
