@@ -66,10 +66,11 @@ public class WeaponAutoReturn : NetworkBehaviour
 
     private void TryFindSocketAndSlot()
     {
-        StartCoroutine(TryFindSocketAndSlotRoutine());
+        // Give XRI and Physics a moment to stabilize before freezing
+        StartCoroutine(NativeSlotRoutine());
     }
 
-    private IEnumerator TryFindSocketAndSlotRoutine()
+    private IEnumerator NativeSlotRoutine()
     {
         PlayerHolsterSystem myHolsters = null;
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
@@ -111,73 +112,44 @@ public class WeaponAutoReturn : NetworkBehaviour
 
             if (homeSocket != null)
             {
-                yield return StartCoroutine(ForceSlotWeaponRoutine());
+                // Un-lock network spawn constraints so the socket can move it
+                var netPhysics = GetComponent<XRMultiplayer.NetworkPhysicsInteractable>();
+                if (netPhysics != null) netPhysics.spawnLocked = false;
+
+                // Make the weapon physics-dead so it CANNOT fall
+                Rigidbody rb = GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    rb.constraints = RigidbodyConstraints.None;
+                }
+
+                // Snap perfectly to the socket attach transform so the Trigger detects it
+                Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
+                transform.position = attach.position;
+                transform.rotation = attach.rotation;
+                
+                Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Snapped {gameObject.name} perfectly to {homeSocket.name}. Waiting for native XR socket grab...");
             }
-            else
-            {
-                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {slotType} socket was NULL!");
-            }
-        }
-        else
-        {
-            Debug.LogError($"<color=red>[WeaponAutoReturn]</color> TIMEOUT: Could not find PlayerHolsterSystem!");
         }
     }
 
-    private IEnumerator ForceSlotWeaponRoutine()
+    private void Update()
     {
-        // INSTANT PHYSICS FREEZE
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
+        // If we have a home socket but XRI hasn't organically grabbed us yet, 
+        // FORCE our position to stay exactly inside the socket's trigger so it CAN'T miss us!
+        if (homeSocket != null && !homeSocket.hasSelection && grabInteractable != null && !grabInteractable.isSelected)
         {
-            rb.isKinematic = true;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.constraints = RigidbodyConstraints.None; // Unlock FreezeAll
-        }
-
-        var netPhysics = GetComponent<XRMultiplayer.NetworkPhysicsInteractable>();
-        if (netPhysics != null) netPhysics.spawnLocked = false;
-
-        if (grabInteractable != null) grabInteractable.enabled = false;
-
-        yield return new WaitForSeconds(0.35f);
-
-        if (homeSocket != null)
-        {
-            if (homeSocket.interactionManager == null)
+            Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
+            transform.position = attach.position;
+            transform.rotation = attach.rotation;
+            
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null && !rb.isKinematic)
             {
-                Debug.LogError($"<color=red>[WeaponAutoReturn]</color> {homeSocket.name} has NO Interaction Manager assigned! Please assign it in the Inspector.");
-                if (grabInteractable != null) grabInteractable.enabled = true;
-                yield break;
-            }
-
-            if (grabInteractable.interactionManager != homeSocket.interactionManager)
-            {
-                grabInteractable.interactionManager = homeSocket.interactionManager;
-                homeSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
-            }
-
-            if (grabInteractable != null) grabInteractable.enabled = true;
-
-            transform.position = homeSocket.transform.position;
-            transform.rotation = homeSocket.transform.rotation;
-
-            if (rb != null) 
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.isKinematic = true; 
-            }
-
-            try
-            {
-                homeSocket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)homeSocket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
-                Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Forced SelectEnter for {gameObject.name}.");
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"<color=red>[WeaponAutoReturn] CRASH!</color> {e.Message}");
+                rb.isKinematic = true; // Reinforce gravity lock
             }
         }
     }
@@ -205,7 +177,19 @@ public class WeaponAutoReturn : NetworkBehaviour
         if (homeSocket != null)
         {
             Debug.Log($"Weapon Auto-Returned to {slotType} Holster!");
-            yield return StartCoroutine(ForceSlotWeaponRoutine());
+            
+            // Just drop it exactly on the socket attach transform and let XRI grab it natively again!
+            Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
+            transform.position = attach.position;
+            transform.rotation = attach.rotation;
+            
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
     }
 }
