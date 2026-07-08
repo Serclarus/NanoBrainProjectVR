@@ -21,31 +21,6 @@ public class PlayerWeaponSpawner : MonoBehaviour
         Debug.Log("<color=green>[WeaponSpawner]</color> Script is ALIVE on: " + gameObject.name);
     }
 
-    private void OnEnable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-    {
-        // Wait 1.5 seconds for Netcode (NGO) to completely finish its Scene Synchronization
-        // before we try to spawn the new weapons!
-        StartCoroutine(WaitAndRespawnRoutine(scene.name));
-    }
-
-    private System.Collections.IEnumerator WaitAndRespawnRoutine(string sceneName)
-    {
-        yield return new WaitForSeconds(1.5f);
-        
-        hasSpawned = false;
-        Debug.Log($"<color=cyan>[WeaponSpawner]</color> New scene fully stabilized ({sceneName}). Spawner reset and ready to spawn fresh weapons.");
-    }
-
     private void Update()
     {
         if (hasSpawned) return;
