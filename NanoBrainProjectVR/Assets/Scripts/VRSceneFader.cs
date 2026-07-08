@@ -64,9 +64,27 @@ public class VRSceneFader : MonoBehaviour
         imageRT.offsetMax = Vector2.zero;
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
     private void Start()
     {
-        // Whenever a scene finishes loading, instantly fade from black to clear!
+        // Initial fade in when the game first launches
+        StartCoroutine(FadeRoutine(1f, 0f, fadeToClearDuration));
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Whenever a new scene finishes loading, fade back in!
+        // This is crucial because this script now survives across scene transitions.
+        StopAllCoroutines();
         StartCoroutine(FadeRoutine(1f, 0f, fadeToClearDuration));
     }
 

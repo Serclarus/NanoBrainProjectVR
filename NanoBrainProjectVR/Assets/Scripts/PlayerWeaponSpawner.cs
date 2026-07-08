@@ -98,10 +98,13 @@ public class PlayerWeaponSpawner : MonoBehaviour
             return;
         }
 
+        // Tell Netcode for GameObjects NOT to destroy this object when loading a new scene!
+        netObj.DestroyWithScene = false;
+
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
 
-        // Persist the weapons across scene loads!
+        // Tell Unity NOT to destroy this object when loading a new scene!
         DontDestroyOnLoad(weapon);
 
         Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} and explicitly wired it to its socket!");
