@@ -39,9 +39,19 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
     public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
     {
-        // Only allow a grab if our Refill routine is forcing it!
-        // This prevents the Ammo Pouch from organically sucking up dropped shotguns!
-        return allowProgrammaticGrab;
+        // If the Refill routine is forcing a grab, allow it!
+        if (allowProgrammaticGrab) return true;
+
+        // CRITICAL FIX: XR Interaction Toolkit continuously evaluates this filter EVERY FRAME.
+        // If we return false after the item is already selected, XRI will forcefully drop it!
+        // We must return true if the socket already holds this specific interactable!
+        if (socketInteractor != null && socketInteractor.hasSelection && socketInteractor.interactablesSelected[0] == interactable)
+        {
+            return true;
+        }
+
+        // Otherwise, reject organics grabs (e.g. dropped shotguns flying into the pouch)
+        return false;
     }
 
     private void Awake()
@@ -57,17 +67,10 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             socketInteractor.interactableCantHoverMeshMaterial = null;
         }
 
-        // Create a guaranteed invisible material
-        invisibleMaterial = new Material(Shader.Find("Standard"));
-        invisibleMaterial.SetFloat("_Mode", 3); // Transparent mode
-        invisibleMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-        invisibleMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-        invisibleMaterial.SetInt("_ZWrite", 0);
-        invisibleMaterial.DisableKeyword("_ALPHATEST_ON");
-        invisibleMaterial.EnableKeyword("_ALPHABLEND_ON");
-        invisibleMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        invisibleMaterial.renderQueue = 3000;
-        invisibleMaterial.color = new Color(0, 0, 0, 0);
+        // Create a guaranteed invisible material using a universally compatible shader
+        // UI/Default exists in URP, HDRP, and Built-in, preventing the "Pink Material" error!
+        invisibleMaterial = new Material(Shader.Find("UI/Default"));
+        invisibleMaterial.color = new Color(0, 0, 0, 0); // 100% transparent
 
         InitializePools();
     }
