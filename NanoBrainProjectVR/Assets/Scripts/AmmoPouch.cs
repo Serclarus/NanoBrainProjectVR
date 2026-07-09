@@ -62,6 +62,23 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         return allowProgrammaticGrab;
     }
 
+    private void Update()
+    {
+        // Brute-force visibility lock: If XRI or Netcode tries to turn the renderer back on, crush it instantly!
+        if (socketInteractor != null && socketInteractor.hasSelection)
+        {
+            IXRSelectInteractable heldItem = socketInteractor.interactablesSelected[0];
+            if (heldItem != null && heldItem.transform != null)
+            {
+                Renderer[] renderers = heldItem.transform.GetComponentsInChildren<Renderer>(true);
+                foreach (Renderer r in renderers)
+                {
+                    if (r.enabled) r.enabled = false;
+                }
+            }
+        }
+    }
+
     private void InitializePools()
     {
         // Create a hidden parent object to keep the hierarchy extremely clean
