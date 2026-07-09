@@ -43,7 +43,7 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             socketInteractor.selectFilters.Add(this);
             
             // Fix: Disable the annoying red ghost meshes when a weapon hovers near the pouch!
-            socketInteractor.showInteractableCantHoverMeshes = false;
+            socketInteractor.interactableCantHoverMeshMaterial = null;
         }
 
         InitializePools();
