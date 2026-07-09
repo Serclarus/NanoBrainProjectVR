@@ -147,6 +147,14 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             rb.angularVelocity = Vector3.zero;
         }
 
+        // MAKE IT ONLINE! 
+        // Pre-warmed pools are created in Awake before the network connects. We MUST spawn them now if we are online!
+        Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
+        if (netObj != null && !netObj.IsSpawned && Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
+        {
+            netObj.Spawn();
+        }
+
         // REFILL the magazine so the player doesn't pull out an empty one!
         Magazine mag = ammoInstance.GetComponent<Magazine>();
         if (mag != null)
