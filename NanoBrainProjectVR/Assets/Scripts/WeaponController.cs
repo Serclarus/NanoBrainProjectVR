@@ -108,7 +108,7 @@ public class WeaponController : NetworkBehaviour
     public NetworkVariable<bool> isSlideLockedBack = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     private Magazine currentMagazine;
-    public NetworkVariable<NetworkObjectReference> syncedMagazine = new NetworkVariable<NetworkObjectReference>();
+    public NetworkVariable<NetworkObjectReference> syncedMagazine = new NetworkVariable<NetworkObjectReference>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<bool> syncedIsHeld = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -563,7 +563,7 @@ public class WeaponController : NetworkBehaviour
         var grabInteractable = newMag.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         if (grabInteractable != null)
         {
-            // Lock it into the socket
+            // Lock it into the socket on the server
             if (grabInteractable.interactionManager != magazineSocket.interactionManager)
             {
                 grabInteractable.interactionManager = magazineSocket.interactionManager;
@@ -574,7 +574,17 @@ public class WeaponController : NetworkBehaviour
                 (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
                 (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
             );
+            
+            // Tell all clients to brutally force it into their local sockets too!
+            ForceSocketMagazineClientRpc(new NetworkObjectReference(netObj));
         }
+    }
+
+    [ClientRpc]
+    private void ForceSocketMagazineClientRpc(NetworkObjectReference magRef)
+    {
+        if (IsServer) return; // Server already did it!
+        StartCoroutine(SyncMagazineRoutine(magRef));
     }
 
     private void Start()
