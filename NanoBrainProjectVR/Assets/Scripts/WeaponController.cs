@@ -217,13 +217,30 @@ public class WeaponController : NetworkBehaviour
             }
         }
 
-        // Disable the magazine's colliders so the player cannot accidentally grab it when picking up the gun
+        // Lock the magazine completely when the gun is dropped so the player cannot accidentally grab it out of the holster!
         if (currentMagazine != null)
         {
-            var cols = currentMagazine.GetComponentsInChildren<Collider>();
-            foreach (var col in cols)
+            var magInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            var magRb = currentMagazine.GetComponent<Rigidbody>();
+
+            if (!state)
             {
-                col.enabled = state;
+                // Weapon Dropped: Disable grabbing, parent it to the gun manually, and freeze it. 
+                // The socket will drop it, but we force it to stay perfectly inside the gun!
+                if (magInteractable != null) magInteractable.enabled = false;
+                if (magazineSocket != null)
+                {
+                    currentMagazine.transform.SetParent(magazineSocket.transform);
+                    currentMagazine.transform.localPosition = Vector3.zero;
+                    currentMagazine.transform.localRotation = Quaternion.identity;
+                }
+                if (magRb != null) magRb.isKinematic = true;
+            }
+            else
+            {
+                // Weapon Grabbed: Re-enable grabbing so the player can pull it out to reload!
+                if (magInteractable != null) magInteractable.enabled = true;
+                // The socket will automatically re-grab it because it's hovering right inside the socket!
             }
         }
     }
