@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7437818360217493075}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: GrabAttachPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -73,7 +73,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5071245392031374793}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightHandAttach
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -138,7 +138,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5422177785697007621}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftHandAttach
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207,7 +207,7 @@ GameObject:
   - component: {fileID: 8984669427194182907}
   - component: {fileID: 4059965037710819467}
   - component: {fileID: 2145881611890471337}
-  m_Layer: 9
+  m_Layer: 8
   m_Name: WPN_AKM_bolt_carrier
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -590,7 +590,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5047293070419574751}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightHandAttach
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -726,7 +726,7 @@ GameObject:
   - component: {fileID: 3822601357179746664}
   - component: {fileID: 6902359730074602650}
   - component: {fileID: 9119476152732815678}
-  m_Layer: 9
+  m_Layer: 8
   m_Name: SecondaryGrip
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1061,7 +1061,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3674137242698780635}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: GrabAttachPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1391,6 +1391,8 @@ MonoBehaviour:
   slideLockDistance: 0.03
   isSlideLockedBack:
     m_InternalValue: 0
+  syncedIsHeld:
+    m_InternalValue: 0
   isChambered:
     m_InternalValue: 0
   muzzleFlash: {fileID: 904919216443535631}
@@ -1668,6 +1670,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   slotType: 0
   returnDelay: 3
+  homeSocket: {fileID: 0}
 --- !u!1 &7517676517083344163
 GameObject:
   m_ObjectHideFlags: 0
@@ -1838,7 +1841,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1034466265142036817}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftHandAttach
   m_TagString: Untagged
   m_Icon: {fileID: 0}

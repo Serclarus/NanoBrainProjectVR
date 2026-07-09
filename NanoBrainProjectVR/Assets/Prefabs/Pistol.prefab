@@ -1261,7 +1261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 625175394
+  GlobalObjectIdHash: 2402539020
   InScenePlacedSourceGlobalObjectIdHash: 625175394
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1340,6 +1340,8 @@ MonoBehaviour:
   hasSlideLockOnEmpty: 1
   slideLockDistance: 0.04
   isSlideLockedBack:
+    m_InternalValue: 0
+  syncedIsHeld:
     m_InternalValue: 0
   isChambered:
     m_InternalValue: 0
@@ -1639,6 +1641,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   slotType: 2
   returnDelay: 3
+  homeSocket: {fileID: 0}
 --- !u!1 &6528532227500869618
 GameObject:
   m_ObjectHideFlags: 0
