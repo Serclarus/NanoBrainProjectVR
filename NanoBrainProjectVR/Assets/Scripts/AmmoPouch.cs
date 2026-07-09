@@ -271,22 +271,11 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
     {
         if (obj == null) return;
         
-        // Instead of disabling renderers (which Netcode or XR might fight against),
-        // we scale all child objects to zero (except those with colliders or interactables!)
-        foreach (Transform child in obj.transform)
-        {
-            // Do not scale the root object or any child that handles physics/interaction
-            if (child.GetComponent<Collider>() != null || child.GetComponent<XRBaseInteractable>() != null)
-                continue;
-
-            child.localScale = isVisible ? Vector3.one : Vector3.zero;
-        }
-
-        // Also ensure renderers are disabled just in case they are on the root!
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
-            if (r.enabled != isVisible) r.enabled = isVisible;
+            r.enabled = isVisible;
+            r.forceRenderingOff = !isVisible; // Brutal Unity override to ensure it NEVER draws!
         }
     }
 }
