@@ -210,6 +210,9 @@ public class WeaponController : NetworkBehaviour
                 // SAFETY: Never disable the main handle of the gun!
                 if (interactable == grabInteractable) continue;
                 
+                // CRITICAL SAFETY: Never disable the XRSocketInteractor! If you disable a socket, it forcefully drops whatever is inside it!
+                if (interactable is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
+                
                 interactable.enabled = state;
             }
         }
@@ -385,7 +388,8 @@ public class WeaponController : NetworkBehaviour
             }
             
             // instantly disable the new magazine's colliders so it cannot be accidentally grabbed!
-            if (!grabInteractable.isSelected)
+            // We use !isHeld instead of !isSelected because if the weapon is in a holster socket, isSelected is true, but it's not held by a hand!
+            if (!isHeld)
             {
                 var cols = currentMagazine.GetComponentsInChildren<Collider>();
                 foreach (Collider c in cols) c.enabled = false;
