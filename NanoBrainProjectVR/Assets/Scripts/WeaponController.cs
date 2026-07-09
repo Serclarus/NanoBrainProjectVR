@@ -439,6 +439,19 @@ public class WeaponController : NetworkBehaviour
         syncedMagazine.OnValueChanged += OnSyncedMagazineChanged;
         syncedIsHeld.OnValueChanged += OnSyncedIsHeldChanged;
 
+        // Force a manual sync on spawn in case the Client is joining late or the value was already set!
+        if (!IsOwner)
+        {
+            if (syncedMagazine.Value.NetworkObjectId != 0)
+            {
+                StartCoroutine(SyncMagazineRoutine(syncedMagazine.Value));
+            }
+            if (syncedIsHeld.Value)
+            {
+                SetSubInteractablesState(true);
+            }
+        }
+
         if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
