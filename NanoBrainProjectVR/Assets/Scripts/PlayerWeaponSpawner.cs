@@ -45,7 +45,7 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         hasSpawned = true;
 
-        Debug.Log("<color=green>[WeaponSpawner]</color> Connected to network — checking for existing weapons or spawning new ones.");
+        Debug.Log("<color=green>[WeaponSpawner]</color> Connected to network — spawning weapons now.");
 
         PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
 
@@ -54,62 +54,9 @@ public class PlayerWeaponSpawner : MonoBehaviour
             Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> No PlayerHolsterSystem found. Weapons will spawn at player position.");
         }
 
-        // Check if this client ALREADY owns weapons (e.g. from a previous scene)!
-        bool ownsRifle = false;
-        bool ownsShotgun = false;
-        bool ownsPistol = false;
-
-        foreach (var netObj in NetworkManager.Singleton.SpawnManager.SpawnedObjectsList)
-        {
-            if (netObj.IsOwner)
-            {
-                var autoReturn = netObj.GetComponent<WeaponAutoReturn>();
-                if (autoReturn != null)
-                {
-                    if (autoReturn.slotType == WeaponSlotType.Rifle)
-                    {
-                        ownsRifle = true;
-                        RelinkExistingWeapon(netObj.gameObject, holsters, autoReturn);
-                    }
-                    else if (autoReturn.slotType == WeaponSlotType.Shotgun)
-                    {
-                        ownsShotgun = true;
-                        RelinkExistingWeapon(netObj.gameObject, holsters, autoReturn);
-                    }
-                    else if (autoReturn.slotType == WeaponSlotType.Pistol)
-                    {
-                        ownsPistol = true;
-                        RelinkExistingWeapon(netObj.gameObject, holsters, autoReturn);
-                    }
-                }
-            }
-        }
-
-        if (!ownsRifle) SpawnWeapon(riflePrefab, holsters);
-        if (!ownsShotgun) SpawnWeapon(shotgunPrefab, holsters);
-        if (!ownsPistol) SpawnWeapon(pistolPrefab, holsters);
-    }
-
-    private void RelinkExistingWeapon(GameObject weapon, PlayerHolsterSystem holsters, WeaponAutoReturn autoReturn)
-    {
-        if (holsters == null) return;
-
-        XRSocketInteractor targetSocket = null;
-        if (autoReturn.slotType == WeaponSlotType.Rifle) targetSocket = holsters.rightShoulderSocket;
-        else if (autoReturn.slotType == WeaponSlotType.Shotgun) targetSocket = holsters.leftShoulderSocket;
-        else if (autoReturn.slotType == WeaponSlotType.Pistol) targetSocket = holsters.rightBeltSocket;
-
-        if (targetSocket != null)
-        {
-            autoReturn.homeSocket = targetSocket;
-            
-            // Move the weapon immediately so it doesn't get left behind in the old scene coordinates
-            Transform attach = targetSocket.attachTransform != null ? targetSocket.attachTransform : targetSocket.transform;
-            weapon.transform.position = attach.position;
-            weapon.transform.rotation = attach.rotation;
-            
-            Debug.Log($"<color=cyan>[WeaponSpawner]</color> Relinked existing {weapon.name} to new scene holsters!");
-        }
+        SpawnWeapon(riflePrefab, holsters);
+        SpawnWeapon(shotgunPrefab, holsters);
+        SpawnWeapon(pistolPrefab, holsters);
     }
 
     private void SpawnWeapon(GameObject prefab, PlayerHolsterSystem holsters)
