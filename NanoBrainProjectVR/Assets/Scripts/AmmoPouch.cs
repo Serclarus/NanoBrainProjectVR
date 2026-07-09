@@ -277,11 +277,22 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
     {
         if (obj == null) return;
         
-        // Find all Renderers (MeshRenderers, SkinnedMeshRenderers) on the prefab and its children
+        // Instead of disabling renderers (which Netcode or XR might fight against),
+        // we scale all child objects to zero (except those with colliders or interactables!)
+        foreach (Transform child in obj.transform)
+        {
+            // Do not scale the root object or any child that handles physics/interaction
+            if (child.GetComponent<Collider>() != null || child.GetComponent<XRBaseInteractable>() != null)
+                continue;
+
+            child.localScale = isVisible ? Vector3.one : Vector3.zero;
+        }
+
+        // Also ensure renderers are disabled just in case they are on the root!
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
-            r.enabled = isVisible;
+            if (r.enabled != isVisible) r.enabled = isVisible;
         }
     }
 }
