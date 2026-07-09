@@ -454,16 +454,13 @@ public class WeaponController : NetworkBehaviour
         syncedIsHeld.OnValueChanged += OnSyncedIsHeldChanged;
 
         // Force a manual sync on spawn in case the Client is joining late or the value was already set!
-        if (!IsOwner)
+        if (syncedMagazine.Value.NetworkObjectId != 0)
         {
-            if (syncedMagazine.Value.NetworkObjectId != 0)
-            {
-                StartCoroutine(SyncMagazineRoutine(syncedMagazine.Value));
-            }
-            if (syncedIsHeld.Value)
-            {
-                SetSubInteractablesState(true);
-            }
+            StartCoroutine(SyncMagazineRoutine(syncedMagazine.Value));
+        }
+        if (syncedIsHeld.Value)
+        {
+            SetSubInteractablesState(true);
         }
 
         // Only the Server is allowed to spawn NetworkObjects! If a Client tries to do this, Unity Netcode throws a fatal error and breaks the script!
