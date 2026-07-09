@@ -498,6 +498,30 @@ public class WeaponController : NetworkBehaviour
         if (netObj != null)
         {
             currentMagazine = netObj.GetComponent<Magazine>();
+            
+            // CRITICAL FIX: If the Client owns this weapon, they MUST locally socket the magazine!
+            // Otherwise, the client's physics engine will cause the magazine to fall infinitely into the void!
+            if (IsOwner && !IsServer)
+            {
+                var grabInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                if (grabInteractable != null && magazineSocket != null)
+                {
+                    // Force the interaction manager to register it if necessary
+                    if (grabInteractable.interactionManager != magazineSocket.interactionManager)
+                    {
+                        grabInteractable.interactionManager = magazineSocket.interactionManager;
+                    }
+                    
+                    if (!magazineSocket.hasSelection)
+                    {
+                        magazineSocket.interactionManager.SelectEnter(
+                            (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
+                            (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
+                        );
+                    }
+                }
+            }
+
             SetSubInteractablesState(isHeld || syncedIsHeld.Value); // Refresh the colliders!
         }
         else
