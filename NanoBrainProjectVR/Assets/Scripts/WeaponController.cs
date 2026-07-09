@@ -108,7 +108,7 @@ public class WeaponController : NetworkBehaviour
     public NetworkVariable<bool> isSlideLockedBack = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     private Magazine currentMagazine;
-    public NetworkVariable<NetworkObjectReference> syncedMagazine = new NetworkVariable<NetworkObjectReference>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<NetworkObjectReference> syncedMagazine = new NetworkVariable<NetworkObjectReference>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> syncedIsHeld = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
     public NetworkVariable<bool> isChambered = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -371,12 +371,16 @@ public class WeaponController : NetworkBehaviour
             currentMagazine = mag;
             
             // Sync to all clients so they know this magazine is inside this gun
-            if (IsOwner)
+            NetworkObject netObj = mag.GetComponent<NetworkObject>();
+            if (netObj != null)
             {
-                NetworkObject netObj = mag.GetComponent<NetworkObject>();
-                if (netObj != null)
+                if (IsServer)
                 {
                     syncedMagazine.Value = new NetworkObjectReference(netObj);
+                }
+                else if (IsOwner)
+                {
+                    SetSyncedMagazineServerRpc(new NetworkObjectReference(netObj));
                 }
             }
             
@@ -392,10 +396,20 @@ public class WeaponController : NetworkBehaviour
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
         currentMagazine = null;
-        if (IsOwner)
+        if (IsServer)
         {
             syncedMagazine.Value = new NetworkObjectReference(); // Empty reference
         }
+        else if (IsOwner)
+        {
+            SetSyncedMagazineServerRpc(new NetworkObjectReference());
+        }
+    }
+
+    [ServerRpc]
+    private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef)
+    {
+        syncedMagazine.Value = magRef;
     }
 
     private void OnTriggerDown(ActivateEventArgs args)
