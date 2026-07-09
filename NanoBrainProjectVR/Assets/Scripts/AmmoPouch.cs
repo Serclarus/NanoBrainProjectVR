@@ -154,6 +154,13 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             ammoPools[prefab].Enqueue(ammoInstance);
         }
 
+        // CRITICAL: We must manually teleport the object OUT of the underground void pool (-100) 
+        // so its colliders are physically inside the Ammo Pouch! XR Interaction Toolkit will 
+        // automatically calculate the final micro-offsets during SelectEnter.
+        Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
+        ammoInstance.transform.position = attach.position;
+        ammoInstance.transform.rotation = attach.rotation;
+
         Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
         if (rb != null)
         {
