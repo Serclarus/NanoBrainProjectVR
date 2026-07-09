@@ -134,9 +134,10 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             ammoPools[prefab].Enqueue(ammoInstance);
         }
 
-        // Reset its physical state so it doesn't fly out of the socket!
-        ammoInstance.transform.position = transform.position;
-        ammoInstance.transform.rotation = transform.rotation;
+        // Reset its physical state so it snaps exactly to the custom attach transform (to fix offset grabs!)
+        Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
+        ammoInstance.transform.position = attach.position;
+        ammoInstance.transform.rotation = attach.rotation;
         
         Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
         if (rb != null)
@@ -227,6 +228,13 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             allowProgrammaticGrab = true;
             socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, (IXRSelectInteractable)ammoInteractable);
             allowProgrammaticGrab = false;
+            
+            // CRITICAL: XRI sometimes moves the object during SelectEnter. 
+            // Force it to hide and stay at the attach transform immediately after!
+            SetObjectVisibility(newAmmo, false);
+            Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
+            newAmmo.transform.position = attach.position;
+            newAmmo.transform.rotation = attach.rotation;
         }
 
         isRefilling = false;
