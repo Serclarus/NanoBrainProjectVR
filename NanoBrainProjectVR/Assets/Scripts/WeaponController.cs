@@ -222,6 +222,14 @@ public class WeaponController : NetworkBehaviour
             {
                 col.enabled = state;
             }
+            
+            // BRUTE FORCE XRI FIX: Disable the magazine's XRGrabInteractable directly
+            // This guarantees the player absolutely cannot grab it, even if XRI tries to ignore the disabled colliders!
+            var magInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (magInteractable != null)
+            {
+                magInteractable.enabled = state;
+            }
         }
     }
 
