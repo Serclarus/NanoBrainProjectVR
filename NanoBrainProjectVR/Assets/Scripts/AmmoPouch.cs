@@ -65,19 +65,22 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         return allowProgrammaticGrab;
     }
 
+    private GameObject hiddenAmmoInstance;
+
     private void Update()
     {
-        // Brute-force visibility lock: If XRI or Netcode tries to turn the renderer back on, crush it instantly!
-        if (socketInteractor != null && socketInteractor.hasSelection)
+        // Brute-force visibility lock: Aggressively hide the magazine tracked by the pouch,
+        // even if XR Interaction Toolkit's socket selection state is broken or delayed!
+        if (hiddenAmmoInstance != null)
         {
-            IXRSelectInteractable heldItem = socketInteractor.interactablesSelected[0];
-            if (heldItem != null && heldItem.transform != null)
+            Unity.Netcode.NetworkObject netObj = hiddenAmmoInstance.GetComponentInParent<Unity.Netcode.NetworkObject>();
+            Transform trueRoot = netObj != null ? netObj.transform : hiddenAmmoInstance.transform;
+
+            Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer r in renderers)
             {
-                Renderer[] renderers = heldItem.transform.GetComponentsInChildren<Renderer>(true);
-                foreach (Renderer r in renderers)
-                {
-                    if (r.enabled) r.enabled = false;
-                }
+                if (r.enabled) r.enabled = false;
+                if (!r.forceRenderingOff) r.forceRenderingOff = true;
             }
         }
     }
@@ -206,6 +209,13 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // The player just pulled the invisible item out of the socket!
         // Instantly turn its renderers back on so they can see the ammo in their hand!
         GameObject grabbedAmmo = args.interactableObject.transform.gameObject;
+        
+        // Stop tracking it for aggressive hiding
+        if (hiddenAmmoInstance != null && grabbedAmmo == hiddenAmmoInstance)
+        {
+            hiddenAmmoInstance = null;
+        }
+
         SetObjectVisibility(grabbedAmmo, true);
 
         RefillSocket();
@@ -252,7 +262,9 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // --- NEW POOL LOGIC: FETCH INSTEAD OF INSTANTIATE ---
         GameObject newAmmo = GetAmmoFromPool(magazinePrefab);
         
-        // HIDE it immediately so the player thinks the socket is empty!
+        // Track this specific instance so our Update() loop aggressively hides it forever!
+        hiddenAmmoInstance = newAmmo;
+        
         SetObjectVisibility(newAmmo, false);
 
         XRBaseInteractable ammoInteractable = newAmmo.GetComponentInChildren<XRBaseInteractable>(true);
@@ -278,7 +290,10 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
     {
         if (obj == null) return;
         
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+        Unity.Netcode.NetworkObject netObj = obj.GetComponentInParent<Unity.Netcode.NetworkObject>();
+        Transform trueRoot = netObj != null ? netObj.transform : obj.transform;
+
+        Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
             r.enabled = isVisible;
