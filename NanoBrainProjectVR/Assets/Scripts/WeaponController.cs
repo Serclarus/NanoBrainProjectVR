@@ -413,13 +413,8 @@ public class WeaponController : NetworkBehaviour
                 }
             }
             
-            // instantly disable the new magazine's colliders so it cannot be accidentally grabbed!
-            // We use !isHeld instead of !isSelected because if the weapon is in a holster socket, isSelected is true, but it's not held by a hand!
-            if (!isHeld)
-            {
-                var cols = currentMagazine.GetComponentsInChildren<Collider>();
-                foreach (Collider c in cols) c.enabled = false;
-            }
+            // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
+            SetSubInteractablesState(isHeld || syncedIsHeld.Value);
         }
     }
 
