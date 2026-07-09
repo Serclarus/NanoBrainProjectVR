@@ -275,14 +275,14 @@ public class WeaponController : NetworkBehaviour
 
     private void OnWeaponGrabbed(SelectEnterEventArgs args)
     {
-        isHeld = true;
-        if (IsOwner) syncedIsHeld.Value = true;
-        
         IXRSelectInteractor interactor = args.interactorObject;
 
         // Only activate sub-interactables if grabbed by a HAND (Direct/Ray interactor), NOT a Socket!
         if (!(interactor is XRSocketInteractor))
         {
+            isHeld = true;
+            if (IsOwner) syncedIsHeld.Value = true;
+            
             SetSubInteractablesState(true);
 
             // FIX: If the weapon's Select Mode is "Multiple", the socket will try to share the weapon with the hand instead of letting it go!
