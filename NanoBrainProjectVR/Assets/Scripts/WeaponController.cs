@@ -502,6 +502,7 @@ public class WeaponController : NetworkBehaviour
                     if (grabInteractable.interactionManager != magazineSocket.interactionManager)
                     {
                         grabInteractable.interactionManager = magazineSocket.interactionManager;
+                        magazineSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
                     }
                     
                     if (!magazineSocket.hasSelection)
