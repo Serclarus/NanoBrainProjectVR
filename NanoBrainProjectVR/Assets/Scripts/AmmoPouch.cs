@@ -33,6 +33,17 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
     public bool canProcess => true;
 
+    private GameObject hiddenAmmoInstance;
+    private System.Collections.Generic.Dictionary<Renderer, Material[]> originalMaterials = new System.Collections.Generic.Dictionary<Renderer, Material[]>();
+    private Material invisibleMaterial;
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        // Only allow a grab if our Refill routine is forcing it!
+        // This prevents the Ammo Pouch from organically sucking up dropped shotguns!
+        return allowProgrammaticGrab;
+    }
+
     private void Awake()
     {
         socketInteractor = GetComponent<XRSocketInteractor>();
@@ -46,6 +57,18 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             socketInteractor.interactableCantHoverMeshMaterial = null;
         }
 
+        // Create a guaranteed invisible material
+        invisibleMaterial = new Material(Shader.Find("Standard"));
+        invisibleMaterial.SetFloat("_Mode", 3); // Transparent mode
+        invisibleMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+        invisibleMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+        invisibleMaterial.SetInt("_ZWrite", 0);
+        invisibleMaterial.DisableKeyword("_ALPHATEST_ON");
+        invisibleMaterial.EnableKeyword("_ALPHABLEND_ON");
+        invisibleMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        invisibleMaterial.renderQueue = 3000;
+        invisibleMaterial.color = new Color(0, 0, 0, 0);
+
         InitializePools();
     }
 
@@ -55,33 +78,6 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         {
             socketInteractor.selectExited.RemoveListener(OnItemRemovedFromSocket);
             socketInteractor.selectFilters.Remove(this);
-        }
-    }
-
-    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
-    {
-        // Only allow a grab if our Refill routine is forcing it!
-        // This prevents the Ammo Pouch from organically sucking up dropped shotguns!
-        return allowProgrammaticGrab;
-    }
-
-    private GameObject hiddenAmmoInstance;
-
-    private void Update()
-    {
-        // Brute-force visibility lock: Aggressively hide the magazine tracked by the pouch,
-        // even if XR Interaction Toolkit's socket selection state is broken or delayed!
-        if (hiddenAmmoInstance != null)
-        {
-            Unity.Netcode.NetworkObject netObj = hiddenAmmoInstance.GetComponentInParent<Unity.Netcode.NetworkObject>();
-            Transform trueRoot = netObj != null ? netObj.transform : hiddenAmmoInstance.transform;
-
-            Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
-            foreach (Renderer r in renderers)
-            {
-                if (r.enabled) r.enabled = false;
-                if (!r.forceRenderingOff) r.forceRenderingOff = true;
-            }
         }
     }
 
@@ -206,17 +202,14 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
     private void OnItemRemovedFromSocket(SelectExitEventArgs args)
     {
-        // The player just pulled the invisible item out of the socket!
-        // Instantly turn its renderers back on so they can see the ammo in their hand!
         GameObject grabbedAmmo = args.interactableObject.transform.gameObject;
         
-        // Stop tracking it for aggressive hiding
+        // Stop tracking it and restore its original visible materials!
         if (hiddenAmmoInstance != null && grabbedAmmo == hiddenAmmoInstance)
         {
+            RestoreMaterials(hiddenAmmoInstance);
             hiddenAmmoInstance = null;
         }
-
-        SetObjectVisibility(grabbedAmmo, true);
 
         RefillSocket();
     }
@@ -262,14 +255,13 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // --- NEW POOL LOGIC: FETCH INSTEAD OF INSTANTIATE ---
         GameObject newAmmo = GetAmmoFromPool(magazinePrefab);
         
-        // Track this specific instance so our Update() loop aggressively hides it forever!
+        // Track this specific instance so we can restore its materials later!
         hiddenAmmoInstance = newAmmo;
         
-        SetObjectVisibility(newAmmo, false);
+        ApplyInvisibleMaterial(newAmmo);
 
         XRBaseInteractable ammoInteractable = newAmmo.GetComponentInChildren<XRBaseInteractable>(true);
 
-        // Wait 1 frame to guarantee that XR Interaction Toolkit has fully registered the new object!
         yield return new WaitForEndOfFrame();
 
         if (ammoInteractable != null && socketInteractor.interactionManager != null)
@@ -278,15 +270,12 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             allowProgrammaticGrab = true;
             socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, (IXRSelectInteractable)ammoInteractable);
             allowProgrammaticGrab = false;
-            
-            // XR Interaction Toolkit handles the position and rotation snapping automatically via attachTransforms!
-            SetObjectVisibility(newAmmo, false);
         }
 
         isRefilling = false;
     }
 
-    private void SetObjectVisibility(GameObject obj, bool isVisible)
+    private void ApplyInvisibleMaterial(GameObject obj)
     {
         if (obj == null) return;
         
@@ -296,8 +285,32 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
-            r.enabled = isVisible;
-            r.forceRenderingOff = !isVisible; // Brutal Unity override to ensure it NEVER draws!
+            if (!originalMaterials.ContainsKey(r))
+            {
+                originalMaterials[r] = r.sharedMaterials;
+            }
+
+            Material[] invMats = new Material[r.sharedMaterials.Length];
+            for (int i = 0; i < invMats.Length; i++) invMats[i] = invisibleMaterial;
+            r.sharedMaterials = invMats;
+        }
+    }
+
+    private void RestoreMaterials(GameObject obj)
+    {
+        if (obj == null) return;
+
+        Unity.Netcode.NetworkObject netObj = obj.GetComponentInParent<Unity.Netcode.NetworkObject>();
+        Transform trueRoot = netObj != null ? netObj.transform : obj.transform;
+
+        Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer r in renderers)
+        {
+            if (originalMaterials.ContainsKey(r))
+            {
+                r.sharedMaterials = originalMaterials[r];
+                originalMaterials.Remove(r);
+            }
         }
     }
 }
