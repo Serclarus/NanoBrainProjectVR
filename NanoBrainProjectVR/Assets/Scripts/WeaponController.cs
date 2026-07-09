@@ -449,6 +449,7 @@ public class WeaponController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        Debug.LogWarning($"[WeaponController] OnNetworkSpawn called. IsServer: {IsServer}, IsOwner: {IsOwner}, OwnerClientId: {OwnerClientId}");
         
         syncedMagazine.OnValueChanged += OnSyncedMagazineChanged;
         syncedIsHeld.OnValueChanged += OnSyncedIsHeldChanged;
@@ -456,6 +457,7 @@ public class WeaponController : NetworkBehaviour
         // Force a manual sync on spawn in case the Client is joining late or the value was already set!
         if (syncedMagazine.Value.NetworkObjectId != 0)
         {
+            Debug.LogWarning($"[WeaponController] syncedMagazine already has a value on spawn: {syncedMagazine.Value.NetworkObjectId}. Syncing immediately.");
             StartCoroutine(SyncMagazineRoutine(syncedMagazine.Value));
         }
         if (syncedIsHeld.Value)
@@ -485,6 +487,7 @@ public class WeaponController : NetworkBehaviour
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
     {
+        Debug.LogWarning($"[WeaponController] SyncMagazineRoutine started on client. Waiting for TryGet on NetObj ID...");
         NetworkObject netObj = null;
         float timeout = 3f; // Wait up to 3 seconds for the network object to spawn on this client
         
@@ -492,6 +495,7 @@ public class WeaponController : NetworkBehaviour
         {
             if (newMag.TryGet(out netObj))
             {
+                Debug.LogWarning($"[WeaponController] TryGet SUCCESS! Magazine found on client.");
                 break;
             }
             timeout -= Time.deltaTime;
@@ -501,6 +505,7 @@ public class WeaponController : NetworkBehaviour
         if (netObj != null)
         {
             currentMagazine = netObj.GetComponent<Magazine>();
+            Debug.LogWarning($"[WeaponController] currentMagazine set on client: {currentMagazine.gameObject.name}");
             
             // CRITICAL FIX: ALL Clients MUST locally socket the magazine!
             // Because XR Sockets are purely local, if the client doesn't explicitly put it in the socket, 
@@ -510,6 +515,7 @@ public class WeaponController : NetworkBehaviour
                 var grabInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (grabInteractable != null && magazineSocket != null)
                 {
+                    Debug.LogWarning($"[WeaponController] Attempting to socket magazine on client...");
                     // Force the interaction manager to register it if necessary
                     var manager = magazineSocket.interactionManager;
                     if (manager == null)
@@ -568,11 +574,17 @@ public class WeaponController : NetworkBehaviour
 
     private IEnumerator SpawnInitialMagazineRoutine()
     {
+        Debug.LogWarning($"[WeaponController] SpawnInitialMagazineRoutine started on Server. Waiting 0.3s...");
         // Wait briefly for XRI and Network to stabilize
         yield return new WaitForSeconds(0.3f);
 
-        if (currentMagazine != null || magazineSocket.hasSelection) yield break;
+        if (currentMagazine != null || magazineSocket.hasSelection)
+        {
+            Debug.LogWarning($"[WeaponController] ABORTED: currentMagazine != null ({currentMagazine != null}) OR magazineSocket.hasSelection ({magazineSocket.hasSelection})");
+            yield break;
+        }
 
+        Debug.LogWarning($"[WeaponController] Instantiating magazine prefab locally...");
         GameObject newMag = Instantiate(magazinePrefab, magazineSocket.transform.position, magazineSocket.transform.rotation);
         
         NetworkObject netObj = newMag.GetComponent<NetworkObject>();
@@ -580,15 +592,23 @@ public class WeaponController : NetworkBehaviour
         
         if (!isOffline && netObj != null)
         {
+            Debug.LogWarning($"[WeaponController] Spawning magazine on network with OwnerClientId: {OwnerClientId}...");
             var netConfig = Unity.Netcode.NetworkManager.Singleton.NetworkConfig;
             if (netConfig != null && !netConfig.Prefabs.Contains(magazinePrefab))
             {
+                Debug.LogWarning($"[WeaponController] Forcefully adding prefab to NetworkManager...");
                 netConfig.Prefabs.Add(new Unity.Netcode.NetworkPrefab { Prefab = magazinePrefab });
             }
 
             netObj.SpawnWithOwnership(OwnerClientId);
             yield return new WaitForEndOfFrame(); // Wait for network sync
         }
+        else
+        {
+            Debug.LogWarning($"[WeaponController] Network is offline OR netObj is null. isOffline: {isOffline}, netObj null: {netObj == null}");
+        }
+
+        Debug.LogWarning($"[WeaponController] Attempting to socket locally on Server...");
 
         var grabInteractable = newMag.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         if (grabInteractable != null)
