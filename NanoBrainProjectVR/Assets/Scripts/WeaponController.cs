@@ -465,8 +465,9 @@ public class WeaponController : NetworkBehaviour
             SetSubInteractablesState(true);
         }
 
-        // Only the Server is allowed to spawn NetworkObjects! If a Client tries to do this, Unity Netcode throws a fatal error and breaks the script!
-        if (IsServer && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        // Only the Owner is allowed to spawn the initial magazine!
+        // In Distributed Authority topology, the Client is allowed to spawn objects.
+        if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
         }
@@ -633,17 +634,7 @@ public class WeaponController : NetworkBehaviour
                 var rb = newMag.GetComponent<Rigidbody>();
                 if (rb != null) rb.isKinematic = true;
             }
-            
-            // Tell all clients to brutally force it into their local sockets too!
-            ForceSocketMagazineClientRpc(new NetworkObjectReference(netObj));
         }
-    }
-
-    [ClientRpc]
-    private void ForceSocketMagazineClientRpc(NetworkObjectReference magRef)
-    {
-        if (IsServer) return; // Server already did it!
-        StartCoroutine(SyncMagazineRoutine(magRef));
     }
 
     private void Start()
