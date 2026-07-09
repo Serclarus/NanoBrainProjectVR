@@ -142,23 +142,47 @@ public class Magazine : NetworkBehaviour
         {
             if (IsOwner)
             {
-                // If it was legitimately spawned over the network, let the server handle the cleanup
-                RequestDespawnRpc();
+                // PERFECT NETWORKED OBJECT POOLING:
+                // Instead of despawning and destroying the object across the network, we teleport it into the void!
+                // NetworkTransform will sync this position to all clients, hiding it instantly.
+                SendToVoidPool();
             }
         }
         else
         {
-            // PERFECT OBJECT POOLING:
-            // Instead of destroying the local magazine, we just hide it!
-            // It stays in the Ammo Pouch's circular queue, and the pouch will recycle it next time!
+            // PERFECT OFFLINE OBJECT POOLING:
             gameObject.SetActive(false); 
         }
     }
 
-    [Rpc(SendTo.Server)]
-    private void RequestDespawnRpc()
+    private void SendToVoidPool()
     {
-        NetworkObject.Despawn();
+        transform.position = new Vector3(0, -100, 0);
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
+
+    /// <summary>
+    /// Instantly despawns or pools the magazine (used by the Ammo Pouch when switching weapons).
+    /// </summary>
+    public void InstantDespawn()
+    {
+        if (IsSpawned)
+        {
+            if (IsOwner)
+            {
+                SendToVoidPool();
+            }
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     /// <summary>

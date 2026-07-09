@@ -256,6 +256,18 @@ public class ShotgunController : NetworkBehaviour
 
         currentHoldingInteractor = null;
 
+        // Ensure physics are completely restored so the shotgun falls to the ground when dropped!
+        bool droppedIntoSocket = args.interactorObject is XRSocketInteractor;
+        if (!droppedIntoSocket)
+        {
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+            }
+        }
+
         // --- NEW: Smart Ammo Pouch Logic for Dropping ---
         AmmoPouch localPouch = args.interactorObject.transform.root.GetComponentInChildren<AmmoPouch>();
         if (localPouch != null)

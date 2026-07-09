@@ -230,8 +230,16 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             IXRSelectInteractable oldItem = socketInteractor.interactablesSelected[0];
             socketInteractor.interactionManager.SelectCancel((IXRSelectInteractor)socketInteractor, oldItem);
             
-            // Instantly hide it! It's already in the circular queue, so it will be automatically reused!
-            oldItem.transform.gameObject.SetActive(false);
+            // MULTIPLAYER FIX: Cleanly despawn the old magazine off the network so it doesn't float in mid-air!
+            Magazine oldMag = oldItem.transform.GetComponent<Magazine>();
+            if (oldMag != null)
+            {
+                oldMag.InstantDespawn();
+            }
+            else
+            {
+                oldItem.transform.gameObject.SetActive(false);
+            }
             
             yield return new WaitForEndOfFrame(); 
         }
