@@ -455,15 +455,36 @@ public class WeaponController : NetworkBehaviour
     
     private void OnSyncedMagazineChanged(NetworkObjectReference oldMag, NetworkObjectReference newMag)
     {
-        // When the server puts a mag in the gun, sync it to the clients!
-        if (newMag.TryGet(out NetworkObject netObj))
+        StartCoroutine(SyncMagazineRoutine(newMag));
+    }
+
+    private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
+    {
+        NetworkObject netObj = null;
+        float timeout = 3f; // Wait up to 3 seconds for the network object to spawn on this client
+        
+        while (timeout > 0)
+        {
+            if (newMag.TryGet(out netObj))
+            {
+                break;
+            }
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (netObj != null)
         {
             currentMagazine = netObj.GetComponent<Magazine>();
             SetSubInteractablesState(isHeld || syncedIsHeld.Value); // Refresh the colliders!
         }
         else
         {
-            currentMagazine = null;
+            // Only set to null if it actually failed to find it after timeout, or if it was intentionally emptied
+            if (newMag.NetworkObjectId == 0)
+            {
+                currentMagazine = null;
+            }
         }
     }
 
