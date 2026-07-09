@@ -218,34 +218,13 @@ public class WeaponController : NetworkBehaviour
             }
         }
 
-        // Lock the magazine completely when the gun is dropped so the player cannot accidentally grab it out of the holster!
+        // Disable the magazine's colliders so the player cannot accidentally grab it when picking up the gun
         if (currentMagazine != null)
         {
-            var magInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-            var magRb = currentMagazine.GetComponent<Rigidbody>();
-            
-            Debug.LogWarning($"[WeaponController] SetSubInteractablesState - currentMagazine is NOT null. magInteractable found: {magInteractable != null}");
-
-            if (!state)
+            var cols = currentMagazine.GetComponentsInChildren<Collider>();
+            foreach (var col in cols)
             {
-                Debug.LogWarning($"[WeaponController] SetSubInteractablesState - Disabling magInteractable and freezing physics.");
-                // Weapon Dropped: Disable grabbing, parent it to the gun manually, and freeze it. 
-                // The socket will drop it, but we force it to stay perfectly inside the gun!
-                if (magInteractable != null) magInteractable.enabled = false;
-                if (magazineSocket != null)
-                {
-                    currentMagazine.transform.SetParent(magazineSocket.transform);
-                    currentMagazine.transform.localPosition = Vector3.zero;
-                    currentMagazine.transform.localRotation = Quaternion.identity;
-                }
-                if (magRb != null) magRb.isKinematic = true;
-            }
-            else
-            {
-                Debug.LogWarning($"[WeaponController] SetSubInteractablesState - Enabling magInteractable.");
-                // Weapon Grabbed: Re-enable grabbing so the player can pull it out to reload!
-                if (magInteractable != null) magInteractable.enabled = true;
-                // The socket will automatically re-grab it because it's hovering right inside the socket!
+                col.enabled = state;
             }
         }
         else
