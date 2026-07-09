@@ -460,7 +460,8 @@ public class WeaponController : NetworkBehaviour
             }
         }
 
-        if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        // Only the Server is allowed to spawn NetworkObjects! If a Client tries to do this, Unity Netcode throws a fatal error and breaks the script!
+        if (IsServer && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
         }
