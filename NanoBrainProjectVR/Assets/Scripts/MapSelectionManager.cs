@@ -86,8 +86,29 @@ public class MapSelectionManager : MonoBehaviour
             }
         }
         
+        // Subscribe to connection failures to enable endless retry loop!
+        if (XRMultiplayer.XRINetworkGameManager.Instance != null)
+        {
+            XRMultiplayer.XRINetworkGameManager.Instance.OnConnectionFailedAction += HandleConnectionFailure;
+        }
+
         // 3. Automatically host a local server so the Operator Dashboard works perfectly out-of-the-box
         Invoke(nameof(AutoHostLocal), 1f); // Wait 1 second to ensure NetworkManager is fully awake
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe to prevent memory leaks
+        if (XRMultiplayer.XRINetworkGameManager.Instance != null)
+        {
+            XRMultiplayer.XRINetworkGameManager.Instance.OnConnectionFailedAction -= HandleConnectionFailure;
+        }
+    }
+
+    private void HandleConnectionFailure(string reason)
+    {
+        Debug.LogWarning($"[MapSelectionManager] Connection failed ({reason}). Retrying in 1 second...");
+        Invoke(nameof(AutoHostLocal), 1f);
     }
     
     private void AutoHostLocal()

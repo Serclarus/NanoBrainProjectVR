@@ -1,41 +1,44 @@
 using UnityEngine;
-using System.Collections.Generic;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
+using System.Collections.Generic;
+using System.Collections;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.Filtering;
-
-[System.Serializable]
-public struct AmmoPoolConfig
-{
-    public GameObject ammoPrefab;
-    [Tooltip("How many to pre-instantiate at the start of the game.")]
-    public int initialPoolSize;
-}
 
 [RequireComponent(typeof(XRSocketInteractor))]
 public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 {
-    [Tooltip("The Magazine prefab that this pouch will currently dispense. This is updated dynamically by the WeaponController!")]
-    public GameObject magazinePrefab;
+    [Header("Ammo Pouch Settings")]
+    [Tooltip("The socket that will hold the ammo")]
+    public XRSocketInteractor socketInteractor;
     
-    [Header("Circular Object Pool")]
+    [Tooltip("The current magazine prefab this pouch produces")]
+    public GameObject magazinePrefab;
+
+    [System.Serializable]
+    public struct AmmoPoolConfig
+    {
+        public GameObject ammoPrefab;
+        public int initialPoolSize;
+    }
+
+    [Header("Pre-warmed Pools")]
     [Tooltip("Configure which magazines to pre-instantiate and how many to keep in the circular pool. (e.g. 4 pistol, 4 rifle, 7 shotgun shells)")]
-    public AmmoPoolConfig[] prewarmedPools;
+    public List<AmmoPoolConfig> prewarmedPools = new List<AmmoPoolConfig>();
 
     private Dictionary<GameObject, Queue<GameObject>> ammoPools = new Dictionary<GameObject, Queue<GameObject>>();
 
-    private XRSocketInteractor socketInteractor;
     private bool isRefilling = false;
-
-    // We use this to only allow the code-driven SelectEnter to succeed!
+    
+    // We use this variable to bypass our own grab filter when RefillSocketRoutine executes!
     private bool allowProgrammaticGrab = false;
 
-    public bool canProcess => true;
-
     private GameObject hiddenAmmoInstance;
-    private System.Collections.Generic.Dictionary<Renderer, Material[]> originalMaterials = new System.Collections.Generic.Dictionary<Renderer, Material[]>();
+    private Dictionary<Renderer, Material[]> originalMaterials = new Dictionary<Renderer, Material[]>();
     private Material invisibleMaterial;
+
+    public bool canProcess => true;
 
     public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
     {
@@ -57,13 +60,14 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
     private void Awake()
     {
         socketInteractor = GetComponent<XRSocketInteractor>();
-        if (socketInteractor != null)
+        
+        // Register this script as the Select Filter
+        socketInteractor.selectFilters.Add(this);
+        socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
+
+        // Fix: Ensure the Ammo Pouch doesn't spawn ghost meshes!
+        if (socketInteractor.interactableCantHoverMeshMaterial != null)
         {
-            socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
-            // Add ourselves as a filter so we can reject native trigger grabs (like the Shotgun loading port!)
-            socketInteractor.selectFilters.Add(this);
-            
-            // Fix: Disable the annoying red ghost meshes when a weapon hovers near the pouch!
             socketInteractor.interactableCantHoverMeshMaterial = null;
         }
 
@@ -107,19 +111,20 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             for (int i = 0; i < config.initialPoolSize; i++)
             {
                 GameObject newAmmo = Instantiate(config.ammoPrefab, poolParent);
-                newAmmo.SetActive(false); // Start hidden!
+                newAmmo.SetActive(false);
+                
+                // Keep things tidy in the hierarchy
+                newAmmo.name = config.ammoPrefab.name + "_Pooled_" + i;
                 
                 ammoPools[config.ammoPrefab].Enqueue(newAmmo);
             }
         }
-        Debug.Log($"<color=green>[AmmoPouch]</color> Pre-warmed pools initialized!");
     }
 
     private GameObject GetAmmoFromPool(GameObject prefab)
     {
         if (prefab == null) return null;
 
-        // Ensure the pool exists (just in case they forgot to add it to the inspector list)
         if (!ammoPools.ContainsKey(prefab))
         {
             ammoPools[prefab] = new Queue<GameObject>();
@@ -127,16 +132,14 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
         GameObject ammoInstance = null;
 
-        // Try to find a free instance in the circular queue
-        int checkCount = ammoPools[prefab].Count;
-        for (int i = 0; i < checkCount; i++)
+        // Try to find an inactive or unheld one
+        int queueSize = ammoPools[prefab].Count;
+        for (int i = 0; i < queueSize; i++)
         {
             GameObject candidate = ammoPools[prefab].Dequeue();
-
-            if (candidate == null) continue; // Optimize: Do NOT put destroyed/null objects back in the queue!
+            ammoPools[prefab].Enqueue(candidate); // Re-queue it immediately for circular pooling
             
-            ammoPools[prefab].Enqueue(candidate); // Keep the circle going
-
+            // Wait, we need to make sure the candidate is NOT already held!
             XRGrabInteractable grab = candidate.GetComponent<XRGrabInteractable>();
             
             // A magazine is "free" to steal if it is NOT selected (not held by hand, not in a gun socket)
@@ -172,18 +175,24 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         }
 
         // MAKE IT ONLINE! 
-        // Pre-warmed pools are created in Awake before the network connects. We MUST spawn them now if we are online!
         Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
         if (netObj != null && !netObj.IsSpawned && Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
         {
             netObj.Spawn();
         }
 
-        // REFILL the magazine so the player doesn't pull out an empty one!
         Magazine mag = ammoInstance.GetComponent<Magazine>();
         if (mag != null)
         {
             mag.Refill();
+        }
+        else
+        {
+            // For items like Shotgun Shells that don't use Magazine.cs, attach our generic physics fixer
+            if (ammoInstance.GetComponent<DropPhysicsFixer>() == null)
+            {
+                ammoInstance.AddComponent<DropPhysicsFixer>();
+            }
         }
 
         ammoInstance.SetActive(true);
@@ -222,7 +231,7 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         StartCoroutine(RefillSocketRoutine());
     }
 
-    private System.Collections.IEnumerator RefillSocketRoutine()
+    private IEnumerator RefillSocketRoutine()
     {
         if (isRefilling) yield break;
         isRefilling = true;
@@ -278,33 +287,33 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         isRefilling = false;
     }
 
-    private void ApplyInvisibleMaterial(GameObject obj)
+    private void ApplyInvisibleMaterial(GameObject ammoInstance)
     {
-        if (obj == null) return;
+        originalMaterials.Clear();
         
-        Unity.Netcode.NetworkObject netObj = obj.GetComponentInParent<Unity.Netcode.NetworkObject>();
-        Transform trueRoot = netObj != null ? netObj.transform : obj.transform;
+        Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponentInParent<Unity.Netcode.NetworkObject>();
+        Transform trueRoot = netObj != null ? netObj.transform : ammoInstance.transform;
 
         Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
-            if (!originalMaterials.ContainsKey(r))
-            {
-                originalMaterials[r] = r.sharedMaterials;
-            }
+            originalMaterials[r] = r.sharedMaterials;
 
             Material[] invMats = new Material[r.sharedMaterials.Length];
-            for (int i = 0; i < invMats.Length; i++) invMats[i] = invisibleMaterial;
+            for (int i = 0; i < invMats.Length; i++)
+            {
+                invMats[i] = invisibleMaterial;
+            }
             r.sharedMaterials = invMats;
         }
     }
 
-    private void RestoreMaterials(GameObject obj)
+    private void RestoreMaterials(GameObject ammoInstance)
     {
-        if (obj == null) return;
-
-        Unity.Netcode.NetworkObject netObj = obj.GetComponentInParent<Unity.Netcode.NetworkObject>();
-        Transform trueRoot = netObj != null ? netObj.transform : obj.transform;
+        if (ammoInstance == null) return;
+        
+        Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponentInParent<Unity.Netcode.NetworkObject>();
+        Transform trueRoot = netObj != null ? netObj.transform : ammoInstance.transform;
 
         Renderer[] renderers = trueRoot.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
@@ -312,8 +321,9 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             if (originalMaterials.ContainsKey(r))
             {
                 r.sharedMaterials = originalMaterials[r];
-                originalMaterials.Remove(r);
             }
         }
+        
+        originalMaterials.Clear();
     }
 }
