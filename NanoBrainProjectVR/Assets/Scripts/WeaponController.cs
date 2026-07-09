@@ -202,6 +202,7 @@ public class WeaponController : NetworkBehaviour
 
     private void SetSubInteractablesState(bool state)
     {
+        Debug.LogWarning($"[WeaponController] SetSubInteractablesState called on {gameObject.name}. State: {state}, isHeld: {isHeld}, syncedIsHeld: {syncedIsHeld.Value}");
         if (subInteractablesGroup != null)
         {
             var interactables = subInteractablesGroup.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true);
@@ -222,9 +223,12 @@ public class WeaponController : NetworkBehaviour
         {
             var magInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
             var magRb = currentMagazine.GetComponent<Rigidbody>();
+            
+            Debug.LogWarning($"[WeaponController] SetSubInteractablesState - currentMagazine is NOT null. magInteractable found: {magInteractable != null}");
 
             if (!state)
             {
+                Debug.LogWarning($"[WeaponController] SetSubInteractablesState - Disabling magInteractable and freezing physics.");
                 // Weapon Dropped: Disable grabbing, parent it to the gun manually, and freeze it. 
                 // The socket will drop it, but we force it to stay perfectly inside the gun!
                 if (magInteractable != null) magInteractable.enabled = false;
@@ -238,10 +242,15 @@ public class WeaponController : NetworkBehaviour
             }
             else
             {
+                Debug.LogWarning($"[WeaponController] SetSubInteractablesState - Enabling magInteractable.");
                 // Weapon Grabbed: Re-enable grabbing so the player can pull it out to reload!
                 if (magInteractable != null) magInteractable.enabled = true;
                 // The socket will automatically re-grab it because it's hovering right inside the socket!
             }
+        }
+        else
+        {
+            Debug.LogWarning($"[WeaponController] SetSubInteractablesState - currentMagazine IS NULL! Cannot lock magazine.");
         }
     }
 
