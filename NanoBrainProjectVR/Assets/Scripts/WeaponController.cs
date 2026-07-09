@@ -511,18 +511,28 @@ public class WeaponController : NetworkBehaviour
                 if (grabInteractable != null && magazineSocket != null)
                 {
                     // Force the interaction manager to register it if necessary
-                    if (grabInteractable.interactionManager != magazineSocket.interactionManager)
+                    var manager = magazineSocket.interactionManager;
+                    if (manager == null)
                     {
-                        grabInteractable.interactionManager = magazineSocket.interactionManager;
-                        magazineSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
+                        manager = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+                        magazineSocket.interactionManager = manager;
                     }
-                    
-                    if (!magazineSocket.hasSelection)
+
+                    if (manager != null)
                     {
-                        magazineSocket.interactionManager.SelectEnter(
-                            (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
-                            (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
-                        );
+                        if (grabInteractable.interactionManager != manager)
+                        {
+                            grabInteractable.interactionManager = manager;
+                            manager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
+                        }
+                        
+                        if (!magazineSocket.hasSelection)
+                        {
+                            manager.SelectEnter(
+                                (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
+                                (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
+                            );
+                        }
                     }
                 }
             }
