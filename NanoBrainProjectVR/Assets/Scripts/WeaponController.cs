@@ -491,9 +491,10 @@ public class WeaponController : NetworkBehaviour
         {
             currentMagazine = netObj.GetComponent<Magazine>();
             
-            // CRITICAL FIX: If the Client owns this weapon, they MUST locally socket the magazine!
-            // Otherwise, the client's physics engine will cause the magazine to fall infinitely into the void!
-            if (IsOwner && !IsServer)
+            // CRITICAL FIX: ALL Clients MUST locally socket the magazine!
+            // Because XR Sockets are purely local, if the client doesn't explicitly put it in the socket, 
+            // the physics engine will pull it down and it will fall out of the world!
+            if (!IsServer)
             {
                 var grabInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (grabInteractable != null && magazineSocket != null)
