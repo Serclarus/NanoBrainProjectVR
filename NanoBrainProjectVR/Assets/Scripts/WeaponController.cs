@@ -192,6 +192,9 @@ public class WeaponController : NetworkBehaviour
         {
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
+            
+            // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
+            magazineSocket.showInteractableCantHoverMeshes = false;
         }
 
         if (triggerTransform != null)

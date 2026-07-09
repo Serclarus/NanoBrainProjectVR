@@ -41,6 +41,9 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             socketInteractor.selectExited.AddListener(OnItemRemovedFromSocket);
             // Add ourselves as a filter so we can reject native trigger grabs (like the Shotgun loading port!)
             socketInteractor.selectFilters.Add(this);
+            
+            // Fix: Disable the annoying red ghost meshes when a weapon hovers near the pouch!
+            socketInteractor.showInteractableCantHoverMeshes = false;
         }
 
         InitializePools();
@@ -151,11 +154,6 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             ammoPools[prefab].Enqueue(ammoInstance);
         }
 
-        // Reset its physical state so it snaps exactly to the custom attach transform (to fix offset grabs!)
-        Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
-        ammoInstance.transform.position = attach.position;
-        ammoInstance.transform.rotation = attach.rotation;
-        
         Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -262,12 +260,8 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             socketInteractor.interactionManager.SelectEnter((IXRSelectInteractor)socketInteractor, (IXRSelectInteractable)ammoInteractable);
             allowProgrammaticGrab = false;
             
-            // CRITICAL: XRI sometimes moves the object during SelectEnter. 
-            // Force it to hide and stay at the attach transform immediately after!
+            // XR Interaction Toolkit handles the position and rotation snapping automatically via attachTransforms!
             SetObjectVisibility(newAmmo, false);
-            Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
-            newAmmo.transform.position = attach.position;
-            newAmmo.transform.rotation = attach.rotation;
         }
 
         isRefilling = false;

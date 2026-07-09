@@ -19,6 +19,14 @@ public class PlayerHolsterSystem : MonoBehaviour
     public bool printDebugLogs = true;
     private float debugTimer = 0f;
 
+    private void Awake()
+    {
+        // Fix: Disable the annoying red ghost meshes when you hold the wrong weapon near a holster!
+        if (leftShoulderSocket != null) leftShoulderSocket.showInteractableCantHoverMeshes = false;
+        if (rightShoulderSocket != null) rightShoulderSocket.showInteractableCantHoverMeshes = false;
+        if (rightBeltSocket != null) rightBeltSocket.showInteractableCantHoverMeshes = false;
+    }
+
     private void Update()
     {
         // We no longer forcefully calculate socket positions here! 
