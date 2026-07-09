@@ -532,6 +532,15 @@ public class WeaponController : NetworkBehaviour
                                 (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
                                 (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
                             );
+                            
+                            // BRUTE FORCE FALLBACK: If XRI refused to socket it (e.g. mismatched layers), forcefully snap it!
+                            if (!magazineSocket.hasSelection)
+                            {
+                                currentMagazine.transform.position = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
+                                currentMagazine.transform.rotation = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.rotation : magazineSocket.transform.rotation;
+                                var rb = currentMagazine.GetComponent<Rigidbody>();
+                                if (rb != null) rb.isKinematic = true;
+                            }
                         }
                     }
                 }
@@ -571,6 +580,12 @@ public class WeaponController : NetworkBehaviour
         
         if (!isOffline && netObj != null)
         {
+            var netConfig = Unity.Netcode.NetworkManager.Singleton.NetworkConfig;
+            if (netConfig != null && !netConfig.Prefabs.Contains(magazinePrefab))
+            {
+                netConfig.Prefabs.Add(new Unity.Netcode.NetworkPrefab { Prefab = magazinePrefab });
+            }
+
             netObj.SpawnWithOwnership(OwnerClientId);
             yield return new WaitForEndOfFrame(); // Wait for network sync
         }
@@ -589,6 +604,15 @@ public class WeaponController : NetworkBehaviour
                 (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
                 (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
             );
+            
+            // BRUTE FORCE FALLBACK: If XRI refused to socket it (e.g. mismatched layers), forcefully snap it!
+            if (!magazineSocket.hasSelection)
+            {
+                newMag.transform.position = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
+                newMag.transform.rotation = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.rotation : magazineSocket.transform.rotation;
+                var rb = newMag.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = true;
+            }
             
             // Tell all clients to brutally force it into their local sockets too!
             ForceSocketMagazineClientRpc(new NetworkObjectReference(netObj));
