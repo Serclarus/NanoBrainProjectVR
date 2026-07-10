@@ -47,17 +47,23 @@ public class PlayerWeaponSpawner : MonoBehaviour
         {
             if (myNetObj == null || myNetObj.IsSpawned)
             {
-                if (!hasSpawned) Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it either has no NetworkObject, or we do not own it. (myNetObj is {myNetObj?.name})");
+                if (!hasSpawned) Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it either has no NetworkObject, or we do not own it.");
                 hasSpawned = true; 
             }
             return;
         }
 
+        // CRITICAL FIX: Only the TRUE Player Avatar should spawn weapons!
+        // The user attached this script to the XR Origin prefab as well, which is NOT the PlayerObject.
+        // Because the XR Origin is in every scene, every time a scene loaded, the new XR Origin spawned duplicate weapons!
+        if (!myNetObj.IsPlayerObject)
+        {
+            Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it is a scene object, not the Player Avatar!");
+            hasSpawned = true;
+            return;
+        }
+
         hasSpawned = true;
-        
-        // CRITICAL FIX: Make the avatar persist across scenes so it isn't destroyed when loading maps!
-        // If it gets destroyed, NetworkManager spawns a new one, which creates duplicate weapons!
-        DontDestroyOnLoad(gameObject);
 
         Debug.Log($"<color=green>[WeaponSpawner]</color> Connected to network and we own this Avatar ({gameObject.name})! Spawning 3 weapons NOW.");
 
