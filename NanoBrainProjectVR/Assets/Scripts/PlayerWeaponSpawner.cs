@@ -39,7 +39,20 @@ public class PlayerWeaponSpawner : MonoBehaviour
         
         if (!NetworkManager.Singleton.IsConnectedClient)
         {
-            Debug.LogWarning("<color=orange>[WeaponSpawner]</color> Waiting: Not a connected client yet!");
+            return;
+        }
+
+        // Prevent duplicate spawning from the XR Origin in each scene!
+        // We only want to spawn weapons from the NetworkPlayerAvatar, which has a NetworkObject.
+        NetworkObject myNetObj = GetComponent<NetworkObject>();
+        if (myNetObj == null || !myNetObj.IsSpawned || !myNetObj.IsOwner)
+        {
+            // If this is the scene's XR Rig, or someone else's avatar, do nothing.
+            // But mark hasSpawned so we don't keep checking every frame.
+            if (myNetObj == null || myNetObj.IsSpawned)
+            {
+                hasSpawned = true; 
+            }
             return;
         }
 
