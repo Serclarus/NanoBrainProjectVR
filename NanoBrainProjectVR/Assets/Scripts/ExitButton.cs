@@ -89,14 +89,8 @@ public class ExitButton : MonoBehaviour
                 buttonText.UpdateMeshPadding();
             }
 
-            Debug.Log($"Exit Button confirmed! Disconnecting and returning to {mainMenuSceneName}...");
+            Debug.Log($"Exit Button confirmed! Returning to {mainMenuSceneName}...");
 
-            // Properly disconnect from the multiplayer session if one exists!
-            // (Using reflection-safe check in case the script is missing)
-            if (XRINetworkGameManager.Instance != null)
-            {
-                XRINetworkGameManager.Instance.LeaveLocalConnection();
-            }
 
             // Use the smooth VR fader if it exists!
             if (VRSceneFader.Instance != null)
