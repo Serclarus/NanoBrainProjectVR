@@ -14,8 +14,8 @@ public class PlayerWeaponSpawner : MonoBehaviour
     public GameObject shotgunPrefab;
     public GameObject pistolPrefab;
 
-    private bool hasSpawned = false;
-    private System.Collections.Generic.List<GameObject> spawnedWeapons = new System.Collections.Generic.List<GameObject>();
+    private static bool hasSpawned = false;
+    private static System.Collections.Generic.List<GameObject> spawnedWeapons = new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -56,14 +56,37 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         hasSpawned = true;
 
-        Debug.Log($"<color=green>[WeaponSpawner]</color> Connected to network and we own this Avatar ({gameObject.name})! Spawning 3 weapons NOW.");
-
         PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
 
         if (holsters == null)
         {
             Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> No PlayerHolsterSystem found locally on Avatar. Weapons will spawn at player position and rely on AutoReturn fallback.");
         }
+
+        spawnedWeapons.RemoveAll(w => w == null);
+
+        if (spawnedWeapons.Count > 0)
+        {
+            Debug.Log($"<color=green>[WeaponSpawner]</color> Weapons already exist from a previous scene! Re-linking them to new holsters.");
+            foreach (GameObject weapon in spawnedWeapons)
+            {
+                if (weapon != null)
+                {
+                    WeaponAutoReturn autoReturn = weapon.GetComponent<WeaponAutoReturn>();
+                    if (autoReturn != null && holsters != null)
+                    {
+                        if (autoReturn.slotType == WeaponSlotType.Rifle) autoReturn.homeSocket = holsters.rightShoulderSocket;
+                        else if (autoReturn.slotType == WeaponSlotType.Shotgun) autoReturn.homeSocket = holsters.leftShoulderSocket;
+                        else if (autoReturn.slotType == WeaponSlotType.Pistol) autoReturn.homeSocket = holsters.rightBeltSocket;
+                        
+                        autoReturn.ForceReturnToSocket(); // Teleport immediately to new holsters
+                    }
+                }
+            }
+            return;
+        }
+
+        Debug.Log($"<color=green>[WeaponSpawner]</color> Connected to network and we own this Avatar ({gameObject.name})! Spawning 3 weapons NOW.");
 
         SpawnWeapon(riflePrefab, holsters);
         SpawnWeapon(shotgunPrefab, holsters);
@@ -131,26 +154,8 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
     private void OnDestroy()
     {
-        // When this VR_Vest (a scene object) is destroyed during a scene transition,
-        // we MUST destroy the dynamically spawned weapons! Otherwise, they survive the 
-        // transition while the avatar dies, leaving duplicate weapons floating in the air 
-        // when the new scene loads and spawns new ones!
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
-
-        foreach (GameObject weapon in spawnedWeapons)
-        {
-            if (weapon != null)
-            {
-                NetworkObject no = weapon.GetComponent<NetworkObject>();
-                if (no != null && no.IsSpawned)
-                {
-                    no.Despawn(true);
-                }
-                else
-                {
-                    Destroy(weapon);
-                }
-            }
-        }
+        // We no longer destroy weapons on scene transition!
+        // We want them to survive so the NEXT scene's XR Origin can pick them up.
+        hasSpawned = false; // Allow the new scene's spawner to run and re-link them
     }
 }
