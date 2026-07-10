@@ -176,6 +176,12 @@ public class WeaponAutoReturn : NetworkBehaviour
         if (returnRoutine != null) StopCoroutine(returnRoutine);
     }
 
+    public void ForceReturnToSocket()
+    {
+        if (returnRoutine != null) StopCoroutine(returnRoutine);
+        returnRoutine = StartCoroutine(ReturnTimer(0f));
+    }
+
     private void OnDropped(SelectExitEventArgs args)
     {
         if (IsSpawned && !IsOwner) return;
@@ -187,9 +193,9 @@ public class WeaponAutoReturn : NetworkBehaviour
         }
     }
 
-    private IEnumerator ReturnTimer()
+    private IEnumerator ReturnTimer(float delay = -1f)
     {
-        yield return new WaitForSeconds(returnDelay);
+        yield return new WaitForSeconds(delay >= 0f ? delay : returnDelay);
 
         if (homeSocket != null)
         {
