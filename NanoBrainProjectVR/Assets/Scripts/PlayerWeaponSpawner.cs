@@ -54,6 +54,10 @@ public class PlayerWeaponSpawner : MonoBehaviour
         }
 
         hasSpawned = true;
+        
+        // CRITICAL FIX: Make the avatar persist across scenes so it isn't destroyed when loading maps!
+        // If it gets destroyed, NetworkManager spawns a new one, which creates duplicate weapons!
+        DontDestroyOnLoad(gameObject);
 
         Debug.Log($"<color=green>[WeaponSpawner]</color> Connected to network and we own this Avatar ({gameObject.name})! Spawning 3 weapons NOW.");
 
