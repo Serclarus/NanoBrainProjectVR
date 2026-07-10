@@ -227,7 +227,8 @@ public class WeaponAutoReturn : NetworkBehaviour
             {
                 if (socket.hasSelection)
                 {
-                    Transform attachedObj = socket.interactablesSelected[0].transform;
+                    var magInteractable = socket.interactablesSelected[0];
+                    Transform attachedObj = magInteractable.transform;
                     Transform targetAttach = socket.attachTransform != null ? socket.attachTransform : socket.transform;
                     attachedObj.position = targetAttach.position;
                     attachedObj.rotation = targetAttach.rotation;
@@ -238,6 +239,23 @@ public class WeaponAutoReturn : NetworkBehaviour
                         attachedRb.isKinematic = true;
                         attachedRb.linearVelocity = Vector3.zero;
                         attachedRb.angularVelocity = Vector3.zero;
+                    }
+
+                    if (homeSocket != null && homeSocket.interactionManager != null)
+                    {
+                        socket.interactionManager = homeSocket.interactionManager;
+                        
+                        var grabInteractableMag = attachedObj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                        if (grabInteractableMag != null)
+                        {
+                            grabInteractableMag.interactionManager = homeSocket.interactionManager;
+                            
+                            try 
+                            {
+                                socket.interactionManager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)socket, (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractableMag);
+                            }
+                            catch (System.Exception e) { }
+                        }
                     }
                 }
             }
