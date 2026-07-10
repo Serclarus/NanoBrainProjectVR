@@ -222,6 +222,26 @@ public class WeaponAutoReturn : NetworkBehaviour
                 rb.angularVelocity = Vector3.zero;
             }
 
+            // CRITICAL FIX: Explicitly teleport all socketed items (like magazines) so they don't get left behind during scene transitions!
+            foreach (var socket in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>())
+            {
+                if (socket.hasSelection)
+                {
+                    Transform attachedObj = socket.interactablesSelected[0].transform;
+                    Transform targetAttach = socket.attachTransform != null ? socket.attachTransform : socket.transform;
+                    attachedObj.position = targetAttach.position;
+                    attachedObj.rotation = targetAttach.rotation;
+                    
+                    Rigidbody attachedRb = attachedObj.GetComponent<Rigidbody>();
+                    if (attachedRb != null)
+                    {
+                        attachedRb.isKinematic = true;
+                        attachedRb.linearVelocity = Vector3.zero;
+                        attachedRb.angularVelocity = Vector3.zero;
+                    }
+                }
+            }
+
             grabInteractable.enabled = true;
             yield return new WaitForEndOfFrame();
 

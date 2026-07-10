@@ -27,8 +27,7 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
     [Tooltip("Configure which magazines to pre-instantiate and how many to keep in the circular pool. (e.g. 4 pistol, 4 rifle, 7 shotgun shells)")]
     public List<AmmoPoolConfig> prewarmedPools = new List<AmmoPoolConfig>();
 
-    private static Dictionary<GameObject, Queue<GameObject>> ammoPools = new Dictionary<GameObject, Queue<GameObject>>();
-    private static bool poolsInitialized = false;
+    private Dictionary<GameObject, Queue<GameObject>> ammoPools = new Dictionary<GameObject, Queue<GameObject>>();
 
     private bool isRefilling = false;
     
@@ -91,8 +90,6 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
     private void InitializePools()
     {
-        if (poolsInitialized) return;
-        poolsInitialized = true;
         // Create a hidden parent object to keep the hierarchy extremely clean
         // We leave this at the ROOT of the scene, otherwise dropped magazines will move with the player!
         Transform poolParent = new GameObject("AmmoPouch_Pool").transform;
