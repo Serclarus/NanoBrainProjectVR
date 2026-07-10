@@ -32,6 +32,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             grabInteractable.selectEntered.AddListener(OnGrabbed);
             grabInteractable.selectExited.AddListener(OnDropped);
         }
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnDisable()
@@ -40,6 +41,20 @@ public class WeaponAutoReturn : NetworkBehaviour
         {
             grabInteractable.selectEntered.RemoveListener(OnGrabbed);
             grabInteractable.selectExited.RemoveListener(OnDropped);
+        }
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // When a new scene loads, the old holsters are destroyed and we are dropped.
+        // If we are the owner, automatically seek out the new holsters in the new scene!
+        if (IsOwner)
+        {
+            Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> New scene loaded! Seeking new holsters for {gameObject.name}...");
+            // Clear the old destroyed socket reference
+            homeSocket = null;
+            TryFindSocketAndSlot();
         }
     }
 
