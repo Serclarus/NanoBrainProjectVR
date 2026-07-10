@@ -15,6 +15,7 @@ public class PlayerWeaponSpawner : MonoBehaviour
     public GameObject pistolPrefab;
 
     private bool hasSpawned = false;
+    private System.Collections.Generic.List<GameObject> spawnedWeapons = new System.Collections.Generic.List<GameObject>();
 
     private void Start()
     {
@@ -50,16 +51,6 @@ public class PlayerWeaponSpawner : MonoBehaviour
                 if (!hasSpawned) Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it either has no NetworkObject, or we do not own it.");
                 hasSpawned = true; 
             }
-            return;
-        }
-
-        // CRITICAL FIX: Only the TRUE Player Avatar should spawn weapons!
-        // The user attached this script to the XR Origin prefab as well, which is NOT the PlayerObject.
-        // Because the XR Origin is in every scene, every time a scene loaded, the new XR Origin spawned duplicate weapons!
-        if (!myNetObj.IsPlayerObject)
-        {
-            Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it is a scene object, not the Player Avatar!");
-            hasSpawned = true;
             return;
         }
 
@@ -133,7 +124,33 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         netObj.Spawn();
         weapon.name = $"{prefab.name}_Networked";
+        spawnedWeapons.Add(weapon);
 
         Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawned {weapon.name} and explicitly wired it to its socket!");
+    }
+
+    private void OnDestroy()
+    {
+        // When this VR_Vest (a scene object) is destroyed during a scene transition,
+        // we MUST destroy the dynamically spawned weapons! Otherwise, they survive the 
+        // transition while the avatar dies, leaving duplicate weapons floating in the air 
+        // when the new scene loads and spawns new ones!
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+
+        foreach (GameObject weapon in spawnedWeapons)
+        {
+            if (weapon != null)
+            {
+                NetworkObject no = weapon.GetComponent<NetworkObject>();
+                if (no != null && no.IsSpawned)
+                {
+                    no.Despawn(true);
+                }
+                else
+                {
+                    Destroy(weapon);
+                }
+            }
+        }
     }
 }
