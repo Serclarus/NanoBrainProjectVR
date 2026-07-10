@@ -42,15 +42,12 @@ public class PlayerWeaponSpawner : MonoBehaviour
             return;
         }
 
-        // Prevent duplicate spawning from the XR Origin in each scene!
-        // We only want to spawn weapons from the NetworkPlayerAvatar, which has a NetworkObject.
         NetworkObject myNetObj = GetComponent<NetworkObject>();
         if (myNetObj == null || !myNetObj.IsSpawned || !myNetObj.IsOwner)
         {
-            // If this is the scene's XR Rig, or someone else's avatar, do nothing.
-            // But mark hasSpawned so we don't keep checking every frame.
             if (myNetObj == null || myNetObj.IsSpawned)
             {
+                if (!hasSpawned) Debug.Log($"<color=red>[WeaponSpawner]</color> Ignoring spawn on {gameObject.name} because it either has no NetworkObject, or we do not own it. (myNetObj is {myNetObj?.name})");
                 hasSpawned = true; 
             }
             return;
@@ -58,13 +55,13 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
         hasSpawned = true;
 
-        Debug.Log("<color=green>[WeaponSpawner]</color> Connected to network — spawning weapons now.");
+        Debug.Log($"<color=green>[WeaponSpawner]</color> Connected to network and we own this Avatar ({gameObject.name})! Spawning 3 weapons NOW.");
 
         PlayerHolsterSystem holsters = GetComponentInChildren<PlayerHolsterSystem>();
 
         if (holsters == null)
         {
-            Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> No PlayerHolsterSystem found. Weapons will spawn at player position.");
+            Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> No PlayerHolsterSystem found locally on Avatar. Weapons will spawn at player position and rely on AutoReturn fallback.");
         }
 
         SpawnWeapon(riflePrefab, holsters);
@@ -74,11 +71,9 @@ public class PlayerWeaponSpawner : MonoBehaviour
 
     private void SpawnWeapon(GameObject prefab, PlayerHolsterSystem holsters)
     {
-        if (prefab == null)
-        {
-            Debug.LogWarning("<color=yellow>[WeaponSpawner]</color> A weapon slot is empty in the Inspector. Skipping.");
-            return;
-        }
+        if (prefab == null) return;
+        
+        Debug.Log($"<color=cyan>[WeaponSpawner]</color> Spawning {prefab.name}...");
 
         Vector3 pos = transform.position;
         Quaternion rot = transform.rotation;
