@@ -7,7 +7,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 [RequireComponent(typeof(XRSocketInteractor))]
-public class AmmoPouch : MonoBehaviour, IXRSelectFilter
+public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
 {
     [Header("Ammo Pouch Settings")]
     [Tooltip("The socket that will hold the ammo")]
@@ -75,8 +75,15 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // UI/Default exists in URP, HDRP, and Built-in, preventing the "Pink Material" error!
         invisibleMaterial = new Material(Shader.Find("UI/Default"));
         invisibleMaterial.color = new Color(0, 0, 0, 0); // 100% transparent
+    }
 
-        InitializePools();
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (IsServer)
+        {
+            InitializePools();
+        }
     }
 
     private void OnDestroy()
@@ -90,14 +97,12 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
 
     private void InitializePools()
     {
-        // Create a hidden parent object to keep the hierarchy extremely clean
-        // We leave this at the ROOT of the scene, otherwise dropped magazines will move with the player!
-        Transform poolParent = new GameObject("AmmoPouch_Pool").transform;
-        
-        // CRITICAL FIX: Make the Ammo Pool survive scene transitions!
-        // Without this, the Lobby's pool gets destroyed when loading Boar Hunting,
-        // forcing the AmmoPouch to desperately instantiate broken, offset fallback magazines!
-        DontDestroyOnLoad(poolParent.gameObject);
+        Transform poolParent = GameObject.Find("AmmoPouch_Pool")?.transform;
+        if (poolParent == null)
+        {
+            poolParent = new GameObject("AmmoPouch_Pool").transform;
+            DontDestroyOnLoad(poolParent.gameObject);
+        }
 
         foreach (var config in prewarmedPools)
         {
@@ -108,15 +113,83 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
                 ammoPools[config.ammoPrefab] = new Queue<GameObject>();
             }
 
+            List<ulong> spawnedIds = new List<ulong>();
+
             for (int i = 0; i < config.initialPoolSize; i++)
             {
                 GameObject newAmmo = Instantiate(config.ammoPrefab, poolParent);
                 newAmmo.SetActive(false);
-                
-                // Keep things tidy in the hierarchy
                 newAmmo.name = config.ammoPrefab.name + "_Pooled_" + i;
                 
+                Unity.Netcode.NetworkObject netObj = newAmmo.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null)
+                {
+                    netObj.SpawnWithOwnership(OwnerClientId);
+                    spawnedIds.Add(netObj.NetworkObjectId);
+                }
+                
                 ammoPools[config.ammoPrefab].Enqueue(newAmmo);
+            }
+
+            if (spawnedIds.Count > 0)
+            {
+                RegisterPooledAmmoClientRpc(config.ammoPrefab.name, spawnedIds.ToArray());
+            }
+        }
+    }
+
+    [Unity.Netcode.ClientRpc]
+    private void RegisterPooledAmmoClientRpc(string prefabName, ulong[] netIds)
+    {
+        if (IsServer) return; // Server already added them to its own pool during instantiation!
+
+        GameObject matchingPrefab = null;
+        foreach (var config in prewarmedPools)
+        {
+            if (config.ammoPrefab != null && config.ammoPrefab.name == prefabName)
+            {
+                matchingPrefab = config.ammoPrefab;
+                break;
+            }
+        }
+
+        if (matchingPrefab == null) return;
+
+        if (!ammoPools.ContainsKey(matchingPrefab))
+            ammoPools[matchingPrefab] = new Queue<GameObject>();
+
+        StartCoroutine(WaitForSpawnedObjects(matchingPrefab, netIds));
+    }
+
+    private IEnumerator WaitForSpawnedObjects(GameObject matchingPrefab, ulong[] netIds)
+    {
+        Transform poolParent = GameObject.Find("AmmoPouch_Pool")?.transform;
+        if (poolParent == null)
+        {
+            poolParent = new GameObject("AmmoPouch_Pool").transform;
+            DontDestroyOnLoad(poolParent.gameObject);
+        }
+
+        foreach (ulong id in netIds)
+        {
+            float timeout = 5f;
+            Unity.Netcode.NetworkObject netObj = null;
+            
+            while (timeout > 0f)
+            {
+                if (Unity.Netcode.NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(id, out netObj))
+                {
+                    break;
+                }
+                timeout -= Time.deltaTime;
+                yield return null;
+            }
+
+            if (netObj != null)
+            {
+                ammoPools[matchingPrefab].Enqueue(netObj.gameObject);
+                netObj.gameObject.SetActive(false);
+                netObj.transform.SetParent(poolParent);
             }
         }
     }
@@ -154,9 +227,25 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         // we MUST instantiate a new one to prevent breaking the game!
         if (ammoInstance == null)
         {
-            Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> All pooled {prefab.name} are currently inside guns! Expanding pool slightly.");
-            ammoInstance = Instantiate(prefab, transform.position, transform.rotation);
-            ammoPools[prefab].Enqueue(ammoInstance);
+            Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> All pooled {prefab.name} are currently inside guns! Waiting for Server to expand pool.");
+            if (IsServer)
+            {
+                Transform poolParent = GameObject.Find("AmmoPouch_Pool")?.transform;
+                ammoInstance = Instantiate(prefab, transform.position, transform.rotation, poolParent);
+                Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null)
+                {
+                    netObj.SpawnWithOwnership(OwnerClientId);
+                    RegisterPooledAmmoClientRpc(prefab.name, new ulong[] { netObj.NetworkObjectId });
+                }
+                ammoPools[prefab].Enqueue(ammoInstance);
+            }
+            else
+            {
+                // Clients just return null for this frame and hope the server expands it soon,
+                // but 4-10 mags is almost never exhausted anyway.
+                return null;
+            }
         }
 
         // CRITICAL: We must manually teleport the object OUT of the underground void pool (-100) 
@@ -172,13 +261,6 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
             rb.isKinematic = true; // FORCE kinematic so it doesn't explode in physics calculations before socket grabs it!
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-        }
-
-        // MAKE IT ONLINE! 
-        Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
-        if (netObj != null && !netObj.IsSpawned && Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
-        {
-            netObj.Spawn();
         }
 
         Magazine mag = ammoInstance.GetComponent<Magazine>();
@@ -265,7 +347,12 @@ public class AmmoPouch : MonoBehaviour, IXRSelectFilter
         }
 
         // --- NEW POOL LOGIC: FETCH INSTEAD OF INSTANTIATE ---
-        GameObject newAmmo = GetAmmoFromPool(magazinePrefab);
+        GameObject newAmmo = null;
+        while (newAmmo == null)
+        {
+            newAmmo = GetAmmoFromPool(magazinePrefab);
+            if (newAmmo == null) yield return new WaitForSeconds(0.5f); // Wait for a magazine to become free
+        }
         
         // Track this specific instance so we can restore its materials later!
         hiddenAmmoInstance = newAmmo;

@@ -31,6 +31,24 @@ public class OperatorDashboard : MonoBehaviour
         StartCoroutine(InitializeDashboardRoutine());
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (pcCamera != null)
+        {
+            CleanUpPCEnvironment();
+        }
+    }
+
     private IEnumerator InitializeDashboardRoutine()
     {
         // Wait a brief moment to ensure XR and Network systems have started
@@ -68,11 +86,36 @@ public class OperatorDashboard : MonoBehaviour
             camObj.tag = "MainCamera";
         }
 
+        // Add AudioListener so the PC Operator can hear the game audio
+        if (pcCamera.GetComponent<AudioListener>() == null)
+        {
+            pcCamera.gameObject.AddComponent<AudioListener>();
+        }
+
         // Disable VR rendering for the PC camera to save performance and prevent bugs
         pcCamera.stereoTargetEye = StereoTargetEyeMask.None;
+        
+        CleanUpPCEnvironment();
 
         // 2. Build the UI Dashboard automatically
         BuildDashboardUI();
+    }
+
+    private void CleanUpPCEnvironment()
+    {
+        // Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard
+        var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
+        if (simulator != null) Destroy(simulator.gameObject);
+
+        // Find the XR Origin and disable it so the operator has no physical hands blocking their view
+        // and doesn't accidentally move an empty player avatar around the map!
+        var xrOrigin = FindObjectOfType<Unity.XR.CoreUtils.XROrigin>();
+        if (xrOrigin != null)
+        {
+            // If it belongs to a network object (like the Host's player body), 
+            // disabling it is a safe way to make the Host an invisible spectator!
+            xrOrigin.gameObject.SetActive(false);
+        }
     }
 
     private void BuildDashboardUI()
@@ -111,8 +154,7 @@ public class OperatorDashboard : MonoBehaviour
         }
 
         // Create Game Action Buttons
-        CreateButton(panelObj.transform, "Retry Connection", new Vector2(0, yOffset - 40f), RetryConnection);
-        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 100f), ResetCurrentMap);
+        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 40f), ResetCurrentMap);
         
         CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -300), 16);
     }
@@ -218,14 +260,5 @@ public class OperatorDashboard : MonoBehaviour
     {
         string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         LoadMap(currentScene);
-    }
-    
-    private void RetryConnection()
-    {
-        if (XRINetworkGameManager.Instance != null && Unity.Netcode.NetworkManager.Singleton != null && !Unity.Netcode.NetworkManager.Singleton.IsListening)
-        {
-            Debug.Log("[OperatorDashboard] Retrying Relay Connection...");
-            XRINetworkGameManager.Instance.QuickJoinLobby();
-        }
     }
 }

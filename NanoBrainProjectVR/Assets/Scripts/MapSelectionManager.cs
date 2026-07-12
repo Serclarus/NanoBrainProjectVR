@@ -117,8 +117,25 @@ public class MapSelectionManager : MonoBehaviour
         {
             if (XRMultiplayer.XRINetworkGameManager.Instance != null)
             {
-                Debug.Log("[MapSelectionManager] Auto-joining or hosting Relay Lobby...");
-                XRMultiplayer.XRINetworkGameManager.Instance.QuickJoinLobby();
+                // Determine if we are running in VR or on PC
+                bool isVRActive = false;
+                var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
+                UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+                foreach (var display in xrDisplays)
+                {
+                    if (display.running) isVRActive = true;
+                }
+                
+                if (isVRActive)
+                {
+                    Debug.Log("[MapSelectionManager] VR Player Detected: Auto-joining Lobby as Client...");
+                    XRMultiplayer.XRINetworkGameManager.Instance.QuickJoinLobby();
+                }
+                else
+                {
+                    Debug.Log("[MapSelectionManager] PC Operator Detected: Creating Lobby as Host...");
+                    XRMultiplayer.XRINetworkGameManager.Instance.CreateNewLobby("Operator_Session", false, 10);
+                }
             }
         }
     }
