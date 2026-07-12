@@ -43,6 +43,9 @@ public class OperatorDashboard : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
+        // The VR player's body is destroyed and recreated on scene loads, so we must find their new head!
+        vrTargetHead = null;
+
         if (pcCamera != null)
         {
             CleanUpPCEnvironment();
@@ -77,14 +80,11 @@ public class OperatorDashboard : MonoBehaviour
 
     private void SetupPCEnvironment()
     {
-        // 1. Find or create the PC Camera
-        pcCamera = Camera.main;
-        if (pcCamera == null)
-        {
-            GameObject camObj = new GameObject("OperatorSpectatorCamera");
-            pcCamera = camObj.AddComponent<Camera>();
-            camObj.tag = "MainCamera";
-        }
+        // 1. Create a dedicated PC Spectator Camera (DO NOT hijack Camera.main as it belongs to XR Origin)
+        GameObject camObj = new GameObject("OperatorSpectatorCamera");
+        camObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
+        pcCamera = camObj.AddComponent<Camera>();
+        camObj.tag = "MainCamera";
 
         // Add AudioListener so the PC Operator can hear the game audio
         if (pcCamera.GetComponent<AudioListener>() == null)
@@ -94,6 +94,9 @@ public class OperatorDashboard : MonoBehaviour
 
         // Disable VR rendering for the PC camera to save performance and prevent bugs
         pcCamera.stereoTargetEye = StereoTargetEyeMask.None;
+
+        // Force this to be the highest priority camera
+        pcCamera.depth = 99;
         
         CleanUpPCEnvironment();
 
@@ -121,6 +124,7 @@ public class OperatorDashboard : MonoBehaviour
     private void BuildDashboardUI()
     {
         GameObject canvasObj = new GameObject("OperatorDashboardCanvas");
+        canvasObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
         dashboardCanvas = canvasObj.AddComponent<Canvas>();
         dashboardCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
