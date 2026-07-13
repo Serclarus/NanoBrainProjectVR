@@ -288,8 +288,8 @@ public class OperatorDashboard : MonoBehaviour
         {
             pcCamera.transform.position = vrTargetHead.position;
             
-            // If we fell back to the root transform, add a fake head height offset so we aren't looking at the floor
-            if (vrTargetHead == NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.ConnectedClientsList.FindIndex(c => c.PlayerObject != null && c.PlayerObject.transform == vrTargetHead)].PlayerObject.transform)
+            // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
+            if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
             {
                 pcCamera.transform.position += Vector3.up * 1.6f;
             }
