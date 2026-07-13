@@ -174,9 +174,12 @@ public class OperatorDashboard : MonoBehaviour
         }
 
         // Create Game Action Buttons
-        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 40f), ResetCurrentMap);
+        CreateButton(panelObj.transform, "Toggle Pause Game", new Vector2(0, yOffset - 20f), TogglePause);
+        CreateButton(panelObj.transform, "Refill Held Mag", new Vector2(0, yOffset - 70f), RefillMags);
+        CreateButton(panelObj.transform, "Load Held Shotgun", new Vector2(0, yOffset - 120f), LoadShotgun);
+        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 170f), ResetCurrentMap);
         
-        CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -300), 16);
+        CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -350), 16);
     }
 
     private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, UnityEngine.Events.UnityAction onClickAction)
@@ -314,5 +317,34 @@ public class OperatorDashboard : MonoBehaviour
     {
         string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         LoadMap(currentScene);
+    }
+
+    private void TogglePause()
+    {
+        Debug.Log("[OperatorDashboard] Sending Toggle Pause command...");
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_TogglePause", NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+            // Also send to all clients (the VR headset)
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_TogglePause", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+        }
+    }
+
+    private void RefillMags()
+    {
+        Debug.Log("[OperatorDashboard] Sending Refill Mags command...");
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_RefillMags", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+        }
+    }
+
+    private void LoadShotgun()
+    {
+        Debug.Log("[OperatorDashboard] Sending Load Shotgun command...");
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_LoadShotgun", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+        }
     }
 }
