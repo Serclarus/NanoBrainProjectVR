@@ -111,9 +111,9 @@ public class WeaponAutoReturn : NetworkBehaviour
             foreach (var holsters in allHolsters)
             {
                 NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
-                if (holsterNetObj == null) 
+                if (holsterNetObj == null || holsterNetObj.IsOwner) 
                 {
-                    // It's the local VR rig!
+                    // It's the local VR rig (or our networked rig)!
                     if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
                     else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
                     else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
