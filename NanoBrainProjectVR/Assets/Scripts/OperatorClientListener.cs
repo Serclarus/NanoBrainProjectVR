@@ -30,17 +30,25 @@ public class OperatorClientListener : NetworkBehaviour
     {
         Debug.Log($"<color=green>[OperatorClientListener]</color> Refill Mags command received!");
 
-        // Find all MagazineAttachPoints to see if a weapon is being held and has a magazine
-        var attachPoints = FindObjectsOfType<MikeNspired.XRIStarterKit.MagazineAttachPoint>();
-        foreach (var point in attachPoints)
+        // Find all WeaponControllers to see if a weapon is being held and has a magazine
+        var weapons = FindObjectsOfType<WeaponController>();
+        foreach (var weapon in weapons)
         {
-            var grab = point.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            var grab = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
             
-            // If the player is currently holding this weapon, and it has a magazine inserted
-            if (grab != null && grab.isSelected && point.Magazine != null)
+            // If the player is currently holding this weapon, and it has a magazine inserted in its socket
+            if (grab != null && grab.isSelected && weapon.magazineSocket != null && weapon.magazineSocket.hasSelection)
             {
-                point.Magazine.Refill();
-                Debug.Log($"<color=green>[OperatorClientListener]</color> Refilled magazine in held weapon: {grab.gameObject.name}");
+                var magInteractable = weapon.magazineSocket.firstInteractableSelected;
+                if (magInteractable != null)
+                {
+                    global::Magazine networkedMag = magInteractable.transform.GetComponent<global::Magazine>();
+                    if (networkedMag != null)
+                    {
+                        networkedMag.Refill();
+                        Debug.Log($"<color=green>[OperatorClientListener]</color> Refilled networked magazine in held weapon: {grab.gameObject.name}");
+                    }
+                }
             }
         }
     }
