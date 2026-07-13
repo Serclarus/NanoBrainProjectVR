@@ -86,6 +86,13 @@ public class OperatorDashboard : MonoBehaviour
         pcCamera = camObj.AddComponent<Camera>();
         camObj.tag = "MainCamera";
 
+        // Copy all settings (Culling Mask, Skybox, FOV) from the original VR Camera before we disable it
+        Camera mainCam = Camera.main;
+        if (mainCam != null)
+        {
+            pcCamera.CopyFrom(mainCam);
+        }
+
         // Add AudioListener so the PC Operator can hear the game audio
         if (pcCamera.GetComponent<AudioListener>() == null)
         {
@@ -110,14 +117,23 @@ public class OperatorDashboard : MonoBehaviour
         var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
         if (simulator != null) Destroy(simulator.gameObject);
 
-        // Find the XR Origin and disable it so the operator has no physical hands blocking their view
-        // and doesn't accidentally move an empty player avatar around the map!
-        var xrOrigin = FindObjectOfType<Unity.XR.CoreUtils.XROrigin>();
-        if (xrOrigin != null)
+        // Find ALL XR Origins in the scene
+        var xrOrigins = FindObjectsOfType<Unity.XR.CoreUtils.XROrigin>();
+        foreach (var xrOrigin in xrOrigins)
         {
-            // If it belongs to a network object (like the Host's player body), 
-            // disabling it is a safe way to make the Host an invisible spectator!
-            xrOrigin.gameObject.SetActive(false);
+            var netObj = xrOrigin.GetComponentInParent<Unity.Netcode.NetworkObject>();
+            
+            // If it has no NetworkObject, it's a scene-default offline rig. Disable it.
+            if (netObj == null)
+            {
+                xrOrigin.gameObject.SetActive(false);
+            }
+            // If it has a NetworkObject and belongs to US (the PC Host), disable it so we are an invisible spectator.
+            else if (netObj.IsOwner)
+            {
+                xrOrigin.gameObject.SetActive(false);
+            }
+            // If it belongs to a REMOTE client (the VR player), DO NOT disable it! We need to see them!
         }
     }
 
@@ -229,11 +245,38 @@ public class OperatorDashboard : MonoBehaviour
             {
                 if (client.ClientId != NetworkManager.Singleton.LocalClientId) // Don't spectate yourself
                 {
-                    XRINetworkPlayer vrPlayer = client.PlayerObject.GetComponent<XRINetworkPlayer>();
-                    if (vrPlayer != null && vrPlayer.head != null)
+                    if (client.PlayerObject != null)
                     {
-                        vrTargetHead = vrPlayer.head;
-                        Debug.Log("[OperatorDashboard] Found VR Player Head! Locking Spectator Camera.");
+                        // 1. Try finding an actual Camera component (unlikely on network avatars, but possible)
+                        Camera cam = client.PlayerObject.GetComponentInChildren<Camera>();
+                        if (cam != null)
+                        {
+                            vrTargetHead = cam.transform;
+                        }
+                        else
+                        {
+                            // 2. Try finding the standard XR Origin 'Main Camera' transform
+                            Transform mainCam = client.PlayerObject.transform.Find("Camera Offset/Main Camera") ?? client.PlayerObject.transform.Find("Main Camera");
+                            if (mainCam != null)
+                            {
+                                vrTargetHead = mainCam;
+                            }
+                            else
+                            {
+                                // 3. Try finding a generic 'Head' transform
+                                Transform head = client.PlayerObject.transform.Find("Head") ?? client.PlayerObject.transform.Find("Camera Offset/Head");
+                                if (head != null)
+                                {
+                                    vrTargetHead = head;
+                                }
+                                else
+                                {
+                                    // 4. Fallback to the root player object
+                                    vrTargetHead = client.PlayerObject.transform;
+                                }
+                            }
+                        }
+                        Debug.Log($"[OperatorDashboard] Found VR Player! Locked Spectator Camera to: {vrTargetHead.name}");
                         break;
                     }
                 }
@@ -244,6 +287,13 @@ public class OperatorDashboard : MonoBehaviour
         if (vrTargetHead != null)
         {
             pcCamera.transform.position = vrTargetHead.position;
+            
+            // If we fell back to the root transform, add a fake head height offset so we aren't looking at the floor
+            if (vrTargetHead == NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.ConnectedClientsList.FindIndex(c => c.PlayerObject != null && c.PlayerObject.transform == vrTargetHead)].PlayerObject.transform)
+            {
+                pcCamera.transform.position += Vector3.up * 1.6f;
+            }
+
             pcCamera.transform.rotation = vrTargetHead.rotation;
         }
     }
