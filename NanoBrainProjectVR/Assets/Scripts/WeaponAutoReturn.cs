@@ -72,6 +72,15 @@ public class WeaponAutoReturn : NetworkBehaviour
     {
         Debug.Log($"<color=yellow>[WeaponAutoReturn]</color> OnNetworkSpawn called for {gameObject.name}. IsOwner: {IsOwner}");
         
+        // IMMEDIATELY FREEZE ON EVERYONE'S SCREEN so it doesn't fall through the floor on the Server!
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         // When spawned online, only slot it for the owner!
         if (IsOwner)
         {

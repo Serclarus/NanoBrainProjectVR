@@ -13,7 +13,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // ONLY the server is allowed to spawn Network Objects.
         if (IsServer)
         {
-            // Spawn weapons immediately when the player joins
+            // If this player body belongs to the PC Operator (who has no VR headset), DO NOT spawn weapons for them!
+            bool isVRActive = false;
+            var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
+            UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+            foreach (var display in xrDisplays) if (display.running) isVRActive = true;
+
+            if (OwnerClientId == NetworkManager.Singleton.LocalClientId && !isVRActive)
+            {
+                Debug.Log("[NetworkPlayerLoadout] PC Operator detected! Skipping weapon spawn.");
+                return;
+            }
+
+            // Spawn weapons immediately when the VR player joins
             SpawnWeaponsForClient(OwnerClientId);
             
             // Subscribe to scene load events so we can respawn weapons when the map changes!
@@ -48,7 +60,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private void SpawnAndAssign(GameObject prefab, ulong clientId)
     {
-        GameObject wep = Instantiate(prefab);
+        // Spawn slightly above the player to prevent clipping into the floor
+        Vector3 spawnPos = transform.position + (Vector3.up * 1.5f);
+        GameObject wep = Instantiate(prefab, spawnPos, Quaternion.identity);
         NetworkObject netObj = wep.GetComponent<NetworkObject>();
         if (netObj != null)
         {
