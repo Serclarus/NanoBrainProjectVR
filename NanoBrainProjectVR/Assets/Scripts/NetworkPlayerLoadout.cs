@@ -78,6 +78,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         SpawnWeaponsForClient(OwnerClientId);
     }
 
+    public void ForceSpawnForClient(ulong clientId)
+    {
+        if (IsServer)
+        {
+            debugStatus = $"Forcing spawn for new owner: Client {clientId}";
+            SpawnWeaponsForClient(clientId);
+        }
+    }
+
     private void SpawnWeaponsForClient(ulong clientId)
     {
         // The server physically creates the weapons and hands ownership to the player
