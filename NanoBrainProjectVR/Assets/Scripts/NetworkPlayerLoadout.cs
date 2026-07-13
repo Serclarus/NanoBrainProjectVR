@@ -8,6 +8,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     public GameObject riflePrefab;
     public GameObject pistolPrefab;
 
+    private string debugStatus = "Waiting for Spawn...";
+    private static System.Collections.Generic.List<GameObject> activeWeapons = new System.Collections.Generic.List<GameObject>();
+
     public override void OnNetworkSpawn()
     {
         // ONLY the server is allowed to spawn Network Objects.
@@ -21,10 +24,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (OwnerClientId == NetworkManager.Singleton.LocalClientId && !isVRActive)
             {
+                debugStatus = $"Skipped spawn for PC Operator (Client {OwnerClientId})";
                 Debug.Log("[NetworkPlayerLoadout] PC Operator detected! Skipping weapon spawn.");
                 return;
             }
 
+            debugStatus = $"Spawning weapons for VR Client {OwnerClientId}!";
             // Spawn weapons immediately when the VR player joins
             SpawnWeaponsForClient(OwnerClientId);
             
@@ -35,6 +40,29 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
         }
     }
+
+    private void OnGUI()
+    {
+        if (!IsServer) return;
+
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 24;
+        style.normal.textColor = Color.red;
+
+        GUILayout.BeginArea(new Rect(10, 10, 800, 800));
+        GUILayout.Label($"--- NETWORK PLAYER LOADOUT DIAGNOSTICS ---", style);
+        GUILayout.Label($"My ClientId: {OwnerClientId}", style);
+        GUILayout.Label($"Status: {debugStatus}", style);
+        
+        activeWeapons.RemoveAll(w => w == null);
+        GUILayout.Label($"Active Weapons on Server: {activeWeapons.Count}", style);
+        foreach (var w in activeWeapons)
+        {
+            GUILayout.Label($"- {w.name} at {w.transform.position}", style);
+        }
+        GUILayout.EndArea();
+    }
+
 
     public override void OnNetworkDespawn()
     {
@@ -67,6 +95,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (netObj != null)
         {
             netObj.SpawnWithOwnership(clientId);
+            activeWeapons.Add(wep);
+            debugStatus = $"Successfully spawned {prefab.name} for Client {clientId}";
+        }
+        else
+        {
+            debugStatus = $"FAILED: {prefab.name} has no NetworkObject!";
         }
     }
 }
