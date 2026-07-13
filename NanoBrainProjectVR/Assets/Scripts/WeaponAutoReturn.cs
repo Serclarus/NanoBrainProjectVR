@@ -114,21 +114,43 @@ public class WeaponAutoReturn : NetworkBehaviour
 
         if (homeSocket == null)
         {
-            // If the spawner didn't inject it (maybe the user spawned it manually from an admin menu?)
-            // Fallback: manually find our holster!
             PlayerHolsterSystem[] allHolsters = FindObjectsOfType<PlayerHolsterSystem>();
+            
+            // First pass: prioritize our OWN NETWORKED holsters!
             foreach (var holsters in allHolsters)
             {
                 NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
-                if (holsterNetObj == null || holsterNetObj.IsOwner) 
+                if (holsterNetObj != null && holsterNetObj.IsOwner) 
                 {
-                    // It's the local VR rig (or our networked rig)!
                     if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
                     else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
                     else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
                     break;
                 }
             }
+
+            // Second pass: if we have no networked rig, fall back to offline rig (for singleplayer testing)
+            if (homeSocket == null)
+            {
+                foreach (var holsters in allHolsters)
+                {
+                    NetworkObject holsterNetObj = holsters.GetComponentInParent<NetworkObject>();
+                    if (holsterNetObj == null) 
+                    {
+                        if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
+                        else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
+                        else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Failsafe: if we STILL couldn't find holsters, teleport the weapon in front of the player's face so they can at least see it spawned!
+        if (homeSocket == null && Camera.main != null)
+        {
+            transform.position = Camera.main.transform.position + Camera.main.transform.forward * 1.0f;
+            Debug.Log($"<color=red>[WeaponAutoReturn]</color> FAILED to find holsters for {gameObject.name}! Teleported in front of face.");
         }
 
             if (homeSocket != null)
