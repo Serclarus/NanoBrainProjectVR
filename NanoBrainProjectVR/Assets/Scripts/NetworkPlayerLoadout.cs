@@ -74,7 +74,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         bool vrActive = false;
         while (timeout > 0f)
         {
-            if (CheckIsVRActive())
+            if (DetermineIfVR())
             {
                 vrActive = true;
                 break;
@@ -83,7 +83,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             yield return null;
         }
 
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete. vrActive: {vrActive}");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete. vrActive: {vrActive} (Platform: {Application.platform})");
 
         // Sync the state to everyone
         isVRUser.Value = vrActive;
@@ -105,6 +105,18 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
             }
         }
+    }
+
+    private bool DetermineIfVR()
+    {
+        // Android standalone builds on Meta Quest are ALWAYS VR
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            return true;
+        }
+
+        // Editor and PC builds check if a VR display subsystem is running (Oculus Link, SteamVR, etc.)
+        return CheckIsVRActive();
     }
 
     private bool CheckIsVRActive()
