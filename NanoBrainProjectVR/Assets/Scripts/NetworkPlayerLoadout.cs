@@ -86,6 +86,14 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (isVR)
             {
+                // Force XROrigin to Floor tracking origin mode to ensure camera matches physical eye level
+                var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+                if (xrOrigin != null)
+                {
+                    xrOrigin.RequestedTrackingOriginMode = Unity.XR.CoreUtils.XROrigin.TrackingOriginMode.Floor;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Programmatically set local XROrigin to Floor tracking mode.");
+                }
+
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
@@ -203,15 +211,63 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (!IsOwner) return;
 
         GUIStyle style = new GUIStyle();
-        style.fontSize = 24;
+        style.fontSize = 20; // Slightly smaller to fit more info
         style.normal.textColor = Color.cyan;
 
-        GUILayout.BeginArea(new Rect(10, 10, 800, 800));
-        GUILayout.Label($"--- NETWORK PLAYER LOADOUT ---", style);
-        GUILayout.Label($"My ClientId: {OwnerClientId}", style);
-        GUILayout.Label($"IsOwner: {IsOwner} | IsServer: {IsServer}", style);
+        GUILayout.BeginArea(new Rect(10, 10, 950, 950));
+        GUILayout.Label($"--- NETWORK PLAYER DIAGNOSTICS ---", style);
+        GUILayout.Label($"My ClientId: {OwnerClientId} | IsOwner: {IsOwner} | IsServer: {IsServer}", style);
         GUILayout.Label($"Status: {debugStatus}", style);
         
+        // 1. Get XROrigin info
+        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+        if (xrOrigin != null)
+        {
+            GUILayout.Label($"[XR Origin] Found on: {xrOrigin.gameObject.name}", style);
+            GUILayout.Label($"  - Tracking Mode: {xrOrigin.RequestedTrackingOriginMode} (Current: {xrOrigin.CurrentTrackingOriginMode})", style);
+            GUILayout.Label($"  - CameraYOffset: {xrOrigin.CameraYOffset} meters", style);
+            GUILayout.Label($"  - Origin Pos (World): {xrOrigin.transform.position}", style);
+            if (xrOrigin.CameraFloorOffsetObject != null)
+            {
+                GUILayout.Label($"  - CameraOffset Pos (Local): {xrOrigin.CameraFloorOffsetObject.transform.localPosition}", style);
+            }
+            if (xrOrigin.Camera != null)
+            {
+                GUILayout.Label($"  - Camera Pos (World): {xrOrigin.Camera.transform.position} | Local: {xrOrigin.Camera.transform.localPosition}", style);
+            }
+        }
+        else
+        {
+            GUILayout.Label($"[XR Origin] NOT FOUND in hierarchy!", style);
+        }
+
+        // 2. Camera.main info
+        if (Camera.main != null)
+        {
+            GUILayout.Label($"[Camera.main] Active: {Camera.main.name} | Tag: {Camera.main.tag}", style);
+            GUILayout.Label($"  - World Pos: {Camera.main.transform.position} | Local: {Camera.main.transform.localPosition}", style);
+            GUILayout.Label($"  - Parent: {(Camera.main.transform.parent != null ? Camera.main.transform.parent.name : "None")}", style);
+        }
+        else
+        {
+            GUILayout.Label($"[Camera.main] NOT FOUND in scene!", style);
+        }
+
+        // 3. Hands tracking info
+        GameObject leftHand = GameObject.Find("Left Controller");
+        GameObject rightHand = GameObject.Find("Right Controller");
+        GUILayout.Label($"[Left Controller] {(leftHand != null ? $"Found | World Pos: {leftHand.transform.position} | Local: {leftHand.transform.localPosition}" : "NOT FOUND")}", style);
+        GUILayout.Label($"[Right Controller] {(rightHand != null ? $"Found | World Pos: {rightHand.transform.position} | Local: {rightHand.transform.localPosition}" : "NOT FOUND")}", style);
+
+        // 4. Vest info
+        var bodyFollower = GetComponentInChildren<BodyFollower>(true);
+        if (bodyFollower != null)
+        {
+            GUILayout.Label($"[BodyFollower] Found on: {bodyFollower.gameObject.name}", style);
+            GUILayout.Label($"  - Position: {bodyFollower.transform.position} | Height Offset: {bodyFollower.bodyHeightOffset}", style);
+            GUILayout.Label($"  - Head Target: {(bodyFollower.head != null ? bodyFollower.head.name : "NULL")}", style);
+        }
+
         activeWeapons.RemoveAll(w => w == null);
         GUILayout.Label($"Active Weapons: {activeWeapons.Count}", style);
         foreach (var w in activeWeapons)
