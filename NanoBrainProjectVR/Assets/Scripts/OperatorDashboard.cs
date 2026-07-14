@@ -19,7 +19,6 @@ public class OperatorDashboard : MonoBehaviour
     private Camera pcCamera;
     private Transform vrTargetHead;
     private UnityEngine.UI.Text connectionStatusText;
-    private UnityEngine.UI.Text connectedClientsText;
 
     private void Awake()
     {
@@ -151,79 +150,63 @@ public class OperatorDashboard : MonoBehaviour
         GameObject panelObj = new GameObject("BackgroundPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         Image bgImage = panelObj.AddComponent<Image>();
-        bgImage.color = new Color(0.1f, 0.1f, 0.12f, 0.85f); // Sleeker dark grey/blue color
+        bgImage.color = new Color(0, 0, 0, 0.5f); // Semi-transparent black
 
         RectTransform panelRT = panelObj.GetComponent<RectTransform>();
-        // Anchor to top-left of the screen and make it a clean, floating box rather than a full vertical strip!
-        panelRT.anchorMin = new Vector2(0, 1);
-        panelRT.anchorMax = new Vector2(0, 1);
-        panelRT.pivot = new Vector2(0, 1);
-        panelRT.anchoredPosition = new Vector2(15, -15);
-        panelRT.sizeDelta = new Vector2(300, 480); // Width 300, Height 480
+        panelRT.anchorMin = new Vector2(0, 0);
+        panelRT.anchorMax = new Vector2(0.3f, 1); // Takes up the left 30% of the screen
+        panelRT.offsetMin = Vector2.zero;
+        panelRT.offsetMax = Vector2.zero;
 
         // Add a Title
-        var titleTxt = CreateText(panelObj.transform, "OPERATOR DASHBOARD", new Vector2(0, -25), 18, 280, 40);
-        titleTxt.fontStyle = FontStyle.Bold;
+        CreateText(panelObj.transform, "OPERATOR DASHBOARD", new Vector2(0, 200), 24);
 
         // Add Connection Status Text
-        connectionStatusText = CreateText(panelObj.transform, "Status: Waiting...", new Vector2(0, -60), 13, 280, 30);
+        connectionStatusText = CreateText(panelObj.transform, "Status: Waiting...", new Vector2(0, 160), 18);
         connectionStatusText.color = Color.yellow;
+
+        // Create Map Loading Buttons
+        float yOffset = 100f;
+        foreach (string mapName in mapNames)
+        {
+            CreateButton(panelObj.transform, $"Load {mapName}", new Vector2(0, yOffset), () => LoadMap(mapName));
+            yOffset -= 60f;
+        }
+
+        // Create Game Action Buttons
+        CreateButton(panelObj.transform, "Toggle Pause Game", new Vector2(0, yOffset - 20f), TogglePause);
+        CreateButton(panelObj.transform, "Refill Held Mag", new Vector2(0, yOffset - 70f), RefillMags);
+        CreateButton(panelObj.transform, "Load Held Shotgun", new Vector2(0, yOffset - 120f), LoadShotgun);
+        CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 170f), ResetCurrentMap);
         
-        connectedClientsText = CreateText(panelObj.transform, "Connected Clients: 0", new Vector2(0, -85), 13, 280, 30);
-        connectedClientsText.color = Color.cyan;
-
-        // We create two columns of buttons below the headers!
-        float leftX = -70f;
-        float rightX = 70f;
-        float btnWidth = 130f;
-        float btnHeight = 35f;
-        
-        // ROW 1: Map 1 (MainMenu) and Map 2 (TrainingGrounds)
-        CreateButton(panelObj.transform, "Load MainMenu", new Vector2(leftX, -130f), btnWidth, btnHeight, () => LoadMap("MainMenu"));
-        CreateButton(panelObj.transform, "Load Training", new Vector2(rightX, -130f), btnWidth, btnHeight, () => LoadMap("TrainingGrounds"));
-
-        // ROW 2: Map 3 (BoarHunt) and Reset Map
-        CreateButton(panelObj.transform, "Load BoarHunt", new Vector2(leftX, -175f), btnWidth, btnHeight, () => LoadMap("BoarHunt"));
-        CreateButton(panelObj.transform, "Reset Map", new Vector2(rightX, -175f), btnWidth, btnHeight, ResetCurrentMap);
-
-        // ROW 3: Pause Game and FORCE Spawn
-        CreateButton(panelObj.transform, "Pause Game", new Vector2(leftX, -230f), btnWidth, btnHeight, TogglePause);
-        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(rightX, -230f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
-
-        // ROW 4: Refill Mag and Load Shotgun
-        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -275f), btnWidth, btnHeight, RefillMags);
-        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -275f), btnWidth, btnHeight, LoadShotgun);
-
-        // Spectator label
-        var specText = CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -330), 12, 280, 30);
-        specText.color = Color.gray;
+        CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -350), 16);
     }
 
-    private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, float width, float height, UnityEngine.Events.UnityAction onClickAction)
+    private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, UnityEngine.Events.UnityAction onClickAction)
     {
         GameObject btnObj = new GameObject($"Btn_{buttonText}");
         btnObj.transform.SetParent(parent, false);
         
         RectTransform rt = btnObj.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(width, height);
+        rt.sizeDelta = new Vector2(200, 40);
         rt.anchoredPosition = anchoredPos;
 
         Image img = btnObj.AddComponent<Image>();
-        img.color = new Color(0.2f, 0.2f, 0.25f, 1f); // darker slate-blue for premium look
+        img.color = new Color(0.2f, 0.2f, 0.2f, 1f);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.onClick.AddListener(onClickAction);
 
-        var txt = CreateText(btnObj.transform, buttonText, Vector2.zero, 11, width, height);
+        CreateText(btnObj.transform, buttonText, Vector2.zero, 18);
     }
 
-    private UnityEngine.UI.Text CreateText(Transform parent, string msg, Vector2 anchoredPos, int fontSize, float width = 250f, float height = 50f)
+    private UnityEngine.UI.Text CreateText(Transform parent, string msg, Vector2 anchoredPos, int fontSize)
     {
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(parent, false);
 
         RectTransform rt = textObj.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(width, height);
+        rt.sizeDelta = new Vector2(250, 50);
         rt.anchoredPosition = anchoredPos;
 
         // Using standard Unity Text to avoid TextMeshPro font asset missing errors in pure scripts
@@ -236,7 +219,6 @@ public class OperatorDashboard : MonoBehaviour
         
         return txt;
     }
-
 
     private void Update()
     {
@@ -254,76 +236,52 @@ public class OperatorDashboard : MonoBehaviour
                 connectionStatusText.color = Color.red;
         }
 
-        // 1b. Update connected clients count
-        if (connectedClientsText != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            int clientCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
-            connectedClientsText.text = $"Connected Clients: {clientCount}";
-            connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
-        }
-
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || !enableSpectatorCamera || pcCamera == null) return;
 
         // 3. Find the VR player's head over the network
         if (vrTargetHead == null)
         {
-            // Find all active NetworkPlayerLoadout instances in the scene
-            var loadouts = FindObjectsOfType<NetworkPlayerLoadout>();
-            foreach (var loadout in loadouts)
+            // We want to spectate the VR player.
+            // If the PC is the Host, the VR player is a Client. If the PC is a Client, the VR player is the Host (or another client).
+            // So we just look for ANY player that is NOT the local PC player.
+            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
             {
-                var netObj = loadout.GetComponent<NetworkObject>();
-                // We want to spectate the remote VR player (who we do NOT own)
-                if (netObj != null && !netObj.IsOwner)
+                if (client.ClientId != NetworkManager.Singleton.LocalClientId) // Don't spectate yourself
                 {
-                    Transform head = null;
-
-                    // 1. Try finding standard XRI or common named transforms
-                    head = loadout.transform.Find("Camera Offset/Main Camera") ??
-                           loadout.transform.Find("Main Camera") ??
-                           loadout.transform.Find("Head") ??
-                           loadout.transform.Find("Camera Offset/Head") ??
-                           loadout.transform.GetComponentInChildren<Camera>()?.transform;
-
-                    // 2. Fallback: Search deeply for any child containing "head" or "camera" in its name (e.g. for custom humanoid avatars)
-                    if (head == null)
+                    if (client.PlayerObject != null)
                     {
-                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
+                        // 1. Try finding an actual Camera component (unlikely on network avatars, but possible)
+                        Camera cam = client.PlayerObject.GetComponentInChildren<Camera>();
+                        if (cam != null)
                         {
-                            string tName = t.name.ToLower();
-                            // Prioritize exact/close matches first
-                            if (tName == "head" || tName == "main camera")
+                            vrTargetHead = cam.transform;
+                        }
+                        else
+                        {
+                            // 2. Try finding the standard XR Origin 'Main Camera' transform
+                            Transform mainCam = client.PlayerObject.transform.Find("Camera Offset/Main Camera") ?? client.PlayerObject.transform.Find("Main Camera");
+                            if (mainCam != null)
                             {
-                                head = t;
-                                break;
+                                vrTargetHead = mainCam;
+                            }
+                            else
+                            {
+                                // 3. Try finding a generic 'Head' transform
+                                Transform head = client.PlayerObject.transform.Find("Head") ?? client.PlayerObject.transform.Find("Camera Offset/Head");
+                                if (head != null)
+                                {
+                                    vrTargetHead = head;
+                                }
+                                else
+                                {
+                                    // 4. Fallback to the root player object
+                                    vrTargetHead = client.PlayerObject.transform;
+                                }
                             }
                         }
+                        Debug.Log($"[OperatorDashboard] Found VR Player! Locked Spectator Camera to: {vrTargetHead.name}");
+                        break;
                     }
-
-                    if (head == null)
-                    {
-                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
-                        {
-                            string tName = t.name.ToLower();
-                            if (tName.Contains("head") || tName.Contains("camera"))
-                            {
-                                head = t;
-                                break;
-                            }
-                        }
-                    }
-
-                    // 3. Fallback: Use the root of the remote avatar
-                    if (head != null)
-                    {
-                        vrTargetHead = head;
-                    }
-                    else
-                    {
-                        vrTargetHead = loadout.transform;
-                    }
-
-                    Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
-                    break;
                 }
             }
         }
@@ -388,46 +346,5 @@ public class OperatorDashboard : MonoBehaviour
         {
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_LoadShotgun", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
         }
-    }
-
-    private void ForceSpawnWeaponsForVR()
-    {
-        Debug.Log("[OperatorDashboard] FORCE Spawn Weapons button pressed!");
-        
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-        {
-            Debug.LogError("[OperatorDashboard] Cannot force spawn — not connected to network!");
-            return;
-        }
-
-        // Find ALL NetworkPlayerLoadout instances in the scene
-        var allLoadouts = FindObjectsOfType<NetworkPlayerLoadout>();
-        Debug.Log($"[OperatorDashboard] Found {allLoadouts.Length} NetworkPlayerLoadout instances.");
-
-        foreach (var loadout in allLoadouts)
-        {
-            var netObj = loadout.GetComponent<NetworkObject>();
-            if (netObj == null) continue;
-
-            Debug.Log($"[OperatorDashboard] Loadout on '{loadout.gameObject.name}': " +
-                      $"OwnerClientId={netObj.OwnerClientId}, " +
-                      $"IsOwner={netObj.IsOwner}, " +
-                      $"IsSpawned={netObj.IsSpawned}");
-
-            // Force spawn for EVERY loadout that isn't ours (the PC operator)
-            // Our own loadout is the one where IsOwner=true on this PC
-            if (!netObj.IsOwner)
-            {
-                Debug.Log($"[OperatorDashboard] Calling ForceSpawnForClient({netObj.OwnerClientId}) on remote player loadout...");
-                loadout.ForceSpawnForClient(netObj.OwnerClientId);
-            }
-            else
-            {
-                Debug.Log($"[OperatorDashboard] Skipping our own loadout (PC Operator).");
-            }
-        }
-
-        // Also log all connected client IDs for diagnostics
-        Debug.Log($"[OperatorDashboard] Connected Client IDs: {string.Join(", ", NetworkManager.Singleton.ConnectedClientsIds)}");
     }
 }
