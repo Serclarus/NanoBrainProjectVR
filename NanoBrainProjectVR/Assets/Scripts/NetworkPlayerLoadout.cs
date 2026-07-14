@@ -78,8 +78,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
         else
         {
-            // We are looking at another peer's avatar.
-            // If they are a PC Operator, hide their renderers so they are invisible.
+            // We are looking at another peer's replicated avatar.
+            // CRITICAL: Disable ALL XR interaction components on non-owner avatars.
+            // If left active, their ghost interactors will grab objects and prevent the local player from releasing them.
+            DisableRemoteInteractors();
+
+            // If they are a PC Operator, also hide their renderers so they are invisible.
             isVRUser.OnValueChanged += OnVRUserChanged;
             if (!isVRUser.Value)
             {
@@ -133,6 +137,38 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Hiding remote PC avatar (Client {OwnerClientId}) - renderers only.");
         foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
+    }
+
+    /// <summary>
+    /// Disables all XR interaction components on a non-owner replicated avatar.
+    /// Without this, the remote avatar's interactors act as ghost hands that grab objects
+    /// and prevent the local VR player from releasing them.
+    /// </summary>
+    private void DisableRemoteInteractors()
+    {
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Disabling XR interactors on remote avatar (Client {OwnerClientId})");
+
+        // Disable all XR Interactors (Direct, Ray, Socket, Poke, etc.)
+        foreach (var interactor in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true))
+        {
+            interactor.enabled = false;
+        }
+
+        // Disable all XR Controllers so they don't process input
+        foreach (var controller in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>(true))
+        {
+            controller.enabled = false;
+        }
+
+        // Disable any XR Interaction Manager on this avatar
+        foreach (var manager in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true))
+        {
+            manager.enabled = false;
+        }
+
+        // Disable the XR Origin so it doesn't fight with the local player's tracking
+        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+        if (xrOrigin != null) xrOrigin.enabled = false;
     }
 
     private void OnGUI()
