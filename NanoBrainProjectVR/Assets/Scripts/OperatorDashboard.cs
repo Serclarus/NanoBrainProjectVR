@@ -19,6 +19,7 @@ public class OperatorDashboard : MonoBehaviour
     private Camera pcCamera;
     private Transform vrTargetHead;
     private UnityEngine.UI.Text connectionStatusText;
+    private UnityEngine.UI.Text connectedClientsText;
 
     private void Awake()
     {
@@ -178,8 +179,11 @@ public class OperatorDashboard : MonoBehaviour
         CreateButton(panelObj.transform, "Refill Held Mag", new Vector2(0, yOffset - 70f), RefillMags);
         CreateButton(panelObj.transform, "Load Held Shotgun", new Vector2(0, yOffset - 120f), LoadShotgun);
         CreateButton(panelObj.transform, "Reset Current Map", new Vector2(0, yOffset - 170f), ResetCurrentMap);
+        CreateButton(panelObj.transform, "FORCE Spawn Weapons", new Vector2(0, yOffset - 230f), ForceSpawnWeaponsForVR);
         
-        CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -350), 16);
+        connectedClientsText = CreateText(panelObj.transform, "Connected: ...", new Vector2(0, -330), 16);
+        connectedClientsText.color = Color.yellow;
+        CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -370), 16);
     }
 
     private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, UnityEngine.Events.UnityAction onClickAction)
@@ -234,6 +238,14 @@ public class OperatorDashboard : MonoBehaviour
                 connectionStatusText.color = Color.yellow;
             else
                 connectionStatusText.color = Color.red;
+        }
+
+        // 1b. Update connected clients count
+        if (connectedClientsText != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            int clientCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+            connectedClientsText.text = $"Connected Clients: {clientCount}";
+            connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
         }
 
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || !enableSpectatorCamera || pcCamera == null) return;
@@ -346,5 +358,46 @@ public class OperatorDashboard : MonoBehaviour
         {
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_LoadShotgun", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
         }
+    }
+
+    private void ForceSpawnWeaponsForVR()
+    {
+        Debug.Log("[OperatorDashboard] FORCE Spawn Weapons button pressed!");
+        
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogError("[OperatorDashboard] Cannot force spawn — not connected to network!");
+            return;
+        }
+
+        // Find ALL NetworkPlayerLoadout instances in the scene
+        var allLoadouts = FindObjectsOfType<NetworkPlayerLoadout>();
+        Debug.Log($"[OperatorDashboard] Found {allLoadouts.Length} NetworkPlayerLoadout instances.");
+
+        foreach (var loadout in allLoadouts)
+        {
+            var netObj = loadout.GetComponent<NetworkObject>();
+            if (netObj == null) continue;
+
+            Debug.Log($"[OperatorDashboard] Loadout on '{loadout.gameObject.name}': " +
+                      $"OwnerClientId={netObj.OwnerClientId}, " +
+                      $"IsOwner={netObj.IsOwner}, " +
+                      $"IsSpawned={netObj.IsSpawned}");
+
+            // Force spawn for EVERY loadout that isn't ours (the PC operator)
+            // Our own loadout is the one where IsOwner=true on this PC
+            if (!netObj.IsOwner)
+            {
+                Debug.Log($"[OperatorDashboard] Calling ForceSpawnForClient({netObj.OwnerClientId}) on remote player loadout...");
+                loadout.ForceSpawnForClient(netObj.OwnerClientId);
+            }
+            else
+            {
+                Debug.Log($"[OperatorDashboard] Skipping our own loadout (PC Operator).");
+            }
+        }
+
+        // Also log all connected client IDs for diagnostics
+        Debug.Log($"[OperatorDashboard] Connected Client IDs: {string.Join(", ", NetworkManager.Singleton.ConnectedClientsIds)}");
     }
 }
