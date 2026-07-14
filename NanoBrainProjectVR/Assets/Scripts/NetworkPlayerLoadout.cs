@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using System.Collections;
 
 public class NetworkPlayerLoadout : NetworkBehaviour
 {
@@ -47,39 +48,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" IsOwner: {IsOwner}" +
                   $" IsServer: {IsServer}" +
                   $" OwnerClientId: {OwnerClientId}" +
-                  $" LocalClientId: {NetworkManager.Singleton.LocalClientId}" +
-                  $" DeviceType: {SystemInfo.deviceType}" +
-                  $" XRActive: {UnityEngine.XR.XRSettings.isDeviceActive}");
+                  $" LocalClientId: {NetworkManager.Singleton.LocalClientId}");
 
         if (IsOwner)
         {
-            // Determine if the local owner is a VR user or PC Operator
-            bool isVR = true;
-            if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
-            {
-                isVR = false;
-            }
-
-            // Sync the state to everyone
-            isVRUser.Value = isVR;
-
-            if (!isVR)
-            {
-                HideAvatarBody();
-            }
-            else
-            {
-                debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
-                SpawnWeaponsForClient(OwnerClientId);
-
-                // Subscribe to scene load events so we can respawn weapons when the map changes!
-                if (NetworkManager.Singleton.SceneManager != null)
-                {
-                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
-                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
-                }
-            }
+            StartCoroutine(InitializeOwnerRoutine());
         }
         else
         {
@@ -90,6 +63,54 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             if (!isVRUser.Value)
             {
                 HideAvatarBody();
+            }
+        }
+    }
+
+    private IEnumerator InitializeOwnerRoutine()
+    {
+        // Wait a brief moment to allow the XR Subsystem to initialize (especially critical on PC VR Link)
+        float timeout = 1.0f;
+        while (timeout > 0f)
+        {
+            if (UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                break;
+            }
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        // Determine if the local owner is a VR user or PC Operator
+        bool isVR = true;
+        if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
+        {
+            isVR = false;
+        }
+
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete." +
+                  $" isVR: {isVR}" +
+                  $" DeviceType: {SystemInfo.deviceType}" +
+                  $" XRActive: {UnityEngine.XR.XRSettings.isDeviceActive}");
+
+        // Sync the state to everyone
+        isVRUser.Value = isVR;
+
+        if (!isVR)
+        {
+            HideAvatarBody();
+        }
+        else
+        {
+            debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
+            SpawnWeaponsForClient(OwnerClientId);
+
+            // Subscribe to scene load events so we can respawn weapons when the map changes!
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
             }
         }
     }
