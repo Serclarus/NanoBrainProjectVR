@@ -12,6 +12,34 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     private bool hasSpawnedWeapons = false;
     private static System.Collections.Generic.List<GameObject> activeWeapons = new System.Collections.Generic.List<GameObject>();
 
+    [Header("Sync Settings")]
+    public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<Vector3> vrHeadPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<Quaternion> vrHeadRotation = new NetworkVariable<Quaternion>(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private Transform localHeadTransform;
+
+    private void Update()
+    {
+        if (IsOwner && isVRUser.Value)
+        {
+            if (localHeadTransform == null)
+            {
+                localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
+                                     transform.Find("Main Camera") ??
+                                     transform.Find("Head") ??
+                                     transform.Find("Camera Offset/Head") ??
+                                     GetComponentInChildren<Camera>()?.transform;
+            }
+
+            if (localHeadTransform != null)
+            {
+                vrHeadPosition.Value = localHeadTransform.position;
+                vrHeadRotation.Value = localHeadTransform.rotation;
+            }
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> OnNetworkSpawn fired!" +
@@ -23,44 +51,70 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" DeviceType: {SystemInfo.deviceType}" +
                   $" XRActive: {UnityEngine.XR.XRSettings.isDeviceActive}");
 
-        // In Distributed Authority mode, IsServer is ALWAYS false.
-        // The OWNER is the one with authority to spawn objects.
-        // This also works in Client-Server mode when running as host (IsOwner && IsServer both true).
-        if (!IsOwner)
+        if (IsOwner)
         {
-            debugStatus = $"Not owner (Owner={OwnerClientId}, Local={NetworkManager.Singleton.LocalClientId}). Skipping.";
-            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
-            return;
-        }
+            // Determine if the local owner is a VR user or PC Operator
+            bool isVR = true;
+            if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                isVR = false;
+            }
 
-        // If this is a PC Operator (Desktop without VR headset), skip weapon spawning and hide the avatar body!
-        if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
+            // Sync the state to everyone
+            isVRUser.Value = isVR;
+
+            if (!isVR)
+            {
+                HideAvatarBody();
+            }
+            else
+            {
+                debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
+                SpawnWeaponsForClient(OwnerClientId);
+
+                // Subscribe to scene load events so we can respawn weapons when the map changes!
+                if (NetworkManager.Singleton.SceneManager != null)
+                {
+                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
+                }
+            }
+        }
+        else
         {
-            debugStatus = $"Skipped spawn and hid PC Operator (Client {OwnerClientId})";
-            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
+            // Non-owners listen to state changes to hide the avatar if it's a PC Operator
+            isVRUser.OnValueChanged += OnVRUserChanged;
 
-            // Disable all cameras, renderers, and colliders on the PC Operator's locally spawned player avatar
-            foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
-            foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
-            foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-
-            // Also disable the XR Origin component entirely so it doesn't try to track/interact
-            var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-            if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
-
-            return;
+            // Run initial check for already spawned clients (late joiners)
+            if (!isVRUser.Value)
+            {
+                HideAvatarBody();
+            }
         }
+    }
 
-        debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
-        SpawnWeaponsForClient(OwnerClientId);
-
-        // Subscribe to scene load events so we can respawn weapons when the map changes!
-        if (NetworkManager.Singleton.SceneManager != null)
+    private void OnVRUserChanged(bool previousValue, bool newValue)
+    {
+        if (!newValue)
         {
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
+            HideAvatarBody();
         }
+    }
+
+    private void HideAvatarBody()
+    {
+        debugStatus = $"Hidden PC Operator (Client {OwnerClientId})";
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus} globally - disabling cameras, renderers, and colliders.");
+
+        // Disable all cameras, renderers, and colliders on the PC Operator's avatar body
+        foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
+        foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
+        foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+
+        // Also disable the XR Origin component entirely so it doesn't try to track/interact
+        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+        if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
     }
 
     private void OnGUI()
@@ -94,6 +148,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         {
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
         }
+        isVRUser.OnValueChanged -= OnVRUserChanged;
     }
 
     private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, System.Collections.Generic.List<ulong> clientsCompleted, System.Collections.Generic.List<ulong> clientsTimedOut)

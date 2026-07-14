@@ -323,6 +323,18 @@ public class OperatorDashboard : MonoBehaviour
                     }
 
                     Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
+
+                    // Copy rendering settings (Culling Mask, FOV, etc.) from the VR player's actual camera so the PC operator sees the exact same layers
+                    Camera vrCam = vrTargetHead.GetComponent<Camera>() ?? 
+                                   vrTargetHead.GetComponentInChildren<Camera>(true) ?? 
+                                   loadout.GetComponentInChildren<Camera>(true);
+                    if (vrCam != null)
+                    {
+                        pcCamera.CopyFrom(vrCam);
+                        pcCamera.stereoTargetEye = StereoTargetEyeMask.None; // Maintain flat screen
+                        pcCamera.depth = 99; // Keep as highest priority
+                        Debug.Log($"[OperatorDashboard] Successfully copied camera settings from VR Player's camera.");
+                    }
                     break;
                 }
             }
@@ -331,15 +343,24 @@ public class OperatorDashboard : MonoBehaviour
         // 4. Lock the PC Camera to the VR Head
         if (vrTargetHead != null)
         {
-            pcCamera.transform.position = vrTargetHead.position;
-            
-            // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
-            if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
+            var loadout = vrTargetHead.GetComponentInParent<NetworkPlayerLoadout>();
+            if (loadout != null && loadout.isVRUser.Value)
             {
-                pcCamera.transform.position += Vector3.up * 1.6f;
+                pcCamera.transform.position = loadout.vrHeadPosition.Value;
+                pcCamera.transform.rotation = loadout.vrHeadRotation.Value;
             }
+            else
+            {
+                pcCamera.transform.position = vrTargetHead.position;
+                
+                // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
+                if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
+                {
+                    pcCamera.transform.position += Vector3.up * 1.6f;
+                }
 
-            pcCamera.transform.rotation = vrTargetHead.rotation;
+                pcCamera.transform.rotation = vrTargetHead.rotation;
+            }
         }
     }
 
