@@ -267,47 +267,63 @@ public class OperatorDashboard : MonoBehaviour
         // 3. Find the VR player's head over the network
         if (vrTargetHead == null)
         {
-            // We want to spectate the VR player.
-            // If the PC is the Host, the VR player is a Client. If the PC is a Client, the VR player is the Host (or another client).
-            // So we just look for ANY player that is NOT the local PC player.
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            // Find all active NetworkPlayerLoadout instances in the scene
+            var loadouts = FindObjectsOfType<NetworkPlayerLoadout>();
+            foreach (var loadout in loadouts)
             {
-                if (client.ClientId != NetworkManager.Singleton.LocalClientId) // Don't spectate yourself
+                var netObj = loadout.GetComponent<NetworkObject>();
+                // We want to spectate the remote VR player (who we do NOT own)
+                if (netObj != null && !netObj.IsOwner)
                 {
-                    if (client.PlayerObject != null)
+                    Transform head = null;
+
+                    // 1. Try finding standard XRI or common named transforms
+                    head = loadout.transform.Find("Camera Offset/Main Camera") ??
+                           loadout.transform.Find("Main Camera") ??
+                           loadout.transform.Find("Head") ??
+                           loadout.transform.Find("Camera Offset/Head") ??
+                           loadout.transform.GetComponentInChildren<Camera>()?.transform;
+
+                    // 2. Fallback: Search deeply for any child containing "head" or "camera" in its name (e.g. for custom humanoid avatars)
+                    if (head == null)
                     {
-                        // 1. Try finding an actual Camera component (unlikely on network avatars, but possible)
-                        Camera cam = client.PlayerObject.GetComponentInChildren<Camera>();
-                        if (cam != null)
+                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
                         {
-                            vrTargetHead = cam.transform;
-                        }
-                        else
-                        {
-                            // 2. Try finding the standard XR Origin 'Main Camera' transform
-                            Transform mainCam = client.PlayerObject.transform.Find("Camera Offset/Main Camera") ?? client.PlayerObject.transform.Find("Main Camera");
-                            if (mainCam != null)
+                            string tName = t.name.ToLower();
+                            // Prioritize exact/close matches first
+                            if (tName == "head" || tName == "main camera")
                             {
-                                vrTargetHead = mainCam;
-                            }
-                            else
-                            {
-                                // 3. Try finding a generic 'Head' transform
-                                Transform head = client.PlayerObject.transform.Find("Head") ?? client.PlayerObject.transform.Find("Camera Offset/Head");
-                                if (head != null)
-                                {
-                                    vrTargetHead = head;
-                                }
-                                else
-                                {
-                                    // 4. Fallback to the root player object
-                                    vrTargetHead = client.PlayerObject.transform;
-                                }
+                                head = t;
+                                break;
                             }
                         }
-                        Debug.Log($"[OperatorDashboard] Found VR Player! Locked Spectator Camera to: {vrTargetHead.name}");
-                        break;
                     }
+
+                    if (head == null)
+                    {
+                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
+                        {
+                            string tName = t.name.ToLower();
+                            if (tName.Contains("head") || tName.Contains("camera"))
+                            {
+                                head = t;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. Fallback: Use the root of the remote avatar
+                    if (head != null)
+                    {
+                        vrTargetHead = head;
+                    }
+                    else
+                    {
+                        vrTargetHead = loadout.transform;
+                    }
+
+                    Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
+                    break;
                 }
             }
         }
