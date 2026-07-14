@@ -55,6 +55,13 @@ public class OperatorDashboard : MonoBehaviour
 
     private IEnumerator InitializeDashboardRoutine()
     {
+        // HARD GUARD: On Android (Meta Quest), this is ALWAYS a VR device. Never run operator dashboard.
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            Debug.Log("[OperatorDashboard] Running on Android/Quest. Operator Dashboard disabled.");
+            yield break;
+        }
+
         // Wait a brief moment to ensure XR and Network systems have started
         yield return new WaitForSeconds(0.5f);
 

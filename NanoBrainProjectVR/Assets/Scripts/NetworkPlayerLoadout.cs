@@ -46,77 +46,46 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> OnNetworkSpawn fired!" +
                   $" GameObject: {gameObject.name}" +
                   $" IsOwner: {IsOwner}" +
-                  $" IsServer: {IsServer}" +
                   $" OwnerClientId: {OwnerClientId}" +
-                  $" LocalClientId: {NetworkManager.Singleton.LocalClientId}");
+                  $" Platform: {Application.platform}");
 
         if (IsOwner)
         {
-            StartCoroutine(InitializeOwnerRoutine());
+            // On Android (Meta Quest), we are ALWAYS VR. On PC, check for a running XR display.
+            bool isVR = (Application.platform == RuntimePlatform.Android) || CheckIsVRActive();
+
+            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner detected as {(isVR ? "VR" : "PC Operator")}");
+
+            isVRUser.Value = isVR;
+
+            if (isVR)
+            {
+                // VR user: spawn weapons
+                debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
+                SpawnWeaponsForClient(OwnerClientId);
+
+                if (NetworkManager.Singleton.SceneManager != null)
+                {
+                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+                }
+            }
+            else
+            {
+                // PC Operator: hide our own avatar (safe because we are on PC, not VR)
+                HideAvatarOnPC();
+            }
         }
         else
         {
-            // Non-owners listen to state changes to hide the avatar if it's a PC Operator
+            // We are looking at another peer's avatar.
+            // If they are a PC Operator, hide their renderers so they are invisible.
             isVRUser.OnValueChanged += OnVRUserChanged;
-
-            // Run initial check for already spawned clients (late joiners)
             if (!isVRUser.Value)
             {
-                HideAvatarBody();
+                HideRemotePCAvatar();
             }
         }
-    }
-
-    private IEnumerator InitializeOwnerRoutine()
-    {
-        // Wait a brief moment to allow the XR Subsystem to initialize (especially critical on PC VR Link)
-        float timeout = 1.0f;
-        bool vrActive = false;
-        while (timeout > 0f)
-        {
-            if (DetermineIfVR())
-            {
-                vrActive = true;
-                break;
-            }
-            timeout -= Time.deltaTime;
-            yield return null;
-        }
-
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete. vrActive: {vrActive} (Platform: {Application.platform})");
-
-        // Sync the state to everyone
-        isVRUser.Value = vrActive;
-
-        if (!vrActive)
-        {
-            HideAvatarBody();
-        }
-        else
-        {
-            debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
-            SpawnWeaponsForClient(OwnerClientId);
-
-            // Subscribe to scene load events so we can respawn weapons when the map changes!
-            if (NetworkManager.Singleton.SceneManager != null)
-            {
-                NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
-            }
-        }
-    }
-
-    private bool DetermineIfVR()
-    {
-        // Android standalone builds on Meta Quest are ALWAYS VR
-        if (Application.platform == RuntimePlatform.Android)
-        {
-            return true;
-        }
-
-        // Editor and PC builds check if a VR display subsystem is running (Oculus Link, SteamVR, etc.)
-        return CheckIsVRActive();
     }
 
     private bool CheckIsVRActive()
@@ -134,23 +103,36 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         if (!newValue)
         {
-            HideAvatarBody();
+            HideRemotePCAvatar();
         }
     }
 
-    private void HideAvatarBody()
+    /// <summary>
+    /// Called ONLY on the PC itself to hide its own avatar. 
+    /// Safe to disable cameras/XR Origins here because the PC has its own OperatorDashboard spectator camera.
+    /// </summary>
+    private void HideAvatarOnPC()
     {
-        debugStatus = $"Hidden PC Operator (Client {OwnerClientId})";
-        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus} globally - disabling cameras, renderers, and colliders.");
+        debugStatus = $"Hidden PC Operator avatar (Client {OwnerClientId})";
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
 
-        // Disable all cameras, renderers, and colliders on the PC Operator's avatar body
         foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
         foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
         foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
 
-        // Also disable the XR Origin component entirely so it doesn't try to track/interact
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Called on ANY device to hide a remote PC Operator's replicated avatar.
+    /// ONLY disables renderers — NEVER touches cameras or XR Origins,
+    /// because on the VR headset those could belong to the local player.
+    /// </summary>
+    private void HideRemotePCAvatar()
+    {
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Hiding remote PC avatar (Client {OwnerClientId}) - renderers only.");
+        foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
     }
 
     private void OnGUI()
