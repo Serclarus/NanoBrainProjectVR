@@ -3228,15 +3228,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7846965221783774222, guid: 2afb0c84b0d17f34f8e1943c0cdbd681,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6560457781514872647}
-    - targetCorrespondingSourceObject: {fileID: 7846965221783774222, guid: 2afb0c84b0d17f34f8e1943c0cdbd681,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8618798540598175516}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2afb0c84b0d17f34f8e1943c0cdbd681, type: 3}
 --- !u!4 &4512307832787306927 stripped
 Transform:
@@ -3244,56 +3236,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1818843164453726064}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &8492611818453025662 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7846965221783774222, guid: 2afb0c84b0d17f34f8e1943c0cdbd681,
-    type: 3}
-  m_PrefabInstance: {fileID: 1818843164453726064}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &6560457781514872647
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8492611818453025662}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 768318694
-  InScenePlacedSourceGlobalObjectIdHash: 2295668069
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
---- !u!114 &8618798540598175516
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8492611818453025662}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 17d25dc873ea0ce4fad9957a244b2690, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayerLoadout
-  ShowTopMostFoldoutHeaderGroup: 1
-  shotgunPrefab: {fileID: 2528653204977119491, guid: 3e094add73c5817408883427e297cc37,
-    type: 3}
-  riflePrefab: {fileID: 7121643266348946437, guid: 81908e6265049a24da238898ce99a90c,
-    type: 3}
-  pistolPrefab: {fileID: 6339974444091640610, guid: 13de1b9a3e01863499714541a05ec5e3,
-    type: 3}
 --- !u!1001 &2317892619599839536
 PrefabInstance:
   m_ObjectHideFlags: 0
