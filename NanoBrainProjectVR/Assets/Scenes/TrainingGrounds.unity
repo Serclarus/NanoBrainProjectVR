@@ -29338,28 +29338,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
-        type: 3}
-      propertyPath: m_NetworkConfig.PlayerPrefab
-      value: 
-      objectReference: {fileID: 5358844088564582620, guid: 2b6dab709dc28bd4c98b9d7d53793dc6,
-        type: 3}
-    - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
-        type: 3}
-      propertyPath: m_NetworkConfig.Prefabs.NetworkPrefabsLists.Array.size
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
-        type: 3}
-      propertyPath: 'm_NetworkConfig.Prefabs.NetworkPrefabsLists.Array.data[4]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 12200e46404936645ab02e3ea66021fd,
-        type: 2}
-    - target: {fileID: 874452183138526564, guid: 3967f87296c892e40b57e37bc8601550,
-        type: 3}
-      propertyPath: 'm_NetworkConfig.Prefabs.NetworkPrefabsLists.Array.data[5]'
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 4145292139985048678, guid: 3967f87296c892e40b57e37bc8601550,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -29414,11 +29392,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Network Manager VR Mutliplayer
-      objectReference: {fileID: 0}
-    - target: {fileID: 5087823492143518475, guid: 3967f87296c892e40b57e37bc8601550,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -149062,6 +149035,16 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5684260240847387616, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3183297672
+      objectReference: {fileID: 0}
+    - target: {fileID: 5684260240847387616, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2295668069
+      objectReference: {fileID: 0}
     - target: {fileID: 5824224595452470828, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_IsActive
@@ -149071,6 +149054,11 @@ PrefabInstance:
         type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2805937965
+      objectReference: {fileID: 0}
+    - target: {fileID: 6560457781514872647, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2295668069
       objectReference: {fileID: 0}
     - target: {fileID: 7174019212652907432, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
@@ -149126,6 +149114,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: XR Interaction Setup (MP Variant)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7174019212652907435, guid: 77ac6b10722bcca4a8baf70e44d89e78,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7960896337995949517, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
