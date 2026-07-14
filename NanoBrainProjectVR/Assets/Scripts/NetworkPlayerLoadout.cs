@@ -17,16 +17,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (IsServer)
         {
             // If this player body belongs to the PC Operator (who has no VR headset), DO NOT spawn weapons for them!
-            bool isVRActive = false;
-            var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
-            UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
-            foreach (var display in xrDisplays) if (display.running) isVRActive = true;
-
-            if (OwnerClientId == NetworkManager.Singleton.LocalClientId && !isVRActive)
+            // A much more reliable check: Is this the Server's own avatar, AND is it running on a Desktop without VR?
+            if (OwnerClientId == NetworkManager.Singleton.LocalClientId && SystemInfo.deviceType == DeviceType.Desktop)
             {
-                debugStatus = $"Skipped spawn for PC Operator (Client {OwnerClientId})";
-                Debug.Log("[NetworkPlayerLoadout] PC Operator detected! Skipping weapon spawn.");
-                return;
+                if (!UnityEngine.XR.XRSettings.isDeviceActive)
+                {
+                    debugStatus = $"Skipped spawn for PC Operator (Client {OwnerClientId})";
+                    Debug.Log("[NetworkPlayerLoadout] PC Operator detected! Skipping weapon spawn.");
+                    return;
+                }
             }
 
             debugStatus = $"Spawning weapons for VR Client {OwnerClientId}!";
