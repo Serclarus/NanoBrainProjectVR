@@ -41,13 +41,39 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
+    private bool isInitialized = false;
+
     public override void OnNetworkSpawn()
     {
+        // 1. If this is a pre-placed scene object and the network is active, destroy it.
+        // NetworkManager will auto-spawn player prefabs for every client!
+        if (NetworkObject != null && NetworkObject.IsSceneObject == true)
+        {
+            Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> Destroying pre-placed scene player object {gameObject.name} to prevent duplication in multiplayer.");
+            Destroy(gameObject);
+            return;
+        }
+
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> OnNetworkSpawn fired!" +
                   $" GameObject: {gameObject.name}" +
                   $" IsOwner: {IsOwner}" +
                   $" OwnerClientId: {OwnerClientId}" +
                   $" Platform: {Application.platform}");
+
+        InitializePlayer();
+    }
+
+    public override void OnGainedOwnership()
+    {
+        base.OnGainedOwnership();
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Gained ownership of {gameObject.name}!");
+        InitializePlayer();
+    }
+
+    private void InitializePlayer()
+    {
+        if (isInitialized) return;
+        isInitialized = true;
 
         if (IsOwner)
         {
