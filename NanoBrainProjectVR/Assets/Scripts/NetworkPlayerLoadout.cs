@@ -33,11 +33,21 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             return;
         }
 
-        // If this is a PC Operator (Desktop without VR headset), skip weapon spawning
+        // If this is a PC Operator (Desktop without VR headset), skip weapon spawning and hide the avatar body!
         if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
         {
-            debugStatus = $"Skipped spawn for PC Operator (Client {OwnerClientId})";
+            debugStatus = $"Skipped spawn and hid PC Operator (Client {OwnerClientId})";
             Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
+
+            // Disable all cameras, renderers, and colliders on the PC Operator's locally spawned player avatar
+            foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
+            foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+
+            // Also disable the XR Origin component entirely so it doesn't try to track/interact
+            var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+            if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
+
             return;
         }
 

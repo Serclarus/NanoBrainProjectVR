@@ -484,9 +484,8 @@ public class WeaponController : NetworkBehaviour
             SetSubInteractablesState(true);
         }
 
-        // Only the Owner is allowed to spawn the initial magazine!
-        // In Distributed Authority topology, the Client is allowed to spawn objects.
-        if (IsOwner && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
+        // Spawn initial magazine on the Server (for Client-Server) OR the Owner (for Distributed Authority)
+        if ((IsServer || IsOwner) && spawnWithMagazine && magazinePrefab != null && magazineSocket != null)
         {
             StartCoroutine(SpawnInitialMagazineRoutine());
         }
@@ -594,7 +593,7 @@ public class WeaponController : NetworkBehaviour
 
     private IEnumerator SpawnInitialMagazineRoutine()
     {
-        Debug.LogWarning($"[WeaponController] SpawnInitialMagazineRoutine started on Server. Waiting 0.3s...");
+        Debug.LogWarning($"[WeaponController] SpawnInitialMagazineRoutine started. IsServer: {IsServer}, IsOwner: {IsOwner}");
         // Wait briefly for XRI and Network to stabilize
         yield return new WaitForSeconds(0.3f);
 
@@ -620,7 +619,17 @@ public class WeaponController : NetworkBehaviour
                 netConfig.Prefabs.Add(new Unity.Netcode.NetworkPrefab { Prefab = magazinePrefab });
             }
 
-            netObj.SpawnWithOwnership(OwnerClientId);
+            try
+            {
+                netObj.SpawnWithOwnership(OwnerClientId);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[WeaponController] Client failed to spawn magazine (probably Client-Server mode). Destroying local clone. Error: {e.Message}");
+                Destroy(newMag);
+                yield break;
+            }
+
             yield return new WaitForEndOfFrame(); // Wait for network sync
         }
         else
@@ -628,7 +637,10 @@ public class WeaponController : NetworkBehaviour
             Debug.LogWarning($"[WeaponController] Network is offline OR netObj is null. isOffline: {isOffline}, netObj null: {netObj == null}");
         }
 
-        Debug.LogWarning($"[WeaponController] Attempting to socket locally on Server...");
+        // Only proceed to socket if the magazine wasn't destroyed
+        if (newMag == null) yield break;
+
+        Debug.LogWarning($"[WeaponController] Attempting to socket magazine...");
 
         var grabInteractable = newMag.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         if (grabInteractable != null)
