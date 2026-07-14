@@ -80,13 +80,8 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        
-        // CRITICAL DUAL-TOPOLOGY FIXED:
-        // We initialize pools if we are the Server (standard Client-Server mode)
-        // OR if we are the Owner (Distributed Authority mode where there is no server).
-        if (IsServer || IsOwner)
+        if (IsServer)
         {
-            Debug.Log($"<color=cyan>[AmmoPouch]</color> OnNetworkSpawn. IsServer: {IsServer}, IsOwner: {IsOwner}. Initializing pools.");
             InitializePools();
         }
     }
@@ -118,8 +113,6 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
                 ammoPools[config.ammoPrefab] = new Queue<GameObject>();
             }
 
-            Debug.Log($"<color=cyan>[AmmoPouch]</color> Pre-warming pool for {config.ammoPrefab.name} with size {config.initialPoolSize}");
-
             List<ulong> spawnedIds = new List<ulong>();
 
             for (int i = 0; i < config.initialPoolSize; i++)
@@ -131,25 +124,14 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
                 Unity.Netcode.NetworkObject netObj = newAmmo.GetComponent<Unity.Netcode.NetworkObject>();
                 if (netObj != null)
                 {
-                    try
-                    {
-                        netObj.SpawnWithOwnership(OwnerClientId);
-                        spawnedIds.Add(netObj.NetworkObjectId);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> Client failed to spawn magazine in pool (expected in Client-Server mode). Destroying local clone. Error: {e.Message}");
-                        Destroy(newAmmo);
-                        continue;
-                    }
+                    netObj.SpawnWithOwnership(OwnerClientId);
+                    spawnedIds.Add(netObj.NetworkObjectId);
                 }
                 
                 ammoPools[config.ammoPrefab].Enqueue(newAmmo);
             }
 
-            // In Client-Server mode, the Server spawned these magazines. 
-            // It MUST notify the Client about their NetworkObjectIds so the Client can add them to its local pool!
-            if (spawnedIds.Count > 0 && IsServer && !IsOwner)
+            if (spawnedIds.Count > 0)
             {
                 RegisterPooledAmmoClientRpc(config.ammoPrefab.name, spawnedIds.ToArray());
             }
@@ -159,7 +141,7 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
     [Unity.Netcode.ClientRpc]
     private void RegisterPooledAmmoClientRpc(string prefabName, ulong[] netIds)
     {
-        if (IsServer) return; // Server already enqueued them directly during instantiation!
+        if (IsServer) return; // Server already added them to its own pool during instantiation!
 
         GameObject matchingPrefab = null;
         foreach (var config in prewarmedPools)
@@ -208,7 +190,6 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
                 ammoPools[matchingPrefab].Enqueue(netObj.gameObject);
                 netObj.gameObject.SetActive(false);
                 netObj.transform.SetParent(poolParent);
-                Debug.Log($"<color=green>[AmmoPouch]</color> Client successfully synced and enqueued server-spawned magazine: {netObj.gameObject.name}");
             }
         }
     }
@@ -231,8 +212,10 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
             GameObject candidate = ammoPools[prefab].Dequeue();
             ammoPools[prefab].Enqueue(candidate); // Re-queue it immediately for circular pooling
             
-            // A magazine is "free" to steal if it is NOT selected (not held by hand, not in a gun socket)
+            // Wait, we need to make sure the candidate is NOT already held!
             XRGrabInteractable grab = candidate.GetComponent<XRGrabInteractable>();
+            
+            // A magazine is "free" to steal if it is NOT selected (not held by hand, not in a gun socket)
             if (grab != null && !grab.isSelected)
             {
                 ammoInstance = candidate;
@@ -240,35 +223,34 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
             }
         }
 
-        // If all pooled magazines are currently in use, expand the pool dynamically
+        // If we checked the entire pool and they are ALL currently inside guns or hands,
+        // we MUST instantiate a new one to prevent breaking the game!
         if (ammoInstance == null)
         {
-            Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> All pooled {prefab.name} are currently in use! Expanding pool dynamically.");
-            
-            Transform poolParent = GameObject.Find("AmmoPouch_Pool")?.transform;
-            ammoInstance = Instantiate(prefab, transform.position, transform.rotation, poolParent);
-            Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
-            if (netObj != null)
+            Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> All pooled {prefab.name} are currently inside guns! Waiting for Server to expand pool.");
+            if (IsServer)
             {
-                try
+                Transform poolParent = GameObject.Find("AmmoPouch_Pool")?.transform;
+                ammoInstance = Instantiate(prefab, transform.position, transform.rotation, poolParent);
+                Unity.Netcode.NetworkObject netObj = ammoInstance.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null)
                 {
                     netObj.SpawnWithOwnership(OwnerClientId);
-                    if (IsServer && !IsOwner)
-                    {
-                        RegisterPooledAmmoClientRpc(prefab.name, new ulong[] { netObj.NetworkObjectId });
-                    }
+                    RegisterPooledAmmoClientRpc(prefab.name, new ulong[] { netObj.NetworkObjectId });
                 }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"<color=yellow>[AmmoPouch]</color> Client failed to spawn dynamic pool expansion (expected in CS mode). Destroying local clone. Error: {e.Message}");
-                    Destroy(ammoInstance);
-                    return null;
-                }
+                ammoPools[prefab].Enqueue(ammoInstance);
             }
-            ammoPools[prefab].Enqueue(ammoInstance);
+            else
+            {
+                // Clients just return null for this frame and hope the server expands it soon,
+                // but 4-10 mags is almost never exhausted anyway.
+                return null;
+            }
         }
 
-        // Teleport out of the void pool so its colliders are physically inside the Ammo Pouch
+        // CRITICAL: We must manually teleport the object OUT of the underground void pool (-100) 
+        // so its colliders are physically inside the Ammo Pouch! XR Interaction Toolkit will 
+        // automatically calculate the final micro-offsets during SelectEnter.
         Transform attach = socketInteractor.attachTransform != null ? socketInteractor.attachTransform : transform;
         ammoInstance.transform.position = attach.position;
         ammoInstance.transform.rotation = attach.rotation;
@@ -276,7 +258,7 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
         Rigidbody rb = ammoInstance.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = true; // FORCE kinematic so it doesn't explode in physics calculations
+            rb.isKinematic = true; // FORCE kinematic so it doesn't explode in physics calculations before socket grabs it!
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
@@ -328,7 +310,6 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
 
     private void RefillSocket()
     {
-        if (!IsOwner) return; // Only the owner should perform local refills of their pouch
         StartCoroutine(RefillSocketRoutine());
     }
 
@@ -345,12 +326,13 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
             yield break;
         }
 
+        // --- NEW POOL LOGIC: HIDE INSTEAD OF DESTROY ---
         if (socketInteractor.hasSelection)
         {
             IXRSelectInteractable oldItem = socketInteractor.interactablesSelected[0];
             socketInteractor.interactionManager.SelectCancel((IXRSelectInteractor)socketInteractor, oldItem);
             
-            // Cleanly despawn the old magazine off the network so it doesn't float in mid-air
+            // MULTIPLAYER FIX: Cleanly despawn the old magazine off the network so it doesn't float in mid-air!
             Magazine oldMag = oldItem.transform.GetComponent<Magazine>();
             if (oldMag != null)
             {
@@ -364,6 +346,7 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
             yield return new WaitForEndOfFrame(); 
         }
 
+        // --- NEW POOL LOGIC: FETCH INSTEAD OF INSTANTIATE ---
         GameObject newAmmo = null;
         while (newAmmo == null)
         {
