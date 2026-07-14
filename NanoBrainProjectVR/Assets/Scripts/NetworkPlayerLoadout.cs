@@ -71,32 +71,24 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         // Wait a brief moment to allow the XR Subsystem to initialize (especially critical on PC VR Link)
         float timeout = 1.0f;
+        bool vrActive = false;
         while (timeout > 0f)
         {
-            if (UnityEngine.XR.XRSettings.isDeviceActive)
+            if (CheckIsVRActive())
             {
+                vrActive = true;
                 break;
             }
             timeout -= Time.deltaTime;
             yield return null;
         }
 
-        // Determine if the local owner is a VR user or PC Operator
-        bool isVR = true;
-        if (SystemInfo.deviceType == DeviceType.Desktop && !UnityEngine.XR.XRSettings.isDeviceActive)
-        {
-            isVR = false;
-        }
-
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete." +
-                  $" isVR: {isVR}" +
-                  $" DeviceType: {SystemInfo.deviceType}" +
-                  $" XRActive: {UnityEngine.XR.XRSettings.isDeviceActive}");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner initialization complete. vrActive: {vrActive}");
 
         // Sync the state to everyone
-        isVRUser.Value = isVR;
+        isVRUser.Value = vrActive;
 
-        if (!isVR)
+        if (!vrActive)
         {
             HideAvatarBody();
         }
@@ -113,6 +105,17 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Subscribed to OnLoadEventCompleted for scene changes.");
             }
         }
+    }
+
+    private bool CheckIsVRActive()
+    {
+        var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
+        UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+        foreach (var display in xrDisplays)
+        {
+            if (display.running) return true;
+        }
+        return false;
     }
 
     private void OnVRUserChanged(bool previousValue, bool newValue)
