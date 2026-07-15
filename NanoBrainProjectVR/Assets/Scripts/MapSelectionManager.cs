@@ -37,6 +37,10 @@ public class MapSelectionManager : MonoBehaviour
     [Tooltip("Text element to display server connection status")]
     public TMP_Text connectionStatusText;
 
+    [Header("Testing")]
+    [Tooltip("If true, playing in the Unity Editor will act like a VR headset and join as a Client instead of hosting as a PC Operator.")]
+    public bool forceVRInEditor = true;
+
     [Header("Layer Culling Setup")]
     [Tooltip("If true, swaps layers to hide maps instead of deactivating them (prevents lag spikes)")]
     public bool useLayerCulling = true;
@@ -118,12 +122,16 @@ public class MapSelectionManager : MonoBehaviour
             if (XRMultiplayer.XRINetworkGameManager.Instance != null)
             {
                 // Determine if we are running in VR or on PC
-                bool isVRActive = false;
-                var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
-                UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
-                foreach (var display in xrDisplays)
+                bool isVRActive = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor);
+                
+                if (!isVRActive)
                 {
-                    if (display.running) isVRActive = true;
+                    var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
+                    UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+                    foreach (var display in xrDisplays)
+                    {
+                        if (display.running) isVRActive = true;
+                    }
                 }
                 
                 if (isVRActive)
