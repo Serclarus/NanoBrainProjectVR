@@ -105,6 +105,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private bool CheckIsVRActive()
     {
+        // On modern Unity XR, isDeviceActive is usually true if a headset is physically connected and recognized (like Oculus Link), 
+        // even if the user hasn't put it on their head yet (which would make display.running false).
+        if (UnityEngine.XR.XRSettings.isDeviceActive) return true;
+
         var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
         UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
         foreach (var display in xrDisplays)

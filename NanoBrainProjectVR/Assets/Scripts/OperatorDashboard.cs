@@ -74,11 +74,19 @@ public class OperatorDashboard : MonoBehaviour
 
         // Determine if we are running in VR
         bool isVRActive = false;
-        var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
-        UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
-        foreach (var display in xrDisplays)
+        
+        if (UnityEngine.XR.XRSettings.isDeviceActive) 
         {
-            if (display.running) isVRActive = true;
+            isVRActive = true;
+        }
+        else
+        {
+            var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
+            UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+            foreach (var display in xrDisplays)
+            {
+                if (display.running) isVRActive = true;
+            }
         }
 
         // If no VR headset is rendering, we assume this is the PC Operator!
@@ -95,14 +103,35 @@ public class OperatorDashboard : MonoBehaviour
 
     private void SetupPCEnvironment()
     {
-        Camera mainCam = Camera.main;
+        Camera templateCam = Camera.main;
+        
+        // If Camera.main is null (e.g. offline rig was deleted or already disabled), find ANY camera in the scene to use as a URP template
+        if (templateCam == null)
+        {
+            var allCameras = Resources.FindObjectsOfTypeAll<Camera>();
+            foreach (var cam in allCameras)
+            {
+                // Must be in the scene (not a prefab asset) and have a UniversalAdditionalCameraData or just be a valid scene camera
+                if (cam.gameObject.scene.isLoaded)
+                {
+                    templateCam = cam;
+                    break;
+                }
+            }
+        }
+
         GameObject camObj;
 
-        if (mainCam != null)
+        if (templateCam != null)
         {
-            // DUPLICATE the main camera to ensure all URP data (UniversalAdditionalCameraData) and post-processing are perfectly preserved!
-            camObj = Instantiate(mainCam.gameObject);
+            // DUPLICATE the template camera to ensure all URP data (UniversalAdditionalCameraData) and post-processing are perfectly preserved!
+            camObj = Instantiate(templateCam.gameObject);
             camObj.name = "OperatorSpectatorCamera";
+            
+            // Ensure the duplicate is active, even if the template was disabled
+            camObj.SetActive(true);
+            var camComponent = camObj.GetComponent<Camera>();
+            if (camComponent != null) camComponent.enabled = true;
             
             // Strip VR tracking components from the spectator camera so it doesn't move with the headset
             var trackedPoseDriver = camObj.GetComponent<UnityEngine.SpatialTracking.TrackedPoseDriver>();
@@ -112,7 +141,7 @@ public class OperatorDashboard : MonoBehaviour
         }
         else
         {
-            // Fallback if no camera exists (very rare)
+            // Absolute fallback if literally zero cameras exist in the entire scene
             camObj = new GameObject("OperatorSpectatorCamera");
             camObj.AddComponent<Camera>();
         }
