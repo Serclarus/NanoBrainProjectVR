@@ -17,6 +17,31 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<Vector3> vrHeadPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<Quaternion> vrHeadRotation = new NetworkVariable<Quaternion>(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private Transform localHeadTransform;
+
+    private void Update()
+    {
+        if (IsOwner && isVRUser.Value)
+        {
+            if (localHeadTransform == null)
+            {
+                localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
+                                     transform.Find("Main Camera") ??
+                                     transform.Find("Head") ??
+                                     transform.Find("Camera Offset/Head") ??
+                                     GetComponentInChildren<Camera>()?.transform;
+            }
+
+            if (localHeadTransform != null)
+            {
+                vrHeadPosition.Value = localHeadTransform.position;
+                vrHeadRotation.Value = localHeadTransform.rotation;
+            }
+        }
+    }
 
     private bool isInitialized = false;
 
@@ -105,10 +130,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private bool CheckIsVRActive()
     {
-        // On modern Unity XR, isDeviceActive is usually true if a headset is physically connected and recognized (like Oculus Link), 
-        // even if the user hasn't put it on their head yet (which would make display.running false).
-        if (UnityEngine.XR.XRSettings.isDeviceActive) return true;
-
         var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
         UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
         foreach (var display in xrDisplays)
@@ -135,11 +156,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         debugStatus = $"Hidden PC Operator avatar (Client {OwnerClientId})";
         Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
 
-        // Only hide renderers and colliders so the PC Operator is an invisible spectator.
-        // DO NOT disable cameras or the XROrigin. This allows the PC Operator to fly around 
-        // using the Unity XR Device Simulator (WASD/Mouse) flawlessly without black screens!
+        foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
         foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
         foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+
+        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+        if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -183,18 +205,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
-
-        // CRITICAL FIX: Disable cameras and audio listeners on remote avatars!
-        // If left enabled, the VR headset might latch onto the remote PC player's camera 
-        // and cause the local player's height/tracking offset to break by ~20cm.
-        foreach (var cam in GetComponentsInChildren<Camera>(true))
-        {
-            cam.enabled = false;
-        }
-        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
-        {
-            listener.enabled = false;
-        }
     }
 
     private System.Collections.IEnumerator DeferredDespawnRoutine()

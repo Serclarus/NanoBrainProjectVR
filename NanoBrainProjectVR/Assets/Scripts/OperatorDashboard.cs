@@ -22,6 +22,8 @@ public class OperatorDashboard : MonoBehaviour
     public bool forceVRInEditor = true;
 
     private Canvas dashboardCanvas;
+    private Camera pcCamera;
+    private Transform vrTargetHead;
     private UnityEngine.UI.Text connectionStatusText;
     private UnityEngine.UI.Text connectedClientsText;
 
@@ -48,7 +50,13 @@ public class OperatorDashboard : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        // Rebuild UI or refresh references if necessary on scene load
+        // The VR player's body is destroyed and recreated on scene loads, so we must find their new head!
+        vrTargetHead = null;
+
+        if (pcCamera != null)
+        {
+            CleanUpPCEnvironment();
+        }
     }
 
     private IEnumerator InitializeDashboardRoutine()
@@ -66,26 +74,18 @@ public class OperatorDashboard : MonoBehaviour
 
         // Determine if we are running in VR
         bool isVRActive = false;
-        
-        if (UnityEngine.XR.XRSettings.isDeviceActive) 
+        var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
+        UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
+        foreach (var display in xrDisplays)
         {
-            isVRActive = true;
-        }
-        else
-        {
-            var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
-            UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
-            foreach (var display in xrDisplays)
-            {
-                if (display.running) isVRActive = true;
-            }
+            if (display.running) isVRActive = true;
         }
 
         // If no VR headset is rendering, we assume this is the PC Operator!
         if (!isVRActive)
         {
-            Debug.Log("[OperatorDashboard] No VR headset detected. Starting Operator Dashboard UI!");
-            BuildDashboardUI();
+            Debug.Log("[OperatorDashboard] No VR headset detected. Starting Operator Dashboard!");
+            SetupPCEnvironment();
         }
         else
         {
@@ -93,7 +93,64 @@ public class OperatorDashboard : MonoBehaviour
         }
     }
 
-    // CleanUpPCEnvironment and camera tracking removed to prevent VR tracking interference
+    private void SetupPCEnvironment()
+    {
+        // 1. Create a dedicated PC Spectator Camera (DO NOT hijack Camera.main as it belongs to XR Origin)
+        GameObject camObj = new GameObject("OperatorSpectatorCamera");
+        camObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
+        pcCamera = camObj.AddComponent<Camera>();
+        camObj.tag = "MainCamera";
+
+        // Copy all settings (Culling Mask, Skybox, FOV) from the original VR Camera before we disable it
+        Camera mainCam = Camera.main;
+        if (mainCam != null)
+        {
+            pcCamera.CopyFrom(mainCam);
+        }
+
+        // Add AudioListener so the PC Operator can hear the game audio
+        if (pcCamera.GetComponent<AudioListener>() == null)
+        {
+            pcCamera.gameObject.AddComponent<AudioListener>();
+        }
+
+        // Disable VR rendering for the PC camera to save performance and prevent bugs
+        pcCamera.stereoTargetEye = StereoTargetEyeMask.None;
+
+        // Force this to be the highest priority camera
+        pcCamera.depth = 99;
+        
+        CleanUpPCEnvironment();
+
+        // 2. Build the UI Dashboard automatically
+        BuildDashboardUI();
+    }
+
+    private void CleanUpPCEnvironment()
+    {
+        // Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard
+        var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
+        if (simulator != null) Destroy(simulator.gameObject);
+
+        // Find ALL XR Origins in the scene
+        var xrOrigins = FindObjectsOfType<Unity.XR.CoreUtils.XROrigin>();
+        foreach (var xrOrigin in xrOrigins)
+        {
+            var netObj = xrOrigin.GetComponentInParent<Unity.Netcode.NetworkObject>();
+            
+            // If it has no NetworkObject, it's a scene-default offline rig. Disable it.
+            if (netObj == null)
+            {
+                xrOrigin.gameObject.SetActive(false);
+            }
+            // If it has a NetworkObject and belongs to US (the PC Host), disable it so we are an invisible spectator.
+            else if (netObj.IsOwner)
+            {
+                xrOrigin.gameObject.SetActive(false);
+            }
+            // If it belongs to a REMOTE client (the VR player), DO NOT disable it! We need to see them!
+        }
+    }
 
     private void BuildDashboardUI()
     {
@@ -219,7 +276,106 @@ public class OperatorDashboard : MonoBehaviour
             connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
         }
 
-        // UI Updates only. Camera tracking logic removed completely.
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || !enableSpectatorCamera || pcCamera == null) return;
+
+        // 3. Find the VR player's head over the network
+        if (vrTargetHead == null)
+        {
+            // Find all active NetworkPlayerLoadout instances in the scene
+            var loadouts = FindObjectsOfType<NetworkPlayerLoadout>();
+            foreach (var loadout in loadouts)
+            {
+                var netObj = loadout.GetComponent<NetworkObject>();
+                // We want to spectate the remote VR player (who we do NOT own)
+                if (netObj != null && !netObj.IsOwner)
+                {
+                    Transform head = null;
+
+                    // 1. Try finding standard XRI or common named transforms
+                    head = loadout.transform.Find("Camera Offset/Main Camera") ??
+                           loadout.transform.Find("Main Camera") ??
+                           loadout.transform.Find("Head") ??
+                           loadout.transform.Find("Camera Offset/Head") ??
+                           loadout.transform.GetComponentInChildren<Camera>()?.transform;
+
+                    // 2. Fallback: Search deeply for any child containing "head" or "camera" in its name (e.g. for custom humanoid avatars)
+                    if (head == null)
+                    {
+                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
+                        {
+                            string tName = t.name.ToLower();
+                            // Prioritize exact/close matches first
+                            if (tName == "head" || tName == "main camera")
+                            {
+                                head = t;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (head == null)
+                    {
+                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
+                        {
+                            string tName = t.name.ToLower();
+                            if (tName.Contains("head") || tName.Contains("camera"))
+                            {
+                                head = t;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. Fallback: Use the root of the remote avatar
+                    if (head != null)
+                    {
+                        vrTargetHead = head;
+                    }
+                    else
+                    {
+                        vrTargetHead = loadout.transform;
+                    }
+
+                    Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
+
+                    // Copy rendering settings (Culling Mask, FOV, etc.) from the VR player's actual camera so the PC operator sees the exact same layers
+                    Camera vrCam = vrTargetHead.GetComponent<Camera>() ?? 
+                                   vrTargetHead.GetComponentInChildren<Camera>(true) ?? 
+                                   loadout.GetComponentInChildren<Camera>(true);
+                    if (vrCam != null)
+                    {
+                        pcCamera.CopyFrom(vrCam);
+                        pcCamera.stereoTargetEye = StereoTargetEyeMask.None; // Maintain flat screen
+                        pcCamera.depth = 99; // Keep as highest priority
+                        Debug.Log($"[OperatorDashboard] Successfully copied camera settings from VR Player's camera.");
+                    }
+                    break;
+                }
+            }
+        }
+
+        // 4. Lock the PC Camera to the VR Head
+        if (vrTargetHead != null)
+        {
+            var loadout = vrTargetHead.GetComponentInParent<NetworkPlayerLoadout>();
+            if (loadout != null && loadout.isVRUser.Value)
+            {
+                pcCamera.transform.position = loadout.vrHeadPosition.Value;
+                pcCamera.transform.rotation = loadout.vrHeadRotation.Value;
+            }
+            else
+            {
+                pcCamera.transform.position = vrTargetHead.position;
+                
+                // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
+                if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
+                {
+                    pcCamera.transform.position += Vector3.up * 1.6f;
+                }
+
+                pcCamera.transform.rotation = vrTargetHead.rotation;
+            }
+        }
     }
 
     // --- NETWORK COMMANDS ---
