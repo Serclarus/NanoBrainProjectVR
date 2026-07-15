@@ -88,16 +88,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             isVRUser.Value = isVR;
 
+            // Teleport local player to an available spawn point in the scene
+            TeleportToSpawnPoint();
+
             if (isVR)
             {
-                // Force XROrigin to Floor tracking origin mode to ensure camera matches physical eye level
-                var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-                if (xrOrigin != null)
-                {
-                    xrOrigin.RequestedTrackingOriginMode = Unity.XR.CoreUtils.XROrigin.TrackingOriginMode.Floor;
-                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Programmatically set local XROrigin to Floor tracking mode.");
-                }
-
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
@@ -303,9 +298,41 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, System.Collections.Generic.List<ulong> clientsCompleted, System.Collections.Generic.List<ulong> clientsTimedOut)
     {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Respawning weapons.");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
+        
+        // Teleport to the spawn point in the new scene first
+        TeleportToSpawnPoint();
+
         // When a new scene loads, the old weapons were destroyed. Respawn them!
         SpawnWeaponsForClient(OwnerClientId);
+    }
+
+    private void TeleportToSpawnPoint()
+    {
+        if (!IsOwner) return;
+
+        var spawnPoints = FindObjectsOfType<PlayerSpawnPoint>();
+        if (spawnPoints.Length > 0)
+        {
+            // Sort by index, then pick a spawn point based on client ID so multiple players don't spawn inside each other
+            System.Array.Sort(spawnPoints, (a, b) => a.spawnIndex.CompareTo(b.spawnIndex));
+            var selectedSpawn = spawnPoints[(int)(OwnerClientId % (ulong)spawnPoints.Length)];
+
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Teleporting local player {gameObject.name} to Spawn Point {selectedSpawn.name} at {selectedSpawn.transform.position}");
+
+            // Temporarily disable CharacterController (if active) to prevent it from resetting the position
+            var cc = GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+
+            transform.position = selectedSpawn.transform.position;
+            transform.rotation = selectedSpawn.transform.rotation;
+
+            if (cc != null) cc.enabled = true;
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow>[NetworkPlayerLoadout]</color> No PlayerSpawnPoint found in the scene! Defaulting to current position: {transform.position}");
+        }
     }
 
     public void ForceSpawnForClient(ulong clientId)
@@ -368,5 +395,22 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             debugStatus = $"EXCEPTION spawning {prefab.name}: {e.Message}";
             Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
         }
+    }
+}
+
+public class PlayerSpawnPoint : MonoBehaviour
+{
+    [Header("Spawn Settings")]
+    [Tooltip("If multiple spawn points exist, you can assign an index to sequence them.")]
+    public int spawnIndex = 0;
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        Vector3 center = transform.position + Vector3.up * 1f;
+        Gizmos.DrawWireCube(center, new Vector3(0.6f, 2.0f, 0.6f));
+        
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(transform.position + Vector3.up * 1.5f, transform.forward * 0.5f);
     }
 }
