@@ -135,12 +135,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         debugStatus = $"Hidden PC Operator avatar (Client {OwnerClientId})";
         Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
 
-        foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
+        // Only hide renderers and colliders so the PC Operator is an invisible spectator.
+        // DO NOT disable cameras or the XROrigin. This allows the PC Operator to fly around 
+        // using the Unity XR Device Simulator (WASD/Mouse) flawlessly without black screens!
         foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
         foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-
-        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-        if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
     }
 
     /// <summary>
