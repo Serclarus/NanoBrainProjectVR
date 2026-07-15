@@ -205,18 +205,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
-
-        // CRITICAL FIX: Disable cameras and audio listeners on remote avatars!
-        // If left enabled, the VR headset might latch onto the remote PC player's camera 
-        // and cause the local player's height/tracking offset to break by ~20cm.
-        foreach (var cam in GetComponentsInChildren<Camera>(true))
-        {
-            cam.enabled = false;
-        }
-        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
-        {
-            listener.enabled = false;
-        }
     }
 
     private System.Collections.IEnumerator DeferredDespawnRoutine()
