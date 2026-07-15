@@ -105,7 +105,10 @@ public class OperatorDashboard : MonoBehaviour
         Camera mainCam = Camera.main;
         if (mainCam != null)
         {
-            pcCamera.CopyFrom(mainCam);
+            pcCamera.fieldOfView = mainCam.fieldOfView;
+            pcCamera.backgroundColor = mainCam.backgroundColor;
+            pcCamera.clearFlags = mainCam.clearFlags;
+            pcCamera.cullingMask = mainCam.cullingMask;
         }
 
         // Add AudioListener so the PC Operator can hear the game audio
@@ -338,16 +341,20 @@ public class OperatorDashboard : MonoBehaviour
 
                     Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
 
-                    // Copy rendering settings (Culling Mask, FOV, etc.) from the VR player's actual camera so the PC operator sees the exact same layers
                     Camera vrCam = vrTargetHead.GetComponent<Camera>() ?? 
                                    vrTargetHead.GetComponentInChildren<Camera>(true) ?? 
                                    loadout.GetComponentInChildren<Camera>(true);
                     if (vrCam != null)
                     {
-                        pcCamera.CopyFrom(vrCam);
+                        // Copy basic settings manually to avoid CopyFrom corrupting XR rendering targets!
+                        pcCamera.fieldOfView = vrCam.fieldOfView;
+                        pcCamera.backgroundColor = vrCam.backgroundColor;
+                        pcCamera.clearFlags = vrCam.clearFlags;
+                        pcCamera.cullingMask = vrCam.cullingMask;
+                        
                         pcCamera.stereoTargetEye = StereoTargetEyeMask.None; // Maintain flat screen
                         pcCamera.depth = 99; // Keep as highest priority
-                        Debug.Log($"[OperatorDashboard] Successfully copied camera settings from VR Player's camera.");
+                        Debug.Log($"[OperatorDashboard] Successfully copied basic camera settings from VR Player's camera.");
                     }
                     break;
                 }
