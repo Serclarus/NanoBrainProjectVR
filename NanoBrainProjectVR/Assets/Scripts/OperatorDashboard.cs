@@ -95,18 +95,31 @@ public class OperatorDashboard : MonoBehaviour
 
     private void SetupPCEnvironment()
     {
-        // 1. Create a dedicated PC Spectator Camera (DO NOT hijack Camera.main as it belongs to XR Origin)
-        GameObject camObj = new GameObject("OperatorSpectatorCamera");
-        camObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
-        pcCamera = camObj.AddComponent<Camera>();
-        camObj.tag = "MainCamera";
-
-        // Copy all settings (Culling Mask, Skybox, FOV) from the original VR Camera before we disable it
         Camera mainCam = Camera.main;
+        GameObject camObj;
+
         if (mainCam != null)
         {
-            pcCamera.CopyFrom(mainCam);
+            // DUPLICATE the main camera to ensure all URP data (UniversalAdditionalCameraData) and post-processing are perfectly preserved!
+            camObj = Instantiate(mainCam.gameObject);
+            camObj.name = "OperatorSpectatorCamera";
+            
+            // Strip VR tracking components from the spectator camera so it doesn't move with the headset
+            var trackedPoseDriver = camObj.GetComponent<UnityEngine.SpatialTracking.TrackedPoseDriver>();
+            if (trackedPoseDriver != null) Destroy(trackedPoseDriver);
+            var inputPoseDriver = camObj.GetComponent<UnityEngine.InputSystem.XR.TrackedPoseDriver>();
+            if (inputPoseDriver != null) Destroy(inputPoseDriver);
         }
+        else
+        {
+            // Fallback if no camera exists (very rare)
+            camObj = new GameObject("OperatorSpectatorCamera");
+            camObj.AddComponent<Camera>();
+        }
+
+        camObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
+        pcCamera = camObj.GetComponent<Camera>();
+        camObj.tag = "MainCamera";
 
         // Add AudioListener so the PC Operator can hear the game audio
         if (pcCamera.GetComponent<AudioListener>() == null)
