@@ -93,6 +93,27 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (isVR)
             {
+                // Ensure the CameraFloorOffsetObject Y is consistent with the tracking mode.
+                // In Floor mode, the XR subsystem provides floor-relative height automatically,
+                // so any leftover CameraYOffset (e.g. 1.6m from the prefab) must be zeroed out.
+                // In Device mode, the CameraYOffset is intentional and should be preserved.
+                var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+                if (xrOrigin != null)
+                {
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> XROrigin tracking mode: {xrOrigin.RequestedTrackingOriginMode}, CameraYOffset: {xrOrigin.CameraYOffset}");
+                    
+                    // If Floor mode is active, force the offset object to Y=0
+                    if (xrOrigin.RequestedTrackingOriginMode == Unity.XR.CoreUtils.XROrigin.TrackingOriginMode.Floor)
+                    {
+                        if (xrOrigin.CameraFloorOffsetObject != null)
+                        {
+                            var localPos = xrOrigin.CameraFloorOffsetObject.transform.localPosition;
+                            xrOrigin.CameraFloorOffsetObject.transform.localPosition = new Vector3(localPos.x, 0f, localPos.z);
+                            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Floor mode detected — cleared CameraOffset Y to 0 (was {localPos.y})");
+                        }
+                    }
+                }
+
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
