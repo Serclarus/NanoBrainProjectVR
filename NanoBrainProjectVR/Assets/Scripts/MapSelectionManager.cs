@@ -121,6 +121,15 @@ public class MapSelectionManager : MonoBehaviour
         {
             if (XRMultiplayer.XRINetworkGameManager.Instance != null)
             {
+                // Wait for UGS Authentication to finish before attempting to join or create lobbies!
+                var state = XRMultiplayer.XRINetworkGameManager.CurrentConnectionState.Value;
+                if (state == XRMultiplayer.XRINetworkGameManager.ConnectionState.None || state == XRMultiplayer.XRINetworkGameManager.ConnectionState.Authenticating)
+                {
+                    Debug.Log("[MapSelectionManager] Waiting for UGS Authentication...");
+                    Invoke(nameof(AutoHostLocal), 0.5f);
+                    return;
+                }
+
                 // Determine if we are running in VR or on PC
                 bool isVRActive = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor);
                 
