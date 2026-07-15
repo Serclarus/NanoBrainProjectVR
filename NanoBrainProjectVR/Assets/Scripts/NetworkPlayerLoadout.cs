@@ -45,12 +45,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // 1. If this is a pre-placed scene object and the network is active, destroy it.
-        // NetworkManager will auto-spawn player prefabs for every client!
-        if (NetworkObject != null && NetworkObject.IsSceneObject == true)
+        // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
+        // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
+        if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
         {
-            Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> Destroying pre-placed scene player object {gameObject.name} to prevent duplication in multiplayer.");
-            Destroy(gameObject);
+            StartCoroutine(DeferredDespawnRoutine());
+            return;
+        }
+        else if (!IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
+        {
+            // Clients ignore pre-placed scene objects on spawn because the server will despawn them shortly
             return;
         }
 
@@ -203,6 +207,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
+    }
+
+    private System.Collections.IEnumerator DeferredDespawnRoutine()
+    {
+        yield return new WaitForEndOfFrame();
+        if (NetworkObject != null && NetworkObject.IsSpawned)
+        {
+            Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> Server despawning pre-placed scene player object {gameObject.name} to prevent duplication in multiplayer.");
+            NetworkObject.Despawn(true);
+        }
     }
 
     private void OnGUI()
