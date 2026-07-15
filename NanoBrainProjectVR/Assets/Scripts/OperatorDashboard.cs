@@ -105,10 +105,7 @@ public class OperatorDashboard : MonoBehaviour
         Camera mainCam = Camera.main;
         if (mainCam != null)
         {
-            pcCamera.fieldOfView = mainCam.fieldOfView;
-            pcCamera.backgroundColor = mainCam.backgroundColor;
-            pcCamera.clearFlags = mainCam.clearFlags;
-            pcCamera.cullingMask = mainCam.cullingMask;
+            pcCamera.CopyFrom(mainCam);
         }
 
         // Add AudioListener so the PC Operator can hear the game audio
