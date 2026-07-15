@@ -17,31 +17,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<Vector3> vrHeadPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<Quaternion> vrHeadRotation = new NetworkVariable<Quaternion>(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
-    private Transform localHeadTransform;
-
-    private void Update()
-    {
-        if (IsOwner && isVRUser.Value)
-        {
-            if (localHeadTransform == null)
-            {
-                localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
-                                     transform.Find("Main Camera") ??
-                                     transform.Find("Head") ??
-                                     transform.Find("Camera Offset/Head") ??
-                                     GetComponentInChildren<Camera>()?.transform;
-            }
-
-            if (localHeadTransform != null)
-            {
-                vrHeadPosition.Value = localHeadTransform.position;
-                vrHeadRotation.Value = localHeadTransform.rotation;
-            }
-        }
-    }
 
     private bool isInitialized = false;
 

@@ -357,24 +357,15 @@ public class OperatorDashboard : MonoBehaviour
         // 4. Lock the PC Camera to the VR Head
         if (vrTargetHead != null)
         {
-            var loadout = vrTargetHead.GetComponentInParent<NetworkPlayerLoadout>();
-            if (loadout != null && loadout.isVRUser.Value)
+            pcCamera.transform.position = vrTargetHead.position;
+            
+            // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
+            if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
             {
-                pcCamera.transform.position = loadout.vrHeadPosition.Value;
-                pcCamera.transform.rotation = loadout.vrHeadRotation.Value;
+                pcCamera.transform.position += Vector3.up * 1.6f;
             }
-            else
-            {
-                pcCamera.transform.position = vrTargetHead.position;
-                
-                // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
-                if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
-                {
-                    pcCamera.transform.position += Vector3.up * 1.6f;
-                }
 
-                pcCamera.transform.rotation = vrTargetHead.rotation;
-            }
+            pcCamera.transform.rotation = vrTargetHead.rotation;
         }
     }
 
