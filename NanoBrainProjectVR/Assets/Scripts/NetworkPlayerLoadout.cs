@@ -14,6 +14,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     private static System.Collections.Generic.List<GameObject> activeWeapons = new System.Collections.Generic.List<GameObject>();
 
     [Header("Sync Settings")]
+    [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
+    public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<Vector3> vrHeadPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<Quaternion> vrHeadRotation = new NetworkVariable<Quaternion>(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -82,7 +84,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (IsOwner)
         {
             // On Android (Meta Quest), we are ALWAYS VR. On PC, check for a running XR display.
-            bool isVR = (Application.platform == RuntimePlatform.Android) || CheckIsVRActive();
+            // If playing in the Editor and forceVRInEditor is true, force it to act like a VR device.
+            bool isVR = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor) || CheckIsVRActive();
 
             Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner detected as {(isVR ? "VR" : "PC Operator")}");
 
@@ -326,6 +329,13 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             transform.position = selectedSpawn.transform.position;
             transform.rotation = selectedSpawn.transform.rotation;
+
+            // Fix the 20cm height offset: snap the player perfectly to the floor after teleporting
+            var snapToGround = GetComponent<SnapToGround>();
+            if (snapToGround != null)
+            {
+                snapToGround.Snap();
+            }
 
             if (cc != null) cc.enabled = true;
         }

@@ -14,6 +14,12 @@ public class OperatorDashboard : MonoBehaviour
     [Header("UI Settings")]
     [Tooltip("The names of the scenes you want to be able to load from the dashboard")]
     public List<string> mapNames = new List<string> { "MainMenu", "TrainingGrounds", "BoarHunt" };
+    [Tooltip("The UI Prefab to spawn on the PC screen")]
+    public GameObject dashboardUIPrefab;
+
+    [Header("Testing")]
+    [Tooltip("If true, playing in the Unity Editor will skip the PC Operator Dashboard and act like a VR headset.")]
+    public bool forceVRInEditor = true;
 
     private Canvas dashboardCanvas;
     private Camera pcCamera;
@@ -56,9 +62,10 @@ public class OperatorDashboard : MonoBehaviour
     private IEnumerator InitializeDashboardRoutine()
     {
         // HARD GUARD: On Android (Meta Quest), this is ALWAYS a VR device. Never run operator dashboard.
-        if (Application.platform == RuntimePlatform.Android)
+        // Also skip it in the Unity Editor if forceVRInEditor is true.
+        if (Application.platform == RuntimePlatform.Android || (Application.isEditor && forceVRInEditor))
         {
-            Debug.Log("[OperatorDashboard] Running on Android/Quest. Operator Dashboard disabled.");
+            Debug.Log("[OperatorDashboard] Running on Android/Quest or VR forced in Editor. Operator Dashboard disabled.");
             yield break;
         }
 

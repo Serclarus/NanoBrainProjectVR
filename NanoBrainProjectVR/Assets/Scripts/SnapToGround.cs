@@ -28,7 +28,7 @@ public class SnapToGround : MonoBehaviour
         Snap();
     }
 
-    private void Snap()
+    public void Snap()
     {
         // Start the raycast slightly above the player's current position to ensure we don't start inside the floor
         Vector3 startPos = transform.position + Vector3.up * 2f;
