@@ -5,27 +5,25 @@ using XRMultiplayer;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// PC Operator Dashboard — UI-ONLY controller.
+/// Provides buttons for map loading, weapon management, and game control.
+/// Does NOT create or manage any cameras. Spectator camera is handled entirely by NetworkPlayerLoadout.
+/// </summary>
 public class OperatorDashboard : MonoBehaviour
 {
-    [Header("Spectator Settings")]
-    [Tooltip("If true, the PC camera will lock to the VR player's head")]
-    public bool enableSpectatorCamera = true;
-    
     [Header("UI Settings")]
     [Tooltip("The names of the scenes you want to be able to load from the dashboard")]
     public List<string> mapNames = new List<string> { "MainMenu", "TrainingGrounds", "BoarHunt" };
-    [Tooltip("The UI Prefab to spawn on the PC screen")]
-    public GameObject dashboardUIPrefab;
 
     [Header("Testing")]
     [Tooltip("If true, playing in the Unity Editor will skip the PC Operator Dashboard and act like a VR headset.")]
     public bool forceVRInEditor = true;
 
     private Canvas dashboardCanvas;
-    private Camera pcCamera;
-    private Transform vrTargetHead;
     private UnityEngine.UI.Text connectionStatusText;
     private UnityEngine.UI.Text connectedClientsText;
+    private UnityEngine.UI.Text spectatingText;
 
     private void Awake()
     {
@@ -36,27 +34,6 @@ public class OperatorDashboard : MonoBehaviour
     private void Start()
     {
         StartCoroutine(InitializeDashboardRoutine());
-    }
-
-    private void OnEnable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-    {
-        // The VR player's body is destroyed and recreated on scene loads, so we must find their new head!
-        vrTargetHead = null;
-
-        if (pcCamera != null)
-        {
-            CleanUpPCEnvironment();
-        }
     }
 
     private IEnumerator InitializeDashboardRoutine()
@@ -84,71 +61,12 @@ public class OperatorDashboard : MonoBehaviour
         // If no VR headset is rendering, we assume this is the PC Operator!
         if (!isVRActive)
         {
-            Debug.Log("[OperatorDashboard] No VR headset detected. Starting Operator Dashboard!");
-            SetupPCEnvironment();
+            Debug.Log("[OperatorDashboard] No VR headset detected. Starting Operator Dashboard UI!");
+            BuildDashboardUI();
         }
         else
         {
             Debug.Log("[OperatorDashboard] VR Headset detected. Operator Dashboard will remain hidden.");
-        }
-    }
-
-    private void SetupPCEnvironment()
-    {
-        // 1. Create a dedicated PC Spectator Camera (DO NOT hijack Camera.main as it belongs to XR Origin)
-        GameObject camObj = new GameObject("OperatorSpectatorCamera");
-        camObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
-        pcCamera = camObj.AddComponent<Camera>();
-        camObj.tag = "MainCamera";
-
-        // Copy all settings (Culling Mask, Skybox, FOV) from the original VR Camera before we disable it
-        Camera mainCam = Camera.main;
-        if (mainCam != null)
-        {
-            pcCamera.CopyFrom(mainCam);
-        }
-
-        // Add AudioListener so the PC Operator can hear the game audio
-        if (pcCamera.GetComponent<AudioListener>() == null)
-        {
-            pcCamera.gameObject.AddComponent<AudioListener>();
-        }
-
-        // Disable VR rendering for the PC camera to save performance and prevent bugs
-        pcCamera.stereoTargetEye = StereoTargetEyeMask.None;
-
-        // Force this to be the highest priority camera
-        pcCamera.depth = 99;
-        
-        CleanUpPCEnvironment();
-
-        // 2. Build the UI Dashboard automatically
-        BuildDashboardUI();
-    }
-
-    private void CleanUpPCEnvironment()
-    {
-        // Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard
-        var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
-        if (simulator != null) Destroy(simulator.gameObject);
-
-        // Find ALL XR Origins in the scene
-        var xrOrigins = FindObjectsOfType<Unity.XR.CoreUtils.XROrigin>();
-        foreach (var xrOrigin in xrOrigins)
-        {
-            var netObj = xrOrigin.GetComponentInParent<Unity.Netcode.NetworkObject>();
-            
-            // If it has no NetworkObject, it's a scene-default offline rig. Disable it.
-            if (netObj == null)
-            {
-                xrOrigin.gameObject.SetActive(false);
-            }
-            // If it has a NetworkObject and belongs to US (the PC Host), disable it so we are an invisible spectator.
-            else if (netObj.IsOwner)
-            {
-                xrOrigin.gameObject.SetActive(false);
-            }
-            // If it belongs to a REMOTE client (the VR player), DO NOT disable it! We need to see them!
         }
     }
 
@@ -165,15 +83,15 @@ public class OperatorDashboard : MonoBehaviour
         GameObject panelObj = new GameObject("BackgroundPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         Image bgImage = panelObj.AddComponent<Image>();
-        bgImage.color = new Color(0.1f, 0.1f, 0.12f, 0.85f); // Sleeker dark grey/blue color
+        bgImage.color = new Color(0.1f, 0.1f, 0.12f, 0.85f);
 
         RectTransform panelRT = panelObj.GetComponent<RectTransform>();
-        // Anchor to top-left of the screen and make it a clean, floating box rather than a full vertical strip!
+        // Anchor to top-left of the screen
         panelRT.anchorMin = new Vector2(0, 1);
         panelRT.anchorMax = new Vector2(0, 1);
         panelRT.pivot = new Vector2(0, 1);
         panelRT.anchoredPosition = new Vector2(15, -15);
-        panelRT.sizeDelta = new Vector2(300, 480); // Width 300, Height 480
+        panelRT.sizeDelta = new Vector2(300, 480);
 
         // Add a Title
         var titleTxt = CreateText(panelObj.transform, "OPERATOR DASHBOARD", new Vector2(0, -25), 18, 280, 40);
@@ -186,31 +104,31 @@ public class OperatorDashboard : MonoBehaviour
         connectedClientsText = CreateText(panelObj.transform, "Connected Clients: 0", new Vector2(0, -85), 13, 280, 30);
         connectedClientsText.color = Color.cyan;
 
-        // We create two columns of buttons below the headers!
+        // Spectating label
+        spectatingText = CreateText(panelObj.transform, "Spectating: Searching...", new Vector2(0, -108), 12, 280, 30);
+        spectatingText.color = Color.gray;
+
+        // Two columns of buttons
         float leftX = -70f;
         float rightX = 70f;
         float btnWidth = 130f;
         float btnHeight = 35f;
         
         // ROW 1: Map 1 (MainMenu) and Map 2 (TrainingGrounds)
-        CreateButton(panelObj.transform, "Load MainMenu", new Vector2(leftX, -130f), btnWidth, btnHeight, () => LoadMap("MainMenu"));
-        CreateButton(panelObj.transform, "Load Training", new Vector2(rightX, -130f), btnWidth, btnHeight, () => LoadMap("TrainingGrounds"));
+        CreateButton(panelObj.transform, "Load MainMenu", new Vector2(leftX, -150f), btnWidth, btnHeight, () => LoadMap("MainMenu"));
+        CreateButton(panelObj.transform, "Load Training", new Vector2(rightX, -150f), btnWidth, btnHeight, () => LoadMap("TrainingGrounds"));
 
         // ROW 2: Map 3 (BoarHunt) and Reset Map
-        CreateButton(panelObj.transform, "Load BoarHunt", new Vector2(leftX, -175f), btnWidth, btnHeight, () => LoadMap("BoarHunt"));
-        CreateButton(panelObj.transform, "Reset Map", new Vector2(rightX, -175f), btnWidth, btnHeight, ResetCurrentMap);
+        CreateButton(panelObj.transform, "Load BoarHunt", new Vector2(leftX, -195f), btnWidth, btnHeight, () => LoadMap("BoarHunt"));
+        CreateButton(panelObj.transform, "Reset Map", new Vector2(rightX, -195f), btnWidth, btnHeight, ResetCurrentMap);
 
         // ROW 3: Pause Game and FORCE Spawn
-        CreateButton(panelObj.transform, "Pause Game", new Vector2(leftX, -230f), btnWidth, btnHeight, TogglePause);
-        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(rightX, -230f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
+        CreateButton(panelObj.transform, "Pause Game", new Vector2(leftX, -250f), btnWidth, btnHeight, TogglePause);
+        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(rightX, -250f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
 
         // ROW 4: Refill Mag and Load Shotgun
-        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -275f), btnWidth, btnHeight, RefillMags);
-        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -275f), btnWidth, btnHeight, LoadShotgun);
-
-        // Spectator label
-        var specText = CreateText(panelObj.transform, "Spectating VR Player...", new Vector2(0, -330), 12, 280, 30);
-        specText.color = Color.gray;
+        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -295f), btnWidth, btnHeight, RefillMags);
+        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -295f), btnWidth, btnHeight, LoadShotgun);
     }
 
     private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, float width, float height, UnityEngine.Events.UnityAction onClickAction)
@@ -223,12 +141,12 @@ public class OperatorDashboard : MonoBehaviour
         rt.anchoredPosition = anchoredPos;
 
         Image img = btnObj.AddComponent<Image>();
-        img.color = new Color(0.2f, 0.2f, 0.25f, 1f); // darker slate-blue for premium look
+        img.color = new Color(0.2f, 0.2f, 0.25f, 1f);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.onClick.AddListener(onClickAction);
 
-        var txt = CreateText(btnObj.transform, buttonText, Vector2.zero, 11, width, height);
+        CreateText(btnObj.transform, buttonText, Vector2.zero, 11, width, height);
     }
 
     private UnityEngine.UI.Text CreateText(Transform parent, string msg, Vector2 anchoredPos, int fontSize, float width = 250f, float height = 50f)
@@ -240,7 +158,6 @@ public class OperatorDashboard : MonoBehaviour
         rt.sizeDelta = new Vector2(width, height);
         rt.anchoredPosition = anchoredPos;
 
-        // Using standard Unity Text to avoid TextMeshPro font asset missing errors in pure scripts
         UnityEngine.UI.Text txt = textObj.AddComponent<UnityEngine.UI.Text>();
         txt.text = msg;
         txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -251,10 +168,9 @@ public class OperatorDashboard : MonoBehaviour
         return txt;
     }
 
-
     private void Update()
     {
-        // 1. Update Connection Status UI
+        // Update Connection Status UI
         if (connectionStatusText != null && XRINetworkGameManager.Instance != null)
         {
             var state = XRINetworkGameManager.CurrentConnectionState.Value;
@@ -268,7 +184,7 @@ public class OperatorDashboard : MonoBehaviour
                 connectionStatusText.color = Color.red;
         }
 
-        // 1b. Update connected clients count
+        // Update connected clients count
         if (connectedClientsText != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             int clientCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
@@ -276,104 +192,28 @@ public class OperatorDashboard : MonoBehaviour
             connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
         }
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || !enableSpectatorCamera || pcCamera == null) return;
-
-        // 3. Find the VR player's head over the network
-        if (vrTargetHead == null)
+        // Update spectating label
+        if (spectatingText != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            // Find all active NetworkPlayerLoadout instances in the scene
-            var loadouts = FindObjectsOfType<NetworkPlayerLoadout>();
-            foreach (var loadout in loadouts)
+            var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
+            bool foundVR = false;
+            foreach (var loadout in allLoadouts)
             {
                 var netObj = loadout.GetComponent<NetworkObject>();
-                // We want to spectate the remote VR player (who we do NOT own)
-                if (netObj != null && !netObj.IsOwner)
+                if (netObj != null && netObj.IsSpawned && !netObj.IsOwner && loadout.isVRUser.Value)
                 {
-                    Transform head = null;
-
-                    // 1. Try finding standard XRI or common named transforms
-                    head = loadout.transform.Find("Camera Offset/Main Camera") ??
-                           loadout.transform.Find("Main Camera") ??
-                           loadout.transform.Find("Head") ??
-                           loadout.transform.Find("Camera Offset/Head") ??
-                           loadout.transform.GetComponentInChildren<Camera>()?.transform;
-
-                    // 2. Fallback: Search deeply for any child containing "head" or "camera" in its name (e.g. for custom humanoid avatars)
-                    if (head == null)
-                    {
-                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
-                        {
-                            string tName = t.name.ToLower();
-                            // Prioritize exact/close matches first
-                            if (tName == "head" || tName == "main camera")
-                            {
-                                head = t;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (head == null)
-                    {
-                        foreach (var t in loadout.GetComponentsInChildren<Transform>(true))
-                        {
-                            string tName = t.name.ToLower();
-                            if (tName.Contains("head") || tName.Contains("camera"))
-                            {
-                                head = t;
-                                break;
-                            }
-                        }
-                    }
-
-                    // 3. Fallback: Use the root of the remote avatar
-                    if (head != null)
-                    {
-                        vrTargetHead = head;
-                    }
-                    else
-                    {
-                        vrTargetHead = loadout.transform;
-                    }
-
-                    Debug.Log($"[OperatorDashboard] Found remote VR player! Locked Spectator Camera to: {vrTargetHead.name}");
-
-                    // Copy rendering settings (Culling Mask, FOV, etc.) from the VR player's actual camera so the PC operator sees the exact same layers
-                    Camera vrCam = vrTargetHead.GetComponent<Camera>() ?? 
-                                   vrTargetHead.GetComponentInChildren<Camera>(true) ?? 
-                                   loadout.GetComponentInChildren<Camera>(true);
-                    if (vrCam != null)
-                    {
-                        pcCamera.CopyFrom(vrCam);
-                        pcCamera.stereoTargetEye = StereoTargetEyeMask.None; // Maintain flat screen
-                        pcCamera.depth = 99; // Keep as highest priority
-                        Debug.Log($"[OperatorDashboard] Successfully copied camera settings from VR Player's camera.");
-                    }
+                    var xriPlayer = loadout.GetComponent<XRINetworkPlayer>();
+                    string playerName = xriPlayer != null ? xriPlayer.playerName : $"Client {netObj.OwnerClientId}";
+                    spectatingText.text = $"Spectating: {playerName}";
+                    spectatingText.color = Color.green;
+                    foundVR = true;
                     break;
                 }
             }
-        }
-
-        // 4. Lock the PC Camera to the VR Head
-        if (vrTargetHead != null)
-        {
-            var loadout = vrTargetHead.GetComponentInParent<NetworkPlayerLoadout>();
-            if (loadout != null && loadout.isVRUser.Value)
+            if (!foundVR)
             {
-                pcCamera.transform.position = loadout.vrHeadPosition.Value;
-                pcCamera.transform.rotation = loadout.vrHeadRotation.Value;
-            }
-            else
-            {
-                pcCamera.transform.position = vrTargetHead.position;
-                
-                // If we fell back to the root transform (which has the NetworkObject), add a fake head height offset so we aren't looking at the floor
-                if (vrTargetHead.GetComponent<Unity.Netcode.NetworkObject>() != null)
-                {
-                    pcCamera.transform.position += Vector3.up * 1.6f;
-                }
-
-                pcCamera.transform.rotation = vrTargetHead.rotation;
+                spectatingText.text = "Spectating: Waiting for VR player...";
+                spectatingText.color = Color.gray;
             }
         }
     }
@@ -385,7 +225,6 @@ public class OperatorDashboard : MonoBehaviour
         Debug.Log($"[OperatorDashboard] Requesting network load for map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            // This forces all clients (including the VR headset) to load the new map synchronously!
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
@@ -402,7 +241,6 @@ public class OperatorDashboard : MonoBehaviour
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_TogglePause", NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
-            // Also send to all clients (the VR headset)
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_TogglePause", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
         }
     }
@@ -435,8 +273,7 @@ public class OperatorDashboard : MonoBehaviour
             return;
         }
 
-        // Find ALL NetworkPlayerLoadout instances in the scene
-        var allLoadouts = FindObjectsOfType<NetworkPlayerLoadout>();
+        var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
         Debug.Log($"[OperatorDashboard] Found {allLoadouts.Length} NetworkPlayerLoadout instances.");
 
         foreach (var loadout in allLoadouts)
@@ -450,7 +287,6 @@ public class OperatorDashboard : MonoBehaviour
                       $"IsSpawned={netObj.IsSpawned}");
 
             // Force spawn for EVERY loadout that isn't ours (the PC operator)
-            // Our own loadout is the one where IsOwner=true on this PC
             if (!netObj.IsOwner)
             {
                 Debug.Log($"[OperatorDashboard] Calling ForceSpawnForClient({netObj.OwnerClientId}) on remote player loadout...");
@@ -462,7 +298,6 @@ public class OperatorDashboard : MonoBehaviour
             }
         }
 
-        // Also log all connected client IDs for diagnostics
         Debug.Log($"[OperatorDashboard] Connected Client IDs: {string.Join(", ", NetworkManager.Singleton.ConnectedClientsIds)}");
     }
 }

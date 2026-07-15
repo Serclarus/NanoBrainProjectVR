@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class NetworkPlayerLoadout : NetworkBehaviour
 {
@@ -11,7 +12,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private string debugStatus = "Waiting for Spawn...";
     private bool hasSpawnedWeapons = false;
-    private static System.Collections.Generic.List<GameObject> activeWeapons = new System.Collections.Generic.List<GameObject>();
+    private static List<GameObject> activeWeapons = new List<GameObject>();
 
     [Header("Sync Settings")]
     [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
@@ -22,8 +23,14 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private Transform localHeadTransform;
 
+    // Spectator camera: reference to the VR player's loadout that we are spectating
+    private NetworkPlayerLoadout vrSpectateTarget;
+    // The camera we use on the PC to spectate (the player prefab's own camera)
+    private Camera spectatorCamera;
+
     private void Update()
     {
+        // VR owner: write head position/rotation to NetworkVariables every frame
         if (IsOwner && isVRUser.Value)
         {
             if (localHeadTransform == null)
@@ -39,6 +46,45 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             {
                 vrHeadPosition.Value = localHeadTransform.position;
                 vrHeadRotation.Value = localHeadTransform.rotation;
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // PC Spectator: slave our camera to the VR player's head NetworkVariables
+        if (!IsOwner || isVRUser.Value || spectatorCamera == null) return;
+
+        // Find the VR target if we don't have one yet
+        if (vrSpectateTarget == null)
+        {
+            FindVRSpectateTarget();
+        }
+
+        // Apply the VR player's head transform to our spectator camera
+        if (vrSpectateTarget != null && vrSpectateTarget.isVRUser.Value)
+        {
+            spectatorCamera.transform.position = vrSpectateTarget.vrHeadPosition.Value;
+            spectatorCamera.transform.rotation = vrSpectateTarget.vrHeadRotation.Value;
+        }
+    }
+
+    /// <summary>
+    /// Searches for a remote NetworkPlayerLoadout that is a VR user and sets it as our spectate target.
+    /// </summary>
+    private void FindVRSpectateTarget()
+    {
+        var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
+        foreach (var loadout in allLoadouts)
+        {
+            if (loadout == this) continue; // Skip ourselves
+
+            var netObj = loadout.GetComponent<NetworkObject>();
+            if (netObj != null && netObj.IsSpawned && loadout.isVRUser.Value)
+            {
+                vrSpectateTarget = loadout;
+                Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> PC Spectator locked onto VR Player (Client {netObj.OwnerClientId})");
+                break;
             }
         }
     }
@@ -108,8 +154,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
             else
             {
-                // PC Operator: hide our own avatar (safe because we are on PC, not VR)
-                HideAvatarOnPC();
+                // PC Operator: completely gut this avatar — it becomes nothing but a floating camera
+                SetupAsGhostSpectator();
             }
         }
         else
@@ -128,9 +174,88 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
+    /// <summary>
+    /// Turns the PC operator's player prefab into a pure ghost camera.
+    /// Everything is disabled/destroyed except one camera that becomes the spectator view.
+    /// The avatar cannot interact with anything — it is just a camera floating in space.
+    /// </summary>
+    private void SetupAsGhostSpectator()
+    {
+        debugStatus = $"Ghost Spectator (Client {OwnerClientId}) — camera only";
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
+
+        // 1. Find the camera we'll keep alive as the spectator view
+        spectatorCamera = GetComponentInChildren<Camera>(true);
+        if (spectatorCamera != null)
+        {
+            // Make sure it's active and rendering
+            spectatorCamera.gameObject.SetActive(true);
+            spectatorCamera.enabled = true;
+            spectatorCamera.stereoTargetEye = StereoTargetEyeMask.None; // Force flat screen rendering
+            
+            // Add AudioListener if missing so the PC operator can hear the game
+            if (spectatorCamera.GetComponent<AudioListener>() == null)
+            {
+                spectatorCamera.gameObject.AddComponent<AudioListener>();
+            }
+
+            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Spectator camera kept alive: {spectatorCamera.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> No camera found on player prefab for spectator view!");
+        }
+
+        // 2. Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard on PC
+        var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
+        if (simulator != null) Destroy(simulator.gameObject);
+
+        // 3. Disable ALL interaction components — the ghost cannot touch anything
+        foreach (var interactor in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true))
+            interactor.enabled = false;
+        foreach (var controller in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>(true))
+            controller.enabled = false;
+        foreach (var manager in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true))
+            manager.enabled = false;
+
+        // 4. Disable ALL colliders — the ghost has no physics presence
+        foreach (var col in GetComponentsInChildren<Collider>(true))
+            col.enabled = false;
+
+        // 5. Disable ALL renderers — the ghost is invisible
+        foreach (var rend in GetComponentsInChildren<Renderer>(true))
+            rend.enabled = false;
+
+        // 6. Disable ALL Rigidbodies — no physics simulation
+        foreach (var rb in GetComponentsInChildren<Rigidbody>(true))
+        {
+            rb.isKinematic = true;
+            rb.detectCollisions = false;
+        }
+
+        // 7. Disable CharacterController if present
+        var cc = GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
+        // 8. Disable the XR Origin so it doesn't fight with anything
+        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+        if (xrOrigin != null) xrOrigin.enabled = false;
+
+        // 9. Disable BodyFollower — no body to follow
+        var bodyFollower = GetComponentInChildren<BodyFollower>(true);
+        if (bodyFollower != null) bodyFollower.enabled = false;
+
+        // 10. Remove any extra AudioListeners that aren't on our spectator camera
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+        {
+            if (spectatorCamera != null && listener.gameObject != spectatorCamera.gameObject)
+                Destroy(listener);
+        }
+    }
+
     private bool CheckIsVRActive()
     {
-        var xrDisplays = new System.Collections.Generic.List<UnityEngine.XR.XRDisplaySubsystem>();
+        var xrDisplays = new List<UnityEngine.XR.XRDisplaySubsystem>();
         UnityEngine.SubsystemManager.GetSubsystems(xrDisplays);
         foreach (var display in xrDisplays)
         {
@@ -148,31 +273,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     }
 
     /// <summary>
-    /// Called ONLY on the PC itself to hide its own avatar. 
-    /// Safe to disable cameras/XR Origins here because the PC has its own OperatorDashboard spectator camera.
-    /// </summary>
-    private void HideAvatarOnPC()
-    {
-        debugStatus = $"Hidden PC Operator avatar (Client {OwnerClientId})";
-        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
-
-        foreach (var cam in GetComponentsInChildren<Camera>(true)) cam.enabled = false;
-        foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
-        foreach (var collider in GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-
-        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-        if (xrOrigin != null) xrOrigin.gameObject.SetActive(false);
-    }
-
-    /// <summary>
     /// Called on ANY device to hide a remote PC Operator's replicated avatar.
-    /// ONLY disables renderers — NEVER touches cameras or XR Origins,
+    /// ONLY disables renderers and colliders — NEVER touches cameras or XR Origins,
     /// because on the VR headset those could belong to the local player.
     /// </summary>
     private void HideRemotePCAvatar()
     {
-        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Hiding remote PC avatar (Client {OwnerClientId}) - renderers only.");
+        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Hiding remote PC avatar (Client {OwnerClientId}) - renderers and colliders off.");
         foreach (var renderer in GetComponentsInChildren<Renderer>(true)) renderer.enabled = false;
+        foreach (var col in GetComponentsInChildren<Collider>(true)) col.enabled = false;
     }
 
     /// <summary>
@@ -207,7 +316,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (xrOrigin != null) xrOrigin.enabled = false;
     }
 
-    private System.Collections.IEnumerator DeferredDespawnRoutine()
+    private IEnumerator DeferredDespawnRoutine()
     {
         yield return new WaitForEndOfFrame();
         if (NetworkObject != null && NetworkObject.IsSpawned)
@@ -216,79 +325,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             NetworkObject.Despawn(true);
         }
     }
-
-    private void OnGUI()
-    {
-        // Show diagnostics on the owner's screen (VR or PC)
-        if (!IsOwner) return;
-
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 20; // Slightly smaller to fit more info
-        style.normal.textColor = Color.cyan;
-
-        GUILayout.BeginArea(new Rect(10, 10, 950, 950));
-        GUILayout.Label($"--- NETWORK PLAYER DIAGNOSTICS ---", style);
-        GUILayout.Label($"My ClientId: {OwnerClientId} | IsOwner: {IsOwner} | IsServer: {IsServer}", style);
-        GUILayout.Label($"Status: {debugStatus}", style);
-        
-        // 1. Get XROrigin info
-        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-        if (xrOrigin != null)
-        {
-            GUILayout.Label($"[XR Origin] Found on: {xrOrigin.gameObject.name}", style);
-            GUILayout.Label($"  - Tracking Mode: {xrOrigin.RequestedTrackingOriginMode} (Current: {xrOrigin.CurrentTrackingOriginMode})", style);
-            GUILayout.Label($"  - CameraYOffset: {xrOrigin.CameraYOffset} meters", style);
-            GUILayout.Label($"  - Origin Pos (World): {xrOrigin.transform.position}", style);
-            if (xrOrigin.CameraFloorOffsetObject != null)
-            {
-                GUILayout.Label($"  - CameraOffset Pos (Local): {xrOrigin.CameraFloorOffsetObject.transform.localPosition}", style);
-            }
-            if (xrOrigin.Camera != null)
-            {
-                GUILayout.Label($"  - Camera Pos (World): {xrOrigin.Camera.transform.position} | Local: {xrOrigin.Camera.transform.localPosition}", style);
-            }
-        }
-        else
-        {
-            GUILayout.Label($"[XR Origin] NOT FOUND in hierarchy!", style);
-        }
-
-        // 2. Camera.main info
-        if (Camera.main != null)
-        {
-            GUILayout.Label($"[Camera.main] Active: {Camera.main.name} | Tag: {Camera.main.tag}", style);
-            GUILayout.Label($"  - World Pos: {Camera.main.transform.position} | Local: {Camera.main.transform.localPosition}", style);
-            GUILayout.Label($"  - Parent: {(Camera.main.transform.parent != null ? Camera.main.transform.parent.name : "None")}", style);
-        }
-        else
-        {
-            GUILayout.Label($"[Camera.main] NOT FOUND in scene!", style);
-        }
-
-        // 3. Hands tracking info
-        GameObject leftHand = GameObject.Find("Left Controller");
-        GameObject rightHand = GameObject.Find("Right Controller");
-        GUILayout.Label($"[Left Controller] {(leftHand != null ? $"Found | World Pos: {leftHand.transform.position} | Local: {leftHand.transform.localPosition}" : "NOT FOUND")}", style);
-        GUILayout.Label($"[Right Controller] {(rightHand != null ? $"Found | World Pos: {rightHand.transform.position} | Local: {rightHand.transform.localPosition}" : "NOT FOUND")}", style);
-
-        // 4. Vest info
-        var bodyFollower = GetComponentInChildren<BodyFollower>(true);
-        if (bodyFollower != null)
-        {
-            GUILayout.Label($"[BodyFollower] Found on: {bodyFollower.gameObject.name}", style);
-            GUILayout.Label($"  - Position: {bodyFollower.transform.position} | Height Offset: {bodyFollower.bodyHeightOffset}", style);
-            GUILayout.Label($"  - Head Target: {(bodyFollower.head != null ? bodyFollower.head.name : "NULL")}", style);
-        }
-
-        activeWeapons.RemoveAll(w => w == null);
-        GUILayout.Label($"Active Weapons: {activeWeapons.Count}", style);
-        foreach (var w in activeWeapons)
-        {
-            GUILayout.Label($"  - {w.name} at {w.transform.position}", style);
-        }
-        GUILayout.EndArea();
-    }
-
 
     public override void OnNetworkDespawn()
     {
@@ -299,7 +335,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         isVRUser.OnValueChanged -= OnVRUserChanged;
     }
 
-    private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, System.Collections.Generic.List<ulong> clientsCompleted, System.Collections.Generic.List<ulong> clientsTimedOut)
+    private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
         
@@ -307,14 +343,22 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         TeleportToSpawnPoint();
 
         // When a new scene loads, the old weapons were destroyed. Respawn them!
-        SpawnWeaponsForClient(OwnerClientId);
+        if (isVRUser.Value)
+        {
+            SpawnWeaponsForClient(OwnerClientId);
+        }
+        else
+        {
+            // PC spectator: re-find the VR target after scene load
+            vrSpectateTarget = null;
+        }
     }
 
     private void TeleportToSpawnPoint()
     {
         if (!IsOwner) return;
 
-        var spawnPoints = FindObjectsOfType<PlayerSpawnPoint>();
+        var spawnPoints = FindObjectsByType<PlayerSpawnPoint>(FindObjectsSortMode.None);
         if (spawnPoints.Length > 0)
         {
             // Sort by index, then pick a spawn point based on client ID so multiple players don't spawn inside each other
