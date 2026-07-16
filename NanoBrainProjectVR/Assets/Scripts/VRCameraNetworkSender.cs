@@ -27,12 +27,25 @@ public class VRCameraNetworkSender : NetworkBehaviour
         {
             if (localHeadTransform == null)
             {
-                // Try to find the camera the same way the old system did
-                localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
-                                     transform.Find("Main Camera") ??
-                                     transform.Find("Head") ??
-                                     transform.Find("Camera Offset/Head") ??
-                                     GetComponentInChildren<Camera>()?.transform;
+                // 1. First, try the most reliable way: ask the XR Origin what its camera is!
+                var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+                if (xrOrigin != null && xrOrigin.Camera != null)
+                {
+                    localHeadTransform = xrOrigin.Camera.transform;
+                    Debug.Log($"<color=green>[VRCameraNetworkSender]</color> Found XR Origin Camera: {localHeadTransform.name}");
+                }
+                else
+                {
+                    // 2. Fallback to common names if no XR Origin exists
+                    localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
+                                         transform.Find("Offset/Main Camera") ??
+                                         transform.Find("Main Camera") ??
+                                         transform.Find("Head") ??
+                                         transform.Find("Camera Offset/Head") ??
+                                         GetComponentInChildren<Camera>()?.transform;
+                    
+                    Debug.Log($"<color=yellow>[VRCameraNetworkSender]</color> XR Origin not found. Falling back to camera: {localHeadTransform?.name}");
+                }
             }
 
             if (localHeadTransform != null)

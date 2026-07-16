@@ -263,6 +263,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
+
+        // CRITICAL: Destroy ALL Cameras and AudioListeners on remote avatars!
+        // If we don't do this, when a remote player spawns, their camera (which is at their waist/floor level) 
+        // can hijack the local VR player's rendering, making it look like the VR player dropped to waist level!
+        foreach (var cam in GetComponentsInChildren<Camera>(true))
+        {
+            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Destroying remote camera to prevent hijack: {cam.gameObject.name}");
+            Destroy(cam.gameObject); 
+        }
+        
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+        {
+            Destroy(listener);
+        }
     }
 
     private IEnumerator DeferredDespawnRoutine()
