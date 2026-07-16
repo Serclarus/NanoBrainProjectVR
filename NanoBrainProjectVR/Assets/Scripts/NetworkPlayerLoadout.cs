@@ -270,9 +270,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // When a new scene loads, the old weapons were destroyed. Respawn them!
         // CRITICAL FIX: Only the Server can spawn NetworkObjects! If clients run this, 
         // they instantiate offline copies that spam errors and completely freeze the VR headset!
-        if (IsServer && isVRUser.Value)
+        if (IsOwner && isVRUser.Value)
         {
-            SpawnWeaponsForClient(OwnerClientId);
+            if (IsServer)
+            {
+                SpawnWeaponsForClient(OwnerClientId);
+            }
+            else
+            {
+                RequestSpawnWeaponsServerRpc(OwnerClientId);
+            }
         }
     }
 
