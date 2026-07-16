@@ -329,24 +329,30 @@ namespace XRMultiplayer
             onSpawnedLocal?.Invoke();
 
             // MULTIPLAYER FIX: Force Unity XR to bind to OUR camera!
-            // Because remote avatars spawn their own cameras and get disabled/destroyed,
-            // the XR Subsystem can get confused and show "no cameras rendering".
-            // Toggling our local camera at the end of the frame forces XR to lock onto us!
+            Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> SetupLocalPlayer: Starting ForceCameraRebindRoutine for Client {NetworkObject.OwnerClientId}...");
             StartCoroutine(ForceCameraRebindRoutine());
         }
 
         private System.Collections.IEnumerator ForceCameraRebindRoutine()
         {
-            // Wait for all remote avatars to be disabled and destroyed
+            Debug.Log("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: Waiting 2 frames...");
             yield return new WaitForEndOfFrame();
             yield return new WaitForEndOfFrame();
+
+            // Log ALL cameras currently in the scene to see what Unity thinks is active
+            Camera[] allCams = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Scene currently has {allCams.Length} Camera components.");
+            foreach (var c in allCams)
+            {
+                Debug.Log($"   - Camera: '{c.gameObject.name}', Tag: {c.gameObject.tag}, Enabled: {c.enabled}, ActiveInHierarchy: {c.gameObject.activeInHierarchy}, TargetEye: {c.stereoTargetEye}");
+            }
 
             if (m_HeadOrigin != null)
             {
                 Camera localCam = m_HeadOrigin.GetComponent<Camera>();
                 if (localCam != null)
                 {
-                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Forcing XR Subsystem Camera Re-bind...");
+                    Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Rebinding Local Camera: '{localCam.gameObject.name}'...");
                     localCam.gameObject.tag = "MainCamera";
                     localCam.enabled = false;
                     localCam.gameObject.SetActive(false);
@@ -355,8 +361,16 @@ namespace XRMultiplayer
                     
                     localCam.gameObject.SetActive(true);
                     localCam.enabled = true;
-                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Local Camera successfully re-bound!");
+                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Local Camera successfully re-bound and activated!");
                 }
+                else
+                {
+                    Debug.LogError("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: m_HeadOrigin has NO Camera component!");
+                }
+            }
+            else
+            {
+                Debug.LogError("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: m_HeadOrigin is NULL!");
             }
         }
 

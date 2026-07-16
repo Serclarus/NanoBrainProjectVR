@@ -318,8 +318,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // CRITICAL FIX: DESTROY all Cameras and AudioListeners on remote avatars.
         // If left active (or even just disabled), Unity's XR system may still bind to them as Camera.main,
         // resulting in "no cameras rendering" or waist-level views!
-        foreach (var cam in GetComponentsInChildren<Camera>(true))
+        var cams = GetComponentsInChildren<Camera>(true);
+        Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> DisableRemoteInteractors (Client {OwnerClientId}): Found {cams.Length} remote cameras to destroy.");
+        foreach (var cam in cams)
         {
+            Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> Destroying remote camera: '{cam.gameObject.name}' (Tag: {cam.gameObject.tag}, Active: {cam.gameObject.activeInHierarchy})");
             Destroy(cam.gameObject);
         }
 
