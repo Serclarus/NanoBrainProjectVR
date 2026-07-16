@@ -52,6 +52,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         InitializePlayer();
     }
 
+    private void Awake()
+    {
+        // CRITICAL FIX: Prevent pre-placed scene avatars from hijacking the VR camera during scene load!
+        // If they hijack the camera, and then get despawned, the VR headset freezes into a 2D image because it loses its camera.
+        var netObj = GetComponent<NetworkObject>();
+        if (netObj != null && !netObj.IsSpawned)
+        {
+            foreach (var cam in GetComponentsInChildren<Camera>(true))
+            {
+                cam.enabled = false;
+            }
+        }
+    }
+
     private void InitializePlayer()
     {
         if (isInitialized) return;
@@ -59,6 +73,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         if (IsOwner)
         {
+            // Re-enable our local camera just in case it was disabled in Awake
+            foreach (var cam in GetComponentsInChildren<Camera>(true))
+            {
+                cam.enabled = true;
+            }
+
             // On Android (Meta Quest), we are ALWAYS VR. On PC, check for a running XR display.
             // If playing in the Editor and forceVRInEditor is true, force it to act like a VR device.
             bool isVR = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor) || CheckIsVRActive();
@@ -73,9 +93,17 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             if (isVR)
             {
                 // VR user: spawn weapons
-                debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
+                debugStatus = $"Requesting weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
-                SpawnWeaponsForClient(OwnerClientId);
+                
+                if (IsServer)
+                {
+                    SpawnWeaponsForClient(OwnerClientId);
+                }
+                else
+                {
+                    RequestSpawnWeaponsServerRpc(OwnerClientId);
+                }
 
                 if (NetworkManager.Singleton.SceneManager != null)
                 {
@@ -114,6 +142,13 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 HideRemotePCAvatar();
             }
         }
+    }
+
+    [ServerRpc]
+    private void RequestSpawnWeaponsServerRpc(ulong clientId)
+    {
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Client {clientId} requested weapon spawn via ServerRpc.");
+        SpawnWeaponsForClient(clientId);
     }
 
     private bool CheckIsVRActive()
@@ -233,7 +268,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         TeleportToSpawnPoint();
 
         // When a new scene loads, the old weapons were destroyed. Respawn them!
-        if (isVRUser.Value)
+        // CRITICAL FIX: Only the Server can spawn NetworkObjects! If clients run this, 
+        // they instantiate offline copies that spam errors and completely freeze the VR headset!
+        if (IsServer && isVRUser.Value)
         {
             SpawnWeaponsForClient(OwnerClientId);
         }
