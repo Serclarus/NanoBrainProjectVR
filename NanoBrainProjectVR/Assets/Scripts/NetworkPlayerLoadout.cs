@@ -80,29 +80,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
 
             // On Android (Meta Quest), we are ALWAYS VR. On PC, check for a running XR display.
-            // If playing in the Editor and forceVRInEditor is true, force it to act like a VR device.
             bool isVR = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor) || CheckIsVRActive();
-
             Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner detected as {(isVR ? "VR" : "PC Operator")}");
 
+            // Set the NetworkVariable so the Server knows we are VR
             isVRUser.Value = isVR;
 
-            // Teleport local player to an available spawn point in the scene
             TeleportToSpawnPoint();
 
             if (isVR)
             {
-                // VR user: spawn weapons
-                debugStatus = $"Requesting weapons for Client {OwnerClientId}!";
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
-                
+                // If we are the Server (Host), we can spawn our own weapons immediately
                 if (IsServer)
                 {
                     SpawnWeaponsForClient(OwnerClientId);
-                }
-                else
-                {
-                    RequestSpawnWeaponsServerRpc(OwnerClientId);
                 }
 
                 if (NetworkManager.Singleton.SceneManager != null)
@@ -113,49 +104,24 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             else
             {
                 // PC Operator: Pure 2D dashboard mode. 
-                // We completely destroy the avatar so it has ZERO physical presence or camera in the game.
                 Debug.Log("<color=yellow>[NetworkPlayerLoadout]</color> PC Operator detected. Despawning avatar to remain in pure 2D Dashboard mode.");
-                
-                if (IsServer)
-                {
-                    NetworkObject.Despawn(true);
-                }
-                else
-                {
-                    // If they are somehow a client operator, ask server to despawn
-                    // But typically PC operator is the Host.
-                    Destroy(gameObject);
-                }
+                if (IsServer) NetworkObject.Despawn(true);
+                else Destroy(gameObject);
             }
         }
         else
         {
-            // We are looking at another peer's replicated avatar.
-            // CRITICAL: Disable ALL XR interaction components on non-owner avatars.
-            // If left active, their ghost interactors will grab objects and prevent the local player from releasing them.
+            // Remote peer logic
             DisableRemoteInteractors();
-
-            // If they are a PC Operator, also hide their renderers so they are invisible.
+            
+            // Subscribe to changes in case they announce they are VR later
             isVRUser.OnValueChanged += OnVRUserChanged;
+            
             if (!isVRUser.Value)
             {
                 HideRemotePCAvatar();
             }
         }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void RequestSpawnWeaponsServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
-    {
-        // Security check: Only allow the client to request weapons for themselves
-        if (rpcParams.Receive.SenderClientId != clientId) 
-        {
-            Debug.LogWarning($"<color=red>[NetworkPlayerLoadout]</color> Client {rpcParams.Receive.SenderClientId} tried to spawn weapons for Client {clientId}!");
-            return;
-        }
-
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Client {clientId} requested weapon spawn via ServerRpc.");
-        SpawnWeaponsForClient(clientId);
     }
 
     private bool CheckIsVRActive()
@@ -171,9 +137,17 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private void OnVRUserChanged(bool previousValue, bool newValue)
     {
-        if (!newValue)
+        if (!newValue && !IsOwner)
         {
             HideRemotePCAvatar();
+        }
+
+        // CRITICAL FIX: If the Server is notified that a Client is a VR user, 
+        // the Server must spawn their initial weapons!
+        if (newValue && IsServer && !hasSpawnedWeapons)
+        {
+            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Client {OwnerClientId} is confirmed as VR user. Server spawning initial weapons.");
+            SpawnWeaponsForClient(OwnerClientId);
         }
     }
 
@@ -275,18 +249,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         TeleportToSpawnPoint();
 
         // When a new scene loads, the old weapons were destroyed. Respawn them!
-        // CRITICAL FIX: Only the Server can spawn NetworkObjects! If clients run this, 
-        // they instantiate offline copies that spam errors and completely freeze the VR headset!
-        if (IsOwner && isVRUser.Value)
+        // CRITICAL FIX: Only the Server can spawn NetworkObjects! We rely entirely on the Server 
+        // to detect scene transitions and spawn weapons for VR users automatically.
+        if (IsServer && isVRUser.Value)
         {
-            if (IsServer)
-            {
-                SpawnWeaponsForClient(OwnerClientId);
-            }
-            else
-            {
-                RequestSpawnWeaponsServerRpc(OwnerClientId);
-            }
+            SpawnWeaponsForClient(OwnerClientId);
         }
     }
 
