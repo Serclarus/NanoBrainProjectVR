@@ -66,8 +66,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
+    // Custom logger that writes to the Unity Console
+    private void LogWeaponDebug(string message, bool isError = false)
+    {
+        string prefix = isError ? "[ERROR] " : "[INFO] ";
+        string fullMessage = $"[Client {OwnerClientId}] {prefix}{message}";
+
+        if (isError) Debug.LogError(fullMessage);
+        else Debug.Log(fullMessage);
+    }
+
     private void InitializePlayer()
     {
+        LogWeaponDebug($"InitializePlayer called. IsOwner: {IsOwner}, IsServer: {IsServer}, isInitialized: {isInitialized}");
         if (isInitialized) return;
         isInitialized = true;
 
@@ -81,10 +92,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             // On Android (Meta Quest), we are ALWAYS VR. On PC, check for a running XR display.
             bool isVR = (Application.platform == RuntimePlatform.Android) || (Application.isEditor && forceVRInEditor) || CheckIsVRActive();
-            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Owner detected as {(isVR ? "VR" : "PC Operator")}");
+            LogWeaponDebug($"Owner detected. platform: {Application.platform}, forceVRInEditor: {forceVRInEditor}, isVR evaluates to: {isVR}");
 
             // Set the NetworkVariable so the Server knows we are VR
             isVRUser.Value = isVR;
+            LogWeaponDebug($"Set isVRUser.Value to {isVRUser.Value}");
 
             TeleportToSpawnPoint();
 
@@ -93,7 +105,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 // If we are the Server (Host), we can spawn our own weapons immediately
                 if (IsServer)
                 {
+                    LogWeaponDebug($"We are the Host (Server+Client). Spawning weapons instantly.");
                     SpawnWeaponsForClient(OwnerClientId);
+                }
+                else
+                {
+                    LogWeaponDebug($"We are a VR Client. Waiting for Server to react to OnVRUserChanged to spawn weapons.");
                 }
 
                 if (NetworkManager.Singleton.SceneManager != null)
@@ -104,7 +121,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             else
             {
                 // PC Operator: Pure 2D dashboard mode. 
-                Debug.Log("<color=yellow>[NetworkPlayerLoadout]</color> PC Operator detected. Despawning avatar to remain in pure 2D Dashboard mode.");
+                LogWeaponDebug("PC Operator detected. Despawning avatar to remain in pure 2D Dashboard mode.");
                 if (IsServer) NetworkObject.Despawn(true);
                 else Destroy(gameObject);
             }
@@ -112,6 +129,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         else
         {
             // Remote peer logic
+            LogWeaponDebug($"We are NOT the owner. Setting up remote avatar. Current isVRUser.Value: {isVRUser.Value}");
             DisableRemoteInteractors();
             
             // Subscribe to changes in case they announce they are VR later
@@ -292,22 +310,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
-    // Custom logger that writes directly to a text file on the Desktop for debugging
-    private void LogWeaponDebug(string message, bool isError = false)
-    {
-        string logPath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), "WeaponSpawnDebug.txt");
-        string prefix = isError ? "[ERROR] " : "[INFO] ";
-        string fullMessage = $"{System.DateTime.Now:HH:mm:ss.fff} {prefix}{message}\n";
-        
-        try
-        {
-            System.IO.File.AppendAllText(logPath, fullMessage);
-        }
-        catch { } // Ignore file lock errors
 
-        if (isError) Debug.LogError(message);
-        else Debug.Log(message);
-    }
 
     public void ForceSpawnForClient(ulong clientId)
     {
