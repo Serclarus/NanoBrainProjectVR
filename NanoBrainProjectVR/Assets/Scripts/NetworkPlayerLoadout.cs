@@ -12,7 +12,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private string debugStatus = "Waiting for Spawn...";
     private bool hasSpawnedWeapons = false;
-    private static List<GameObject> activeWeapons = new List<GameObject>();
+    public NetworkVariable<int> activeWeaponCount = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private float nextWeaponCheckTime = 0f;
 
     [Header("Sync Settings")]
     [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
@@ -43,23 +44,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" Platform: {Application.platform}");
 
         InitializePlayer();
-
-        // NATIVE AUTOMATED SPAWN: If we are the Server, we wait 1.5 seconds to ensure the 
-        // VR Client has fully loaded and set their isVRUser.Value, then we force spawn their weapons.
-        if (IsServer)
-        {
-            StartCoroutine(NativeServerAutomatedSpawnRoutine());
-        }
-    }
-
-    private System.Collections.IEnumerator NativeServerAutomatedSpawnRoutine()
-    {
-        yield return new WaitForSeconds(1.5f);
-        if (isVRUser.Value)
-        {
-            LogWeaponDebug("1.5 second native automated spawn timer finished! Force spawning weapons now.");
-            SpawnWeaponsForClient(OwnerClientId);
-        }
     }
 
     public override void OnGainedOwnership()
@@ -87,7 +71,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     private void LogWeaponDebug(string message, bool isError = false)
     {
         string prefix = isError ? "[ERROR] " : "[INFO] ";
-        string fullMessage = $"[Client {OwnerClientId}] {prefix}{message}";
+        string fullMessage = $"[WEAPON_DEBUG] [Client {OwnerClientId}] {prefix}{message}";
 
         if (isError) Debug.LogError(fullMessage);
         else Debug.Log(fullMessage);
@@ -127,8 +111,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 }
                 else
                 {
-                    LogWeaponDebug($"We are a VR Client. Aggressively requesting weapons from Server via Coroutine.");
-                    StartCoroutine(AggressiveWeaponRequestRoutine());
+                    LogWeaponDebug($"We are a VR Client. Our Update loop will aggressively demand weapons until we get them.");
                 }
 
                 if (NetworkManager.Singleton.SceneManager != null)
@@ -160,12 +143,24 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
-    private System.Collections.IEnumerator AggressiveWeaponRequestRoutine()
+    private void Update()
     {
-        // Wait 1 full second to guarantee Netcode ownership tables and scene synchronization are 100% finished
-        yield return new WaitForSeconds(1.0f);
-        LogWeaponDebug("1 second elapsed. Firing RequestSpawnWeaponsServerRpc to Server!");
-        RequestSpawnWeaponsServerRpc(OwnerClientId);
+        // BRUTE-FORCE FIX: If we are the VR Client, we mathematically enforce that we MUST have 3 weapons.
+        // If we don't, we scream at the Server every 2 seconds until we do. This is 100% immune to dropped packets, 
+        // scene loading race conditions, and missed events.
+        if (IsOwner && isVRUser.Value && !IsServer)
+        {
+            if (Time.time > nextWeaponCheckTime)
+            {
+                nextWeaponCheckTime = Time.time + 2.0f;
+                
+                if (activeWeaponCount.Value < 3)
+                {
+                    LogWeaponDebug($"BRUTE-FORCE CHECK: VR Client only has {activeWeaponCount.Value}/3 weapons! Demanding weapons from Server!");
+                    RequestSpawnWeaponsServerRpc(OwnerClientId);
+                }
+            }
+        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -297,23 +292,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             var cc = GetComponent<CharacterController>();
             if (cc != null) cc.enabled = true;
             Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Locomotion and CharacterController re-enabled for new scene.");
-            
-            // Wait 1 second and ask the server for weapons again in the new scene
-            if (!IsServer)
-            {
-                StartCoroutine(AggressiveWeaponRequestRoutine());
-            }
         }
 
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
 
-        // When a new scene loads, the old weapons were destroyed. Respawn them!
-        // NATIVE AUTOMATED SPAWN: Only the Server can spawn NetworkObjects! We rely entirely on the Server 
-        // to detect scene transitions and spawn weapons for VR users automatically.
         if (IsServer)
         {
-            StartCoroutine(NativeServerAutomatedSpawnRoutine());
+            activeWeaponCount.Value = 0;
+            hasSpawnedWeapons = false;
         }
     }
 
@@ -408,7 +395,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 // In Distributed Authority, the spawning client automatically gets ownership.
                 // SpawnWithOwnership ensures the correct client owns the weapon in all topologies.
                 netObj.SpawnWithOwnership(clientId);
-                activeWeapons.Add(wep);
+                activeWeaponCount.Value++;
                 debugStatus = $"Successfully spawned {prefab.name} for Client {clientId}";
                 LogWeaponDebug($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus} | NetworkObjectId: {netObj.NetworkObjectId}");
             }
