@@ -14,7 +14,7 @@ public class OperatorDashboard : MonoBehaviour
 {
     [Header("UI Settings")]
     [Tooltip("The names of the scenes you want to be able to load from the dashboard")]
-    public List<string> mapNames = new List<string> { "MainMenu", "TrainingGrounds", "BoarHunt" };
+    public List<string> mapNames = new List<string> { "MainMenu", "TrainingGrounds", "BoarHunting", "ShootingRange" };
 
     [Header("Testing")]
     [Tooltip("If true, playing in the Unity Editor will skip the PC Operator Dashboard and act like a VR headset.")]
@@ -121,20 +121,23 @@ public class OperatorDashboard : MonoBehaviour
         float btnHeight = 35f;
         
         // ROW 1: Map 1 (MainMenu) and Map 2 (TrainingGrounds)
-        CreateButton(panelObj.transform, "Load MainMenu", new Vector2(leftX, -150f), btnWidth, btnHeight, () => LoadMap("MainMenu"));
-        CreateButton(panelObj.transform, "Load Training", new Vector2(rightX, -150f), btnWidth, btnHeight, () => LoadMap("TrainingGrounds"));
+        CreateButton(panelObj.transform, "Load MainMenu", new Vector2(leftX, -130f), btnWidth, btnHeight, () => LoadMap("MainMenu"));
+        CreateButton(panelObj.transform, "Load Training", new Vector2(rightX, -130f), btnWidth, btnHeight, () => LoadMap("TrainingGrounds"));
 
-        // ROW 2: Map 3 (BoarHunt) and Reset Map
-        CreateButton(panelObj.transform, "Load BoarHunt", new Vector2(leftX, -195f), btnWidth, btnHeight, () => LoadMap("BoarHunt"));
-        CreateButton(panelObj.transform, "Reset Map", new Vector2(rightX, -195f), btnWidth, btnHeight, ResetCurrentMap);
+        // ROW 2: Map 3 (BoarHunting) and Map 4 (ShootingRange)
+        CreateButton(panelObj.transform, "Load BoarHunting", new Vector2(leftX, -175f), btnWidth, btnHeight, () => LoadMap("BoarHunting"));
+        CreateButton(panelObj.transform, "Load Range", new Vector2(rightX, -175f), btnWidth, btnHeight, () => LoadMap("ShootingRange"));
 
-        // ROW 3: Pause Game and FORCE Spawn
-        CreateButton(panelObj.transform, "Pause Game", new Vector2(leftX, -250f), btnWidth, btnHeight, TogglePause);
-        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(rightX, -250f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
+        // ROW 3: Reset Map and Pause Game
+        CreateButton(panelObj.transform, "Reset Map", new Vector2(leftX, -220f), btnWidth, btnHeight, ResetCurrentMap);
+        CreateButton(panelObj.transform, "Pause Game", new Vector2(rightX, -220f), btnWidth, btnHeight, TogglePause);
 
-        // ROW 4: Refill Mag and Load Shotgun
-        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -295f), btnWidth, btnHeight, RefillMags);
-        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -295f), btnWidth, btnHeight, LoadShotgun);
+        // ROW 4: FORCE Spawn
+        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(leftX, -275f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
+
+        // ROW 5: Refill Mag and Load Shotgun
+        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -320f), btnWidth, btnHeight, RefillMags);
+        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -320f), btnWidth, btnHeight, LoadShotgun);
 
         // Fix: The UI Camera only renders Layer 5 (UI). All dynamically created objects default to Layer 0.
         // We must set the Canvas and all its children to Layer 5.
