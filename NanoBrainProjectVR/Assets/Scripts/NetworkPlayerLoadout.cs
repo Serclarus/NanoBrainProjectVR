@@ -159,10 +159,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private void Update()
     {
-        // BRUTE-FORCE FIX: If we are the VR Client, we mathematically enforce that we MUST have 3 weapons.
-        // We do not trust the Server's "activeWeaponCount", because Netcode drops Spawn messages during scene loads.
-        // We check the local NetworkManager to see if we physically own the NetworkObjects.
-        if (IsOwner && isVRUser.Value && !IsServer)
+        // BRUTE-FORCE FIX: Enforce that the VR Client must have 3 weapons.
+        // In Distributed Authority (DA), there is no Server. Both players are Clients.
+        // Therefore, the VR Client MUST spawn its own weapons locally!
+        if (IsOwner && isVRUser.Value)
         {
             if (Time.time > nextWeaponCheckTime)
             {
@@ -172,8 +172,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 var myObjects = NetworkManager.Singleton.SpawnManager.GetClientOwnedObjects(OwnerClientId);
                 if (myObjects.Length < 4)
                 {
-                    LogWeaponDebug($"BRUTE-FORCE CHECK: VR Client only owns {myObjects.Length} objects (needs 4)! Demanding weapons from Server!");
-                    RequestSpawnWeaponsServerRpc(OwnerClientId);
+                    LogWeaponDebug($"BRUTE-FORCE CHECK: VR Client only owns {myObjects.Length} objects (needs 4)! Attempting to spawn weapons...");
+                    
+                    try
+                    {
+                        // In Distributed Authority, the client is allowed to instantiate and spawn objects!
+                        SpawnWeaponsForClient(OwnerClientId);
+                    }
+                    catch (System.Exception e)
+                    {
+                        // If an exception is thrown, we are in traditional Client-Server mode.
+                        LogWeaponDebug($"Local spawn failed (expected in Client-Server): {e.Message}. Falling back to ServerRpc!");
+                        RequestSpawnWeaponsServerRpc(OwnerClientId);
+                    }
                 }
             }
         }
