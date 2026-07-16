@@ -82,11 +82,11 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
         base.OnNetworkSpawn();
         
         // CRITICAL DUAL-TOPOLOGY FIXED:
-        // In Distributed Authority, there is no true Server. The Owner MUST initialize their own pools!
-        // We initialize pools if we are the Server (Client-Server fallback) OR if we are the Owner (DA).
-        if (IsServer || IsOwner)
+        // We initialize pools ONLY if we are the Server! 
+        // Clients will automatically receive the spawned objects from the Server via standard Netcode synchronization.
+        if (IsServer)
         {
-            Debug.Log($"<color=cyan>[AmmoPouch]</color> OnNetworkSpawn. IsServer: {IsServer}, IsOwner: {IsOwner}. Initializing pools.");
+            Debug.Log($"<color=cyan>[AmmoPouch]</color> OnNetworkSpawn. IsServer: {IsServer}. Initializing pools.");
             InitializePools();
         }
     }
