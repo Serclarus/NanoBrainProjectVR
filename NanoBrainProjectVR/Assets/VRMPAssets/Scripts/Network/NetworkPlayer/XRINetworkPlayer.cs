@@ -327,6 +327,37 @@ namespace XRMultiplayer
             m_VoiceChat.ToggleSelfMute(true, true);
 
             onSpawnedLocal?.Invoke();
+
+            // MULTIPLAYER FIX: Force Unity XR to bind to OUR camera!
+            // Because remote avatars spawn their own cameras and get disabled/destroyed,
+            // the XR Subsystem can get confused and show "no cameras rendering".
+            // Toggling our local camera at the end of the frame forces XR to lock onto us!
+            StartCoroutine(ForceCameraRebindRoutine());
+        }
+
+        private System.Collections.IEnumerator ForceCameraRebindRoutine()
+        {
+            // Wait for all remote avatars to be disabled and destroyed
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+
+            if (m_HeadOrigin != null)
+            {
+                Camera localCam = m_HeadOrigin.GetComponent<Camera>();
+                if (localCam != null)
+                {
+                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Forcing XR Subsystem Camera Re-bind...");
+                    localCam.gameObject.tag = "MainCamera";
+                    localCam.enabled = false;
+                    localCam.gameObject.SetActive(false);
+                    
+                    yield return null; // Wait one frame while it's off
+                    
+                    localCam.gameObject.SetActive(true);
+                    localCam.enabled = true;
+                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Local Camera successfully re-bound!");
+                }
+            }
         }
 
         /// <summary>
