@@ -84,8 +84,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
             else
             {
-                // PC Operator: completely gut this avatar — it becomes nothing but a floating camera
-                SetupAsGhostSpectator();
+                // PC Operator: Pure 2D dashboard mode. 
+                // We completely destroy the avatar so it has ZERO physical presence or camera in the game.
+                Debug.Log("<color=yellow>[NetworkPlayerLoadout]</color> PC Operator detected. Despawning avatar to remain in pure 2D Dashboard mode.");
+                
+                if (IsServer)
+                {
+                    NetworkObject.Despawn(true);
+                }
+                else
+                {
+                    // If they are somehow a client operator, ask server to despawn
+                    // But typically PC operator is the Host.
+                    Destroy(gameObject);
+                }
             }
         }
         else
@@ -101,104 +113,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             {
                 HideRemotePCAvatar();
             }
-        }
-    }
-
-    /// <summary>
-    /// Turns the PC operator's player prefab into a pure ghost camera.
-    /// Everything is disabled/destroyed except one camera that becomes the spectator view.
-    /// The avatar cannot interact with anything — it is just a camera floating in space.
-    /// </summary>
-    private void SetupAsGhostSpectator()
-    {
-        debugStatus = $"Ghost Spectator (Client {OwnerClientId}) — camera only";
-        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
-
-        // 1. Find the camera we'll keep alive as the spectator view
-        Camera spectatorCamera = GetComponentInChildren<Camera>(true);
-        if (spectatorCamera != null)
-        {
-            // Make sure it's active and rendering
-            spectatorCamera.gameObject.SetActive(true);
-            spectatorCamera.enabled = true;
-            spectatorCamera.stereoTargetEye = StereoTargetEyeMask.None; // Force flat screen rendering
-            
-            // Add AudioListener if missing so the PC operator can hear the game
-            if (spectatorCamera.GetComponent<AudioListener>() == null)
-            {
-                spectatorCamera.gameObject.AddComponent<AudioListener>();
-            }
-
-            // Tag it and name it
-            spectatorCamera.gameObject.name = "SpectatorCamera";
-            try
-            {
-                spectatorCamera.gameObject.tag = "SpectatorCamera";
-            }
-            catch (UnityException)
-            {
-                Debug.LogWarning("<color=yellow>[NetworkPlayerLoadout]</color> Tag 'SpectatorCamera' is not defined in the project. Using name fallback.");
-            }
-
-            // Unparent it so it can move freely
-            spectatorCamera.transform.SetParent(null);
-
-            // Add the new Sync script
-            if (spectatorCamera.GetComponent<SpectatorCameraSync>() == null)
-            {
-                spectatorCamera.gameObject.AddComponent<SpectatorCameraSync>();
-            }
-
-            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Spectator camera detached and configured!");
-        }
-        else
-        {
-            Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> No camera found on player prefab for spectator view!");
-        }
-
-        // 2. Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard on PC
-        var simulator = FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
-        if (simulator != null) Destroy(simulator.gameObject);
-
-        // 3. Disable ALL interaction components — the ghost cannot touch anything
-        foreach (var interactor in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true))
-            interactor.enabled = false;
-        foreach (var controller in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>(true))
-            controller.enabled = false;
-        foreach (var manager in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true))
-            manager.enabled = false;
-
-        // 4. Disable ALL colliders — the ghost has no physics presence
-        foreach (var col in GetComponentsInChildren<Collider>(true))
-            col.enabled = false;
-
-        // 5. Disable ALL renderers — the ghost is invisible
-        foreach (var rend in GetComponentsInChildren<Renderer>(true))
-            rend.enabled = false;
-
-        // 6. Disable ALL Rigidbodies — no physics simulation
-        foreach (var rb in GetComponentsInChildren<Rigidbody>(true))
-        {
-            rb.isKinematic = true;
-            rb.detectCollisions = false;
-        }
-
-        // 7. Disable CharacterController if present
-        var cc = GetComponent<CharacterController>();
-        if (cc != null) cc.enabled = false;
-
-        // 8. Disable the XR Origin so it doesn't fight with anything
-        var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
-        if (xrOrigin != null) xrOrigin.enabled = false;
-
-        // 9. Disable BodyFollower — no body to follow
-        var bodyFollower = GetComponentInChildren<BodyFollower>(true);
-        if (bodyFollower != null) bodyFollower.enabled = false;
-
-        // 10. Remove any extra AudioListeners left on the avatar body
-        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
-        {
-            Destroy(listener);
         }
     }
 

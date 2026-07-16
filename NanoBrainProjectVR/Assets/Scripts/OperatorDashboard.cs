@@ -72,10 +72,20 @@ public class OperatorDashboard : MonoBehaviour
 
     private void BuildDashboardUI()
     {
+        // Create a dedicated UI Camera so the screen isn't just a Unity warning
+        GameObject camObj = new GameObject("OperatorUICamera");
+        camObj.transform.SetParent(this.transform);
+        Camera uiCam = camObj.AddComponent<Camera>();
+        uiCam.clearFlags = CameraClearFlags.SolidColor;
+        uiCam.backgroundColor = new Color(0.05f, 0.05f, 0.05f); // Very dark gray
+        uiCam.cullingMask = 1 << 5; // UI Layer only
+        
+        // Setup Canvas
         GameObject canvasObj = new GameObject("OperatorDashboardCanvas");
         canvasObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
         dashboardCanvas = canvasObj.AddComponent<Canvas>();
-        dashboardCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        dashboardCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        dashboardCanvas.worldCamera = uiCam;
         canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         canvasObj.AddComponent<GraphicRaycaster>();
 
@@ -103,10 +113,6 @@ public class OperatorDashboard : MonoBehaviour
         
         connectedClientsText = CreateText(panelObj.transform, "Connected Clients: 0", new Vector2(0, -85), 13, 280, 30);
         connectedClientsText.color = Color.cyan;
-
-        // Spectating label
-        spectatingText = CreateText(panelObj.transform, "Spectating: Searching...", new Vector2(0, -108), 12, 280, 30);
-        spectatingText.color = Color.gray;
 
         // Two columns of buttons
         float leftX = -70f;
@@ -190,31 +196,6 @@ public class OperatorDashboard : MonoBehaviour
             int clientCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
             connectedClientsText.text = $"Connected Clients: {clientCount}";
             connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
-        }
-
-        // Update spectating label
-        if (spectatingText != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
-            bool foundVR = false;
-            foreach (var loadout in allLoadouts)
-            {
-                var netObj = loadout.GetComponent<NetworkObject>();
-                if (netObj != null && netObj.IsSpawned && !netObj.IsOwner && loadout.isVRUser.Value)
-                {
-                    var xriPlayer = loadout.GetComponent<XRINetworkPlayer>();
-                    string playerName = xriPlayer != null ? xriPlayer.playerName : $"Client {netObj.OwnerClientId}";
-                    spectatingText.text = $"Spectating: {playerName}";
-                    spectatingText.color = Color.green;
-                    foundVR = true;
-                    break;
-                }
-            }
-            if (!foundVR)
-            {
-                spectatingText.text = "Spectating: Waiting for VR player...";
-                spectatingText.color = Color.gray;
-            }
         }
     }
 
