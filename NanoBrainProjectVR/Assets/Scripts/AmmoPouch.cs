@@ -82,11 +82,11 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
         base.OnNetworkSpawn();
         
         // CRITICAL DUAL-TOPOLOGY FIXED:
-        // We initialize pools if we are the Server (standard Client-Server mode)
-        // OR if we are the Owner (Distributed Authority mode where there is no server).
-        if (IsServer || IsOwner)
+        // We initialize pools ONLY if we are the Server! 
+        // Clients will automatically receive the spawned objects from the Server via standard Netcode synchronization.
+        if (IsServer)
         {
-            Debug.Log($"<color=cyan>[AmmoPouch]</color> OnNetworkSpawn. IsServer: {IsServer}, IsOwner: {IsOwner}. Initializing pools.");
+            Debug.Log($"<color=cyan>[AmmoPouch]</color> OnNetworkSpawn. IsServer: {IsServer}. Initializing pools.");
             InitializePools();
         }
     }
@@ -125,7 +125,6 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
             for (int i = 0; i < config.initialPoolSize; i++)
             {
                 GameObject newAmmo = Instantiate(config.ammoPrefab, poolParent);
-                newAmmo.SetActive(false);
                 newAmmo.name = config.ammoPrefab.name + "_Pooled_" + i;
                 
                 Unity.Netcode.NetworkObject netObj = newAmmo.GetComponent<Unity.Netcode.NetworkObject>();
@@ -133,7 +132,15 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
                 {
                     try
                     {
+                        // CRITICAL NETCODE FIX: The object MUST be active when SpawnWithOwnership is called!
+                        // If it is inactive, Unity Netcode writes ZERO bytes for its NetworkBehaviours,
+                        // which catastrophically breaks the `SynchronizeSceneNetworkObjects` stream for Clients
+                        // and results in 'NetworkBehaviour index out of bounds' errors!
                         netObj.SpawnWithOwnership(OwnerClientId);
+                        
+                        // Now that it's legally registered with Netcode, we can hide it.
+                        newAmmo.SetActive(false);
+                        
                         spawnedIds.Add(netObj.NetworkObjectId);
                     }
                     catch (System.Exception e)

@@ -718,6 +718,12 @@ public class WeaponController : NetworkBehaviour
             for (int i = 0; i < shellPoolSize; i++)
             {
                 GameObject shell = Instantiate(shellPrefab, poolParent);
+                
+                // Strip Netcode components from purely visual local shells so they don't throw errors!
+                if (shell.TryGetComponent<NetworkObject>(out var netObj)) Destroy(netObj);
+                if (shell.TryGetComponent<XRMultiplayer.NetworkPhysicsInteractable>(out var phys)) Destroy(phys);
+                if (shell.TryGetComponent<XRMultiplayer.ClientNetworkTransform>(out var cnt)) Destroy(cnt);
+
                 shell.SetActive(false);
                 shellPool.Enqueue(shell);
             }
