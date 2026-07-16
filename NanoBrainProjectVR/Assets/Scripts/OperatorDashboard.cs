@@ -25,22 +25,10 @@ public class OperatorDashboard : MonoBehaviour
     private UnityEngine.UI.Text connectedClientsText;
     private UnityEngine.UI.Text spectatingText;
 
-    public static OperatorDashboard Instance { get; private set; }
-
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            
-            // MULTIPLAYER FIX: Automatically add the spectator camera script so the user doesn't have to edit the scene
-            gameObject.AddComponent<SpectatorCameraFollower>();
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        // Keep this dashboard alive forever once created
+        DontDestroyOnLoad(this.gameObject);
     }
 
     private void Start()
