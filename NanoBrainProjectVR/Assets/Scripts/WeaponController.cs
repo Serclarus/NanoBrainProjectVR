@@ -408,6 +408,19 @@ public class WeaponController : NetworkBehaviour
                 {
                     SetSyncedMagazineServerRpc(new NetworkObjectReference(netObj));
                 }
+
+                // Explicit Network Parenting
+                if (IsServer || IsOwner)
+                {
+                    try
+                    {
+                        netObj.TrySetParent(transform);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"[WeaponController] Could not apply network parent to magazine: {e.Message}");
+                    }
+                }
             }
             
             // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
@@ -417,6 +430,22 @@ public class WeaponController : NetworkBehaviour
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
+        if (currentMagazine != null)
+        {
+            NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
+            if (netObj != null && (IsServer || IsOwner))
+            {
+                try
+                {
+                    netObj.TryRemoveParent();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[WeaponController] Could not remove network parent from magazine: {e.Message}");
+                }
+            }
+        }
+
         currentMagazine = null;
         if (IsServer)
         {
