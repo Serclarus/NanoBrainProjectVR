@@ -43,6 +43,23 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" Platform: {Application.platform}");
 
         InitializePlayer();
+
+        // NATIVE AUTOMATED SPAWN: If we are the Server, we wait 1.5 seconds to ensure the 
+        // VR Client has fully loaded and set their isVRUser.Value, then we force spawn their weapons.
+        if (IsServer)
+        {
+            StartCoroutine(NativeServerAutomatedSpawnRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator NativeServerAutomatedSpawnRoutine()
+    {
+        yield return new WaitForSeconds(1.5f);
+        if (isVRUser.Value)
+        {
+            LogWeaponDebug("1.5 second native automated spawn timer finished! Force spawning weapons now.");
+            SpawnWeaponsForClient(OwnerClientId);
+        }
     }
 
     public override void OnGainedOwnership()
@@ -292,11 +309,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         TeleportToSpawnPoint();
 
         // When a new scene loads, the old weapons were destroyed. Respawn them!
-        // CRITICAL FIX: Only the Server can spawn NetworkObjects! We rely entirely on the Server 
+        // NATIVE AUTOMATED SPAWN: Only the Server can spawn NetworkObjects! We rely entirely on the Server 
         // to detect scene transitions and spawn weapons for VR users automatically.
-        if (IsServer && isVRUser.Value)
+        if (IsServer)
         {
-            SpawnWeaponsForClient(OwnerClientId);
+            StartCoroutine(NativeServerAutomatedSpawnRoutine());
         }
     }
 
