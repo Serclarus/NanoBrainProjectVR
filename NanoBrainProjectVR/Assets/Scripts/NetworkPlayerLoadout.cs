@@ -144,9 +144,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
-    [ServerRpc]
-    private void RequestSpawnWeaponsServerRpc(ulong clientId)
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestSpawnWeaponsServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
     {
+        // Security check: Only allow the client to request weapons for themselves
+        if (rpcParams.Receive.SenderClientId != clientId) 
+        {
+            Debug.LogWarning($"<color=red>[NetworkPlayerLoadout]</color> Client {rpcParams.Receive.SenderClientId} tried to spawn weapons for Client {clientId}!");
+            return;
+        }
+
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Client {clientId} requested weapon spawn via ServerRpc.");
         SpawnWeaponsForClient(clientId);
     }
@@ -350,8 +357,18 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         try
         {
-            // Spawn slightly above the player to prevent clipping into the floor
+            // CRITICAL FIX: The Server executes this RPC, but the Server's 'transform.position' for this client
+            // has not synced yet from the client's local teleport! It thinks the client is still at (0,0,0)!
+            // We must calculate the deterministic spawn point so weapons spawn exactly where the client teleported to.
             Vector3 spawnPos = transform.position + (Vector3.up * 1.5f);
+            var spawnPoints = FindObjectsByType<PlayerSpawnPoint>(FindObjectsSortMode.None);
+            if (spawnPoints.Length > 0)
+            {
+                System.Array.Sort(spawnPoints, (a, b) => a.spawnIndex.CompareTo(b.spawnIndex));
+                var selectedSpawn = spawnPoints[(int)(clientId % (ulong)spawnPoints.Length)];
+                spawnPos = selectedSpawn.transform.position + (Vector3.up * 1.5f);
+            }
+
             Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Instantiating {prefab.name} at {spawnPos}...");
             
             GameObject wep = Instantiate(prefab, spawnPos, Quaternion.identity);
