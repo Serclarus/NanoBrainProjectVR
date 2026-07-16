@@ -67,7 +67,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
-    // Custom logger that writes to the Unity Console
+    // Custom logger that writes to the Unity Console, and broadcasts Server logs to Clients!
     private void LogWeaponDebug(string message, bool isError = false)
     {
         string prefix = isError ? "[ERROR] " : "[INFO] ";
@@ -75,6 +75,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         if (isError) Debug.LogError(fullMessage);
         else Debug.Log(fullMessage);
+
+        // If we are the Server, broadcast this log to all clients so the developer can see it in the Editor!
+        if (IsServer)
+        {
+            BroadcastLogClientRpc(fullMessage);
+        }
+    }
+
+    [ClientRpc]
+    private void BroadcastLogClientRpc(string message)
+    {
+        // Don't double-log on the Host
+        if (IsServer) return;
+        Debug.Log($"<color=magenta>[SERVER-ECHO]</color> {message}");
     }
 
     private void InitializePlayer()
@@ -146,17 +160,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     private void Update()
     {
         // BRUTE-FORCE FIX: If we are the VR Client, we mathematically enforce that we MUST have 3 weapons.
-        // If we don't, we scream at the Server every 2 seconds until we do. This is 100% immune to dropped packets, 
-        // scene loading race conditions, and missed events.
+        // We do not trust the Server's "activeWeaponCount", because Netcode drops Spawn messages during scene loads.
+        // We check the local NetworkManager to see if we physically own the NetworkObjects.
         if (IsOwner && isVRUser.Value && !IsServer)
         {
             if (Time.time > nextWeaponCheckTime)
             {
                 nextWeaponCheckTime = Time.time + 2.0f;
                 
-                if (activeWeaponCount.Value < 3)
+                // The client should own at least 4 objects: 1 Player Avatar + 3 Weapons
+                var myObjects = NetworkManager.Singleton.SpawnManager.GetClientOwnedObjects(OwnerClientId);
+                if (myObjects.Length < 4)
                 {
-                    LogWeaponDebug($"BRUTE-FORCE CHECK: VR Client only has {activeWeaponCount.Value}/3 weapons! Demanding weapons from Server!");
+                    LogWeaponDebug($"BRUTE-FORCE CHECK: VR Client only owns {myObjects.Length} objects (needs 4)! Demanding weapons from Server!");
                     RequestSpawnWeaponsServerRpc(OwnerClientId);
                 }
             }
@@ -166,10 +182,22 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestSpawnWeaponsServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
     {
-        // Security check
-        if (rpcParams.Receive.SenderClientId != clientId) return;
+        LogWeaponDebug($"<color=orange>SERVER RECEIVED RPC!</color> from SenderClientId: {rpcParams.Receive.SenderClientId} for requested clientId: {clientId}");
 
-        LogWeaponDebug($"Server received aggressive weapon request from Client {clientId}. Spawning now!");
+        // Clean up any ghost weapons that the Server thinks exist but the Client dropped
+        var serverObjects = NetworkManager.Singleton.SpawnManager.GetClientOwnedObjects(clientId);
+        int despawnCount = 0;
+        foreach (var netObj in serverObjects)
+        {
+            if (netObj != null && netObj.IsSpawned && netObj.gameObject != gameObject && !netObj.IsPlayerObject)
+            {
+                // We assume any non-player object owned by the client is a weapon
+                netObj.Despawn(true);
+                despawnCount++;
+            }
+        }
+        LogWeaponDebug($"Server despawned {despawnCount} existing ghost weapons for Client {clientId}. Spawning fresh ones now!");
+
         SpawnWeaponsForClient(clientId);
     }
 
