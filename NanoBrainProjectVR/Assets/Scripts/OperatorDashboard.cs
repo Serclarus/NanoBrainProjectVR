@@ -211,26 +211,25 @@ public class OperatorDashboard : MonoBehaviour
             connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
         }
 
-        // CRITICAL FIX: If we load into a scene (like BoarHunt) that doesn't have an EventSystem,
-        // or its EventSystem gets destroyed, our UI buttons will become completely unclickable!
-        // Further, if the new scene DOES have an EventSystem but it's configured exclusively for VR (XRUIInputModule),
-        // the PC Operator won't be able to click anything with the mouse! 
-        // We must ensure there is an EventSystem, AND it has a StandaloneInputModule.
+        // CRITICAL FIX: The project uses the New Input System (activeInputHandler: 1).
+        // Using StandaloneInputModule throws a fatal exception and completely breaks the UI!
+        // We must ensure the scene has an EventSystem, and if not, we create one with the correct InputSystem UI module!
         var currentEventSystem = UnityEngine.EventSystems.EventSystem.current;
         if (currentEventSystem == null)
         {
-            Debug.LogWarning("[OperatorDashboard] No EventSystem found in scene! Creating one so UI buttons work.");
+            Debug.LogWarning("[OperatorDashboard] No EventSystem found in scene! Creating one with InputSystemUIInputModule.");
             GameObject eventSystemObj = new GameObject("OperatorEventSystem");
             eventSystemObj.transform.SetParent(this.transform);
             currentEventSystem = eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            eventSystemObj.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
         else
         {
-            // The scene has an EventSystem (probably for VR). Make sure it can accept PC Mouse input!
-            if (currentEventSystem.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>() == null)
+            // If an EventSystem exists but lacks the New Input System module, inject it!
+            if (currentEventSystem.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() == null && 
+                currentEventSystem.GetComponent<UnityEngine.XR.Interaction.Toolkit.UI.XRUIInputModule>() == null)
             {
-                currentEventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                currentEventSystem.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
             }
         }
     }
