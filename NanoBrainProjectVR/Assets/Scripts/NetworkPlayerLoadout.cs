@@ -315,18 +315,17 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
 
-        // CRITICAL FIX: Disable all Cameras and AudioListeners on remote avatars.
-        // If left active, they will override the local player's camera (e.g., Camera.main) and cause the view
-        // to be stuck at waist level or at the spawn point!
+        // CRITICAL FIX: DESTROY all Cameras and AudioListeners on remote avatars.
+        // If left active (or even just disabled), Unity's XR system may still bind to them as Camera.main,
+        // resulting in "no cameras rendering" or waist-level views!
         foreach (var cam in GetComponentsInChildren<Camera>(true))
         {
-            cam.enabled = false;
-            cam.gameObject.SetActive(false);
+            Destroy(cam.gameObject);
         }
 
         foreach (var listener in GetComponentsInChildren<AudioListener>(true))
         {
-            listener.enabled = false;
+            Destroy(listener);
         }
     }
 
