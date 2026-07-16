@@ -327,51 +327,6 @@ namespace XRMultiplayer
             m_VoiceChat.ToggleSelfMute(true, true);
 
             onSpawnedLocal?.Invoke();
-
-            // MULTIPLAYER FIX: Force Unity XR to bind to OUR camera!
-            Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> SetupLocalPlayer: Starting ForceCameraRebindRoutine for Client {NetworkObject.OwnerClientId}...");
-            StartCoroutine(ForceCameraRebindRoutine());
-        }
-
-        private System.Collections.IEnumerator ForceCameraRebindRoutine()
-        {
-            Debug.Log("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: Waiting 2 frames...");
-            yield return new WaitForEndOfFrame();
-            yield return new WaitForEndOfFrame();
-
-            // Log ALL cameras currently in the scene to see what Unity thinks is active
-            Camera[] allCams = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-            Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Scene currently has {allCams.Length} Camera components.");
-            foreach (var c in allCams)
-            {
-                Debug.Log($"   - Camera: '{c.gameObject.name}', Tag: {c.gameObject.tag}, Enabled: {c.enabled}, ActiveInHierarchy: {c.gameObject.activeInHierarchy}, TargetEye: {c.stereoTargetEye}");
-            }
-
-            if (m_HeadOrigin != null)
-            {
-                Camera localCam = m_HeadOrigin.GetComponent<Camera>();
-                if (localCam != null)
-                {
-                    Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Rebinding Local Camera: '{localCam.gameObject.name}'...");
-                    localCam.gameObject.tag = "MainCamera";
-                    localCam.enabled = false;
-                    localCam.gameObject.SetActive(false);
-                    
-                    yield return null; // Wait one frame while it's off
-                    
-                    localCam.gameObject.SetActive(true);
-                    localCam.enabled = true;
-                    Debug.Log("<color=magenta>[XRINetworkPlayer]</color> Local Camera successfully re-bound and activated!");
-                }
-                else
-                {
-                    Debug.LogError("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: m_HeadOrigin has NO Camera component!");
-                }
-            }
-            else
-            {
-                Debug.LogError("<color=magenta>[XRINetworkPlayer]</color> ForceCameraRebindRoutine: m_HeadOrigin is NULL!");
-            }
         }
 
         /// <summary>
