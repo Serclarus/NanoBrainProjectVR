@@ -264,19 +264,17 @@ namespace XRMultiplayer
                 Debug.Log($"<color=magenta>[XRINetworkPlayer]</color> Platform type set to {m_PlatformType.Value}");
 
                 // Get Origin and set head.
-                // MULTIPLAYER FIX: MUST use GetComponentInChildren, NOT FindFirstObjectByType!
-                // If there are multiple players in the scene, FindFirstObjectByType will grab the Host's camera!
-                m_XROrigin = GetComponentInChildren<XROrigin>(true);
+                m_XROrigin = FindFirstObjectByType<XROrigin>();
                 if (m_XROrigin != null)
                 {
                     m_HeadOrigin = m_XROrigin.Camera.transform;
-                    // MULTIPLAYER FIX: Automatically find the local controllers so the avatar hands can follow them!
-                    // MUST search locally in our own hierarchy, otherwise GameObject.Find grabs the Host's controllers!
-                    Transform leftController = transform.Find("Camera Offset/Left Controller");
-                    if (leftController != null) m_LeftHandOrigin = leftController;
 
-                    Transform rightController = transform.Find("Camera Offset/Right Controller");
-                    if (rightController != null) m_RightHandOrigin = rightController;
+                    // MULTIPLAYER FIX: Automatically find the local controllers so the avatar hands can follow them!
+                    GameObject leftController = GameObject.Find("Left Controller");
+                    if (leftController != null) m_LeftHandOrigin = leftController.transform;
+
+                    GameObject rightController = GameObject.Find("Right Controller");
+                    if (rightController != null) m_RightHandOrigin = rightController.transform;
                 }
                 else
                 {
