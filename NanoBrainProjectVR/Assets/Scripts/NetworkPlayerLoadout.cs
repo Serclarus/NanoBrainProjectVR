@@ -110,7 +110,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 }
                 else
                 {
-                    LogWeaponDebug($"We are a VR Client. Waiting for Server to react to OnVRUserChanged to spawn weapons.");
+                    LogWeaponDebug($"We are a VR Client. Aggressively requesting weapons from Server via Coroutine.");
+                    StartCoroutine(AggressiveWeaponRequestRoutine());
                 }
 
                 if (NetworkManager.Singleton.SceneManager != null)
@@ -140,6 +141,24 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 HideRemotePCAvatar();
             }
         }
+    }
+
+    private System.Collections.IEnumerator AggressiveWeaponRequestRoutine()
+    {
+        // Wait 1 full second to guarantee Netcode ownership tables and scene synchronization are 100% finished
+        yield return new WaitForSeconds(1.0f);
+        LogWeaponDebug("1 second elapsed. Firing RequestSpawnWeaponsServerRpc to Server!");
+        RequestSpawnWeaponsServerRpc(OwnerClientId);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestSpawnWeaponsServerRpc(ulong clientId, ServerRpcParams rpcParams = default)
+    {
+        // Security check
+        if (rpcParams.Receive.SenderClientId != clientId) return;
+
+        LogWeaponDebug($"Server received aggressive weapon request from Client {clientId}. Spawning now!");
+        SpawnWeaponsForClient(clientId);
     }
 
     private bool CheckIsVRActive()
@@ -261,6 +280,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             var cc = GetComponent<CharacterController>();
             if (cc != null) cc.enabled = true;
             Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Locomotion and CharacterController re-enabled for new scene.");
+            
+            // Wait 1 second and ask the server for weapons again in the new scene
+            if (!IsServer)
+            {
+                StartCoroutine(AggressiveWeaponRequestRoutine());
+            }
         }
 
         // Teleport to the spawn point in the new scene first
