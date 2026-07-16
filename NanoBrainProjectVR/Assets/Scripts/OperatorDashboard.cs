@@ -213,14 +213,25 @@ public class OperatorDashboard : MonoBehaviour
 
         // CRITICAL FIX: If we load into a scene (like BoarHunt) that doesn't have an EventSystem,
         // or its EventSystem gets destroyed, our UI buttons will become completely unclickable!
-        // We constantly check if an EventSystem exists, and if not, we create one.
-        if (UnityEngine.EventSystems.EventSystem.current == null)
+        // Further, if the new scene DOES have an EventSystem but it's configured exclusively for VR (XRUIInputModule),
+        // the PC Operator won't be able to click anything with the mouse! 
+        // We must ensure there is an EventSystem, AND it has a StandaloneInputModule.
+        var currentEventSystem = UnityEngine.EventSystems.EventSystem.current;
+        if (currentEventSystem == null)
         {
             Debug.LogWarning("[OperatorDashboard] No EventSystem found in scene! Creating one so UI buttons work.");
             GameObject eventSystemObj = new GameObject("OperatorEventSystem");
             eventSystemObj.transform.SetParent(this.transform);
-            eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            currentEventSystem = eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
             eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
+        else
+        {
+            // The scene has an EventSystem (probably for VR). Make sure it can accept PC Mouse input!
+            if (currentEventSystem.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>() == null)
+            {
+                currentEventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
         }
     }
 
