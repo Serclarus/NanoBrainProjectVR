@@ -292,31 +292,48 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 
+    // Custom logger that writes directly to a text file on the Desktop for debugging
+    private void LogWeaponDebug(string message, bool isError = false)
+    {
+        string logPath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop), "WeaponSpawnDebug.txt");
+        string prefix = isError ? "[ERROR] " : "[INFO] ";
+        string fullMessage = $"{System.DateTime.Now:HH:mm:ss.fff} {prefix}{message}\n";
+        
+        try
+        {
+            System.IO.File.AppendAllText(logPath, fullMessage);
+        }
+        catch { } // Ignore file lock errors
+
+        if (isError) Debug.LogError(message);
+        else Debug.Log(message);
+    }
+
     public void ForceSpawnForClient(ulong clientId)
     {
         debugStatus = $"Forcing spawn for Client {clientId}";
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> {debugStatus}");
+        LogWeaponDebug($"<color=cyan>[NetworkPlayerLoadout]</color> {debugStatus}");
         SpawnWeaponsForClient(clientId);
     }
 
     private void SpawnWeaponsForClient(ulong clientId)
     {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> SpawnWeaponsForClient({clientId}) called." +
+        LogWeaponDebug($"<color=cyan>[NetworkPlayerLoadout]</color> SpawnWeaponsForClient({clientId}) called. IsServer: {IsServer}. " +
                   $" shotgun={(shotgunPrefab != null ? shotgunPrefab.name : "NULL")}" +
                   $" rifle={(riflePrefab != null ? riflePrefab.name : "NULL")}" +
                   $" pistol={(pistolPrefab != null ? pistolPrefab.name : "NULL")}");
 
         int count = 0;
         if (shotgunPrefab != null) { SpawnAndAssign(shotgunPrefab, clientId); count++; }
-        else Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> shotgunPrefab is NULL!");
+        else LogWeaponDebug("<color=red>[NetworkPlayerLoadout]</color> shotgunPrefab is NULL!", true);
         
         if (riflePrefab != null) { SpawnAndAssign(riflePrefab, clientId); count++; }
-        else Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> riflePrefab is NULL!");
+        else LogWeaponDebug("<color=red>[NetworkPlayerLoadout]</color> riflePrefab is NULL!", true);
         
         if (pistolPrefab != null) { SpawnAndAssign(pistolPrefab, clientId); count++; }
-        else Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> pistolPrefab is NULL!");
+        else LogWeaponDebug("<color=red>[NetworkPlayerLoadout]</color> pistolPrefab is NULL!", true);
 
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Attempted to spawn {count}/3 weapons for Client {clientId}.");
+        LogWeaponDebug($"<color=green>[NetworkPlayerLoadout]</color> Attempted to spawn {count}/3 weapons for Client {clientId}.");
         hasSpawnedWeapons = true;
     }
 
@@ -336,7 +353,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 spawnPos = selectedSpawn.transform.position + (Vector3.up * 1.5f);
             }
 
-            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Instantiating {prefab.name} at {spawnPos}...");
+            LogWeaponDebug($"<color=cyan>[NetworkPlayerLoadout]</color> Instantiating {prefab.name} at {spawnPos}...");
             
             GameObject wep = Instantiate(prefab, spawnPos, Quaternion.identity);
             NetworkObject netObj = wep.GetComponent<NetworkObject>();
@@ -348,19 +365,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 netObj.SpawnWithOwnership(clientId);
                 activeWeapons.Add(wep);
                 debugStatus = $"Successfully spawned {prefab.name} for Client {clientId}";
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus} | NetworkObjectId: {netObj.NetworkObjectId}");
+                LogWeaponDebug($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus} | NetworkObjectId: {netObj.NetworkObjectId}");
             }
             else
             {
                 debugStatus = $"FAILED: {prefab.name} has no NetworkObject component!";
-                Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}");
+                LogWeaponDebug($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}", true);
                 Destroy(wep);
             }
         }
         catch (System.Exception e)
         {
             debugStatus = $"EXCEPTION spawning {prefab.name}: {e.Message}";
-            Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
+            LogWeaponDebug($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}", true);
         }
     }
 }
