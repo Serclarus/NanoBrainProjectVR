@@ -210,6 +210,18 @@ public class OperatorDashboard : MonoBehaviour
             connectedClientsText.text = $"Connected Clients: {clientCount}";
             connectedClientsText.color = clientCount > 1 ? Color.green : Color.yellow;
         }
+
+        // CRITICAL FIX: If we load into a scene (like BoarHunt) that doesn't have an EventSystem,
+        // or its EventSystem gets destroyed, our UI buttons will become completely unclickable!
+        // We constantly check if an EventSystem exists, and if not, we create one.
+        if (UnityEngine.EventSystems.EventSystem.current == null)
+        {
+            Debug.LogWarning("[OperatorDashboard] No EventSystem found in scene! Creating one so UI buttons work.");
+            GameObject eventSystemObj = new GameObject("OperatorEventSystem");
+            eventSystemObj.transform.SetParent(this.transform);
+            eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
     }
 
     // --- NETWORK COMMANDS ---

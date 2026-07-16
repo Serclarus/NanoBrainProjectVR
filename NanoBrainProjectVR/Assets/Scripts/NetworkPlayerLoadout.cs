@@ -216,6 +216,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
         
+        // CRITICAL FIX: The Main Menu paralyzes the player (disables locomotion). 
+        // When we load into a new scene, we MUST re-enable it so the player isn't permanently stuck!
+        if (IsOwner && isVRUser.Value)
+        {
+            foreach (var provider in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true))
+            {
+                provider.enabled = true;
+            }
+            var cc = GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = true;
+            Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Locomotion and CharacterController re-enabled for new scene.");
+        }
+
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
 
