@@ -23,8 +23,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private Transform localHeadTransform;
 
-    // Spectator camera: reference to the VR player's loadout that we are spectating
-    private NetworkPlayerLoadout vrSpectateTarget;
     // The camera we use on the PC to spectate (the player prefab's own camera)
     private Camera spectatorCamera;
 
@@ -46,45 +44,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             {
                 vrHeadPosition.Value = localHeadTransform.position;
                 vrHeadRotation.Value = localHeadTransform.rotation;
-            }
-        }
-    }
-
-    private void LateUpdate()
-    {
-        // PC Spectator: slave our camera to the VR player's head NetworkVariables
-        if (!IsOwner || isVRUser.Value || spectatorCamera == null) return;
-
-        // Find the VR target if we don't have one yet
-        if (vrSpectateTarget == null)
-        {
-            FindVRSpectateTarget();
-        }
-
-        // Apply the VR player's head transform to our spectator camera
-        if (vrSpectateTarget != null && vrSpectateTarget.isVRUser.Value)
-        {
-            spectatorCamera.transform.position = vrSpectateTarget.vrHeadPosition.Value;
-            spectatorCamera.transform.rotation = vrSpectateTarget.vrHeadRotation.Value;
-        }
-    }
-
-    /// <summary>
-    /// Searches for a remote NetworkPlayerLoadout that is a VR user and sets it as our spectate target.
-    /// </summary>
-    private void FindVRSpectateTarget()
-    {
-        var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
-        foreach (var loadout in allLoadouts)
-        {
-            if (loadout == this) continue; // Skip ourselves
-
-            var netObj = loadout.GetComponent<NetworkObject>();
-            if (netObj != null && netObj.IsSpawned && loadout.isVRUser.Value)
-            {
-                vrSpectateTarget = loadout;
-                Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> PC Spectator locked onto VR Player (Client {netObj.OwnerClientId})");
-                break;
             }
         }
     }
@@ -314,6 +273,24 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
+
+        // CRITICAL FIX: Disable remote cameras and remove their MainCamera tag safely.
+        // We do NOT destroy them anymore, we just disable them so they don't render
+        // over the local player's camera.
+        var cams = GetComponentsInChildren<Camera>(true);
+        Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> DisableRemoteInteractors (Client {OwnerClientId}): Found {cams.Length} remote cameras to disable.");
+        foreach (var cam in cams)
+        {
+            Debug.Log($"<color=red>[NetworkPlayerLoadout]</color> Safely disabling remote camera: '{cam.gameObject.name}'");
+            cam.gameObject.tag = "Untagged"; // Crucial! Don't let it be MainCamera
+            cam.enabled = false;
+            cam.gameObject.SetActive(false);
+        }
+
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+        {
+            listener.enabled = false;
+        }
     }
 
     private IEnumerator DeferredDespawnRoutine()
@@ -346,11 +323,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (isVRUser.Value)
         {
             SpawnWeaponsForClient(OwnerClientId);
-        }
-        else
-        {
-            // PC spectator: re-find the VR target after scene load
-            vrSpectateTarget = null;
         }
     }
 
