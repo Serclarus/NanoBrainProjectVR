@@ -18,76 +18,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     [Tooltip("If true, playing in the Unity Editor will always spawn weapons and behave like a VR headset, even without one plugged in.")]
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<Vector3> vrHeadPosition = new NetworkVariable<Vector3>(Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<Quaternion> vrHeadRotation = new NetworkVariable<Quaternion>(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
-    private Transform localHeadTransform;
-
-    // Spectator camera: reference to the VR player's loadout that we are spectating
-    private NetworkPlayerLoadout vrSpectateTarget;
-    // The camera we use on the PC to spectate (the player prefab's own camera)
-    private Camera spectatorCamera;
-
-    private void Update()
-    {
-        // VR owner: write head position/rotation to NetworkVariables every frame
-        if (IsOwner && isVRUser.Value)
-        {
-            if (localHeadTransform == null)
-            {
-                localHeadTransform = transform.Find("Camera Offset/Main Camera") ??
-                                     transform.Find("Main Camera") ??
-                                     transform.Find("Head") ??
-                                     transform.Find("Camera Offset/Head") ??
-                                     GetComponentInChildren<Camera>()?.transform;
-            }
-
-            if (localHeadTransform != null)
-            {
-                vrHeadPosition.Value = localHeadTransform.position;
-                vrHeadRotation.Value = localHeadTransform.rotation;
-            }
-        }
-    }
-
-    private void LateUpdate()
-    {
-        // PC Spectator: slave our camera to the VR player's head NetworkVariables
-        if (!IsOwner || isVRUser.Value || spectatorCamera == null) return;
-
-        // Find the VR target if we don't have one yet
-        if (vrSpectateTarget == null)
-        {
-            FindVRSpectateTarget();
-        }
-
-        // Apply the VR player's head transform to our spectator camera
-        if (vrSpectateTarget != null && vrSpectateTarget.isVRUser.Value)
-        {
-            spectatorCamera.transform.position = vrSpectateTarget.vrHeadPosition.Value;
-            spectatorCamera.transform.rotation = vrSpectateTarget.vrHeadRotation.Value;
-        }
-    }
-
-    /// <summary>
-    /// Searches for a remote NetworkPlayerLoadout that is a VR user and sets it as our spectate target.
-    /// </summary>
-    private void FindVRSpectateTarget()
-    {
-        var allLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
-        foreach (var loadout in allLoadouts)
-        {
-            if (loadout == this) continue; // Skip ourselves
-
-            var netObj = loadout.GetComponent<NetworkObject>();
-            if (netObj != null && netObj.IsSpawned && loadout.isVRUser.Value)
-            {
-                vrSpectateTarget = loadout;
-                Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> PC Spectator locked onto VR Player (Client {netObj.OwnerClientId})");
-                break;
-            }
-        }
-    }
 
     private bool isInitialized = false;
 
@@ -185,7 +115,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> {debugStatus}");
 
         // 1. Find the camera we'll keep alive as the spectator view
-        spectatorCamera = GetComponentInChildren<Camera>(true);
+        Camera spectatorCamera = GetComponentInChildren<Camera>(true);
         if (spectatorCamera != null)
         {
             // Make sure it's active and rendering
@@ -199,7 +129,27 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 spectatorCamera.gameObject.AddComponent<AudioListener>();
             }
 
-            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Spectator camera kept alive: {spectatorCamera.gameObject.name}");
+            // Tag it and name it
+            spectatorCamera.gameObject.name = "SpectatorCamera";
+            try
+            {
+                spectatorCamera.gameObject.tag = "SpectatorCamera";
+            }
+            catch (UnityException)
+            {
+                Debug.LogWarning("<color=yellow>[NetworkPlayerLoadout]</color> Tag 'SpectatorCamera' is not defined in the project. Using name fallback.");
+            }
+
+            // Unparent it so it can move freely
+            spectatorCamera.transform.SetParent(null);
+
+            // Add the new Sync script
+            if (spectatorCamera.GetComponent<SpectatorCameraSync>() == null)
+            {
+                spectatorCamera.gameObject.AddComponent<SpectatorCameraSync>();
+            }
+
+            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Spectator camera detached and configured!");
         }
         else
         {
@@ -207,7 +157,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
 
         // 2. Destroy the XR Device Simulator so it doesn't hijack mouse/keyboard on PC
-        var simulator = FindObjectOfType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
+        var simulator = FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator>();
         if (simulator != null) Destroy(simulator.gameObject);
 
         // 3. Disable ALL interaction components — the ghost cannot touch anything
@@ -245,11 +195,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         var bodyFollower = GetComponentInChildren<BodyFollower>(true);
         if (bodyFollower != null) bodyFollower.enabled = false;
 
-        // 10. Remove any extra AudioListeners that aren't on our spectator camera
+        // 10. Remove any extra AudioListeners left on the avatar body
         foreach (var listener in GetComponentsInChildren<AudioListener>(true))
         {
-            if (spectatorCamera != null && listener.gameObject != spectatorCamera.gameObject)
-                Destroy(listener);
+            Destroy(listener);
         }
     }
 
@@ -346,11 +295,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (isVRUser.Value)
         {
             SpawnWeaponsForClient(OwnerClientId);
-        }
-        else
-        {
-            // PC spectator: re-find the VR target after scene load
-            vrSpectateTarget = null;
         }
     }
 
