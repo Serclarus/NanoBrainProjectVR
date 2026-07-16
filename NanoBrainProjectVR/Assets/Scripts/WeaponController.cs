@@ -425,9 +425,10 @@ public class WeaponController : NetworkBehaviour
         }
     }
 
-    [ServerRpc]
-    private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef)
+    [ServerRpc(RequireOwnership = false)]
+    private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef, ServerRpcParams rpcParams = default)
     {
+        Debug.LogWarning($"<color=red>SetSyncedMagazineServerRpc called by {rpcParams.Receive.SenderClientId}!</color>");
         syncedMagazine.Value = magRef;
     }
 

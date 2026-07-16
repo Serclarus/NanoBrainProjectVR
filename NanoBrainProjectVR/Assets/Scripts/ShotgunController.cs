@@ -305,9 +305,10 @@ public class ShotgunController : NetworkBehaviour
         else FireWeaponLocal();
     }
 
-    [ServerRpc]
-    private void FireWeaponServerRpc()
+    [ServerRpc(RequireOwnership = false)]
+    private void FireWeaponServerRpc(ServerRpcParams rpcParams = default)
     {
+        Debug.LogWarning($"<color=red>FireWeaponServerRpc called by {rpcParams.Receive.SenderClientId}!</color>");
         FireWeaponLocal();
     }
 
@@ -527,9 +528,10 @@ public class ShotgunController : NetworkBehaviour
         else PlaySoundLocal(false);
     }
 
-    [ServerRpc]
-    private void EjectShellServerRpc()
+    [ServerRpc(RequireOwnership = false)]
+    private void EjectShellServerRpc(ServerRpcParams rpcParams = default)
     {
+        Debug.LogWarning($"<color=red>EjectShellServerRpc called by {rpcParams.Receive.SenderClientId}!</color>");
         EjectShellClientRpc();
     }
 
