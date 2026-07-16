@@ -77,7 +77,7 @@ public class OperatorDashboard : MonoBehaviour
         camObj.transform.SetParent(this.transform);
         Camera uiCam = camObj.AddComponent<Camera>();
         uiCam.clearFlags = CameraClearFlags.SolidColor;
-        uiCam.backgroundColor = new Color(0.05f, 0.05f, 0.05f); // Very dark gray
+        uiCam.backgroundColor = new Color(0.07f, 0.07f, 0.075f); // Modern dark mode background (near black)
         uiCam.cullingMask = 1 << 5; // UI Layer only
         
         // Setup Canvas
@@ -93,7 +93,7 @@ public class OperatorDashboard : MonoBehaviour
         GameObject panelObj = new GameObject("BackgroundPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         Image bgImage = panelObj.AddComponent<Image>();
-        bgImage.color = new Color(0.1f, 0.1f, 0.12f, 0.85f);
+        bgImage.color = new Color(0.12f, 0.12f, 0.13f, 0.95f); // Sleek dark gray panel
 
         RectTransform panelRT = panelObj.GetComponent<RectTransform>();
         // Anchor to top-left of the screen
@@ -135,6 +135,19 @@ public class OperatorDashboard : MonoBehaviour
         // ROW 4: Refill Mag and Load Shotgun
         CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -295f), btnWidth, btnHeight, RefillMags);
         CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -295f), btnWidth, btnHeight, LoadShotgun);
+
+        // Fix: The UI Camera only renders Layer 5 (UI). All dynamically created objects default to Layer 0.
+        // We must set the Canvas and all its children to Layer 5.
+        SetLayerRecursively(canvasObj, 5);
+    }
+
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, newLayer);
+        }
     }
 
     private void CreateButton(Transform parent, string buttonText, Vector2 anchoredPos, float width, float height, UnityEngine.Events.UnityAction onClickAction)
