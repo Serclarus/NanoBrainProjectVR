@@ -168,6 +168,7 @@ public class WeaponController : NetworkBehaviour
 
     private void Awake()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
         SetSubInteractablesState(false);
 
         grabInteractable = GetComponent<TwoHandGrabInteractable>();
@@ -239,6 +240,8 @@ public class WeaponController : NetworkBehaviour
     public override void OnDestroy()
     {
         base.OnDestroy();
+        
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         
         if (grabInteractable != null)
         {
@@ -503,6 +506,18 @@ public class WeaponController : NetworkBehaviour
     private void OnSyncedMagazineChanged(NetworkObjectReference oldMag, NetworkObjectReference newMag)
     {
         StartCoroutine(SyncMagazineRoutine(newMag));
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // CRITICAL FIX: When a scene changes, XR Interaction Manager clears all socket states and drops the magazine into the world!
+        // But Netcode still knows the magazine belongs in this gun (syncedMagazine hasn't changed).
+        // We must manually re-trigger the socketing routine when the new scene loads!
+        if (IsSpawned && syncedMagazine.Value.NetworkObjectId != 0)
+        {
+            Debug.LogWarning($"[WeaponController] Scene loaded! Re-syncing magazine {syncedMagazine.Value.NetworkObjectId} into socket.");
+            StartCoroutine(SyncMagazineRoutine(syncedMagazine.Value));
+        }
     }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
