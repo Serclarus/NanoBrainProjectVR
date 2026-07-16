@@ -314,6 +314,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Disable the XR Origin so it doesn't fight with the local player's tracking
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
+
+        // CRITICAL FIX: Disable all Cameras and AudioListeners on remote avatars.
+        // If left active, they will override the local player's camera (e.g., Camera.main) and cause the view
+        // to be stuck at waist level or at the spawn point!
+        foreach (var cam in GetComponentsInChildren<Camera>(true))
+        {
+            cam.enabled = false;
+            cam.gameObject.SetActive(false);
+        }
+
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+        {
+            listener.enabled = false;
+        }
     }
 
     private IEnumerator DeferredDespawnRoutine()
