@@ -332,11 +332,6 @@ public class ShotgunController : NetworkBehaviour
         else FireWeaponLocal();
     }
 
-    [ServerRpc]
-    private void ServerLogRpc(string message)
-    {
-        Debug.Log($"<color=cyan>[ShotgunController]</color> {message}");
-    }
 
     [ServerRpc(RequireOwnership = false)]
     private void SetWeaponParentServerRpc(NetworkObjectReference parentRef, ServerRpcParams rpcParams = default)
