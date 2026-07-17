@@ -219,6 +219,35 @@ public class ShotgunController : NetworkBehaviour
                     Debug.LogWarning($"<color=red>[ShotgunController]</color> {gameObject.name} grabbed, but its Magazine Prefab is MISSING in the Inspector!");
                 }
             }
+
+            // Explicit Network Un-Parenting (Removing from Holster)
+            if (IsServer || IsOwner)
+            {
+                try
+                {
+                    NetworkObject.TryRemoveParent();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[ShotgunController] Could not remove network parent from weapon: {e.Message}");
+                }
+            }
+        }
+        else
+        {
+            // Socket Logic (Holstered)
+            // Explicit Network Parenting
+            if (IsServer || IsOwner)
+            {
+                try
+                {
+                    NetworkObject.TrySetParent(interactor.transform);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[ShotgunController] Could not apply network parent to weapon: {e.Message}");
+                }
+            }
         }
 
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
