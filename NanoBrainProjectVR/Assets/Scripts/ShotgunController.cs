@@ -502,14 +502,14 @@ public class ShotgunController : NetworkBehaviour
 
         if (chamberState.Value == ChamberState.SpentShell || chamberState.Value == ChamberState.LiveRound)
         {
+            EjectShellLocal();
             if (IsSpawned) EjectShellServerRpc();
-            else EjectShellLocal();
         }
 
         chamberState.Value = ChamberState.Empty;
         
-        if (IsSpawned) PlaySoundClientRpc(true);
-        else PlaySoundLocal(true);
+        PlaySoundLocal(true);
+        if (IsSpawned) PlaySoundServerRpc(true);
     }
 
     // Call this via UnityEvent on the TwoHandGrabInteractable!
@@ -523,11 +523,11 @@ public class ShotgunController : NetworkBehaviour
             chamberState.Value = ChamberState.LiveRound;
         }
 
-        if (IsSpawned) PlaySoundClientRpc(false);
-        else PlaySoundLocal(false);
+        PlaySoundLocal(false);
+        if (IsSpawned) PlaySoundServerRpc(false);
     }
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void EjectShellServerRpc()
     {
         EjectShellClientRpc();
@@ -536,6 +536,7 @@ public class ShotgunController : NetworkBehaviour
     [ClientRpc]
     private void EjectShellClientRpc()
     {
+        if (IsOwner) return; // Prevent double ejection for the owner!
         EjectShellLocal();
     }
 
@@ -582,9 +583,16 @@ public class ShotgunController : NetworkBehaviour
         if (shell != null) shell.SetActive(false);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    private void PlaySoundServerRpc(bool isPullBack, ServerRpcParams rpcParams = default)
+    {
+        PlaySoundClientRpc(isPullBack);
+    }
+
     [ClientRpc]
     private void PlaySoundClientRpc(bool isPullBack)
     {
+        if (IsOwner) return; // Prevent double sound for the owner!
         PlaySoundLocal(isPullBack);
     }
 

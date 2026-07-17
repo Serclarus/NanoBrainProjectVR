@@ -4,6 +4,8 @@ using UnityEngine;
 
 using UnityEngine.XR.Interaction.Toolkit; // Required for XR Grab Interactable
 using UnityEngine.XR.Interaction.Toolkit.Interactors; // Required for XRSocketInteractor
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using Unity.Netcode; // Required for NGO
 
 [System.Serializable]
@@ -193,6 +195,10 @@ public class WeaponController : NetworkBehaviour
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
             
+            // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
+            magazineSocket.hoverFilters.Add(this);
+            magazineSocket.selectFilters.Add(this);
+            
             // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
             magazineSocket.interactableCantHoverMeshMaterial = null;
         }
@@ -252,6 +258,9 @@ public class WeaponController : NetworkBehaviour
         {
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
+            
+            magazineSocket.hoverFilters.Remove(this);
+            magazineSocket.selectFilters.Remove(this);
         }
     }
 
@@ -502,6 +511,38 @@ public class WeaponController : NetworkBehaviour
     private void OnSyncedMagazineChanged(NetworkObjectReference oldMag, NetworkObjectReference newMag)
     {
         StartCoroutine(SyncMagazineRoutine(newMag));
+    }
+
+    // --- XR SOCKET FILTERING ---
+    public bool canProcess => true;
+
+    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
+    {
+        return IsMagazineAllowed(interactable);
+    }
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        return IsMagazineAllowed(interactable);
+    }
+
+    private bool IsMagazineAllowed(IXRInteractable interactable)
+    {
+        Magazine mag = interactable.transform.GetComponent<Magazine>();
+        if (mag == null) 
+        {
+            return false; // Not a magazine! Reject it completely.
+        }
+
+        if (magazinePrefab != null)
+        {
+            if (!interactable.transform.name.StartsWith(magazinePrefab.name))
+            {
+                return false; // Wrong type of magazine!
+            }
+        }
+
+        return true;
     }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
