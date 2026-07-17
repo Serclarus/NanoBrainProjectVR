@@ -502,21 +502,20 @@ public class ShotgunController : NetworkBehaviour
     // PUMP ACTION LOGIC
     // ────────────────────────────────────────────────────────────────────────
 
-    // Call this via UnityEvent on the TwoHandGrabInteractable!
     public void OnPumpPulledBack()
     {
         if (IsSpawned && !IsOwner) return;
 
         if (chamberState.Value == ChamberState.SpentShell || chamberState.Value == ChamberState.LiveRound)
         {
+            EjectShellLocal();
             if (IsSpawned) EjectShellServerRpc();
-            else EjectShellLocal();
         }
 
         chamberState.Value = ChamberState.Empty;
         
-        if (IsSpawned) PlaySoundClientRpc(true);
-        else PlaySoundLocal(true);
+        PlaySoundLocal(true);
+        if (IsSpawned) PlaySoundServerRpc(true);
     }
 
     // Call this via UnityEvent on the TwoHandGrabInteractable!
@@ -530,20 +529,20 @@ public class ShotgunController : NetworkBehaviour
             chamberState.Value = ChamberState.LiveRound;
         }
 
-        if (IsSpawned) PlaySoundClientRpc(false);
-        else PlaySoundLocal(false);
+        PlaySoundLocal(false);
+        if (IsSpawned) PlaySoundServerRpc(false);
     }
 
     [ServerRpc(RequireOwnership = false)]
     private void EjectShellServerRpc(ServerRpcParams rpcParams = default)
     {
-        Debug.LogWarning($"<color=red>EjectShellServerRpc called by {rpcParams.Receive.SenderClientId}!</color>");
         EjectShellClientRpc();
     }
 
     [ClientRpc]
     private void EjectShellClientRpc()
     {
+        if (IsOwner) return; // Prevent double ejection for the owner!
         EjectShellLocal();
     }
 
@@ -590,9 +589,16 @@ public class ShotgunController : NetworkBehaviour
         if (shell != null) shell.SetActive(false);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    private void PlaySoundServerRpc(bool isPullBack, ServerRpcParams rpcParams = default)
+    {
+        PlaySoundClientRpc(isPullBack);
+    }
+
     [ClientRpc]
     private void PlaySoundClientRpc(bool isPullBack)
     {
+        if (IsOwner) return; // Prevent double sound for the owner!
         PlaySoundLocal(isPullBack);
     }
 
