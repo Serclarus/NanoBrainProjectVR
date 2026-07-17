@@ -317,31 +317,29 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             }
 
             // Explicit Network Un-Parenting (Removing from Holster)
-            if (IsServer || IsOwner)
+            if (IsServer)
             {
-                try
-                {
-                    NetworkObject.TryRemoveParent();
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"[WeaponController] Could not remove network parent from weapon: {e.Message}");
-                }
+                NetworkObject.TryRemoveParent();
+            }
+            else
+            {
+                SetWeaponParentServerRpc(new NetworkObjectReference());
             }
         }
         else
         {
             // Socket Logic (Holstered)
             // Explicit Network Parenting
-            if (IsServer || IsOwner)
+            NetworkObject playerRoot = interactor.transform.root.GetComponent<NetworkObject>();
+            if (playerRoot != null)
             {
-                try
+                if (IsServer)
                 {
-                    NetworkObject.TrySetParent(interactor.transform);
+                    NetworkObject.TrySetParent(playerRoot.transform);
                 }
-                catch (System.Exception e)
+                else
                 {
-                    Debug.LogWarning($"[WeaponController] Could not apply network parent to weapon: {e.Message}");
+                    SetWeaponParentServerRpc(new NetworkObjectReference(playerRoot));
                 }
             }
         }
@@ -496,6 +494,19 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef, ServerRpcParams rpcParams = default)
     {
         syncedMagazine.Value = magRef;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetWeaponParentServerRpc(NetworkObjectReference parentRef, ServerRpcParams rpcParams = default)
+    {
+        if (parentRef.TryGet(out NetworkObject parentNetObj))
+        {
+            NetworkObject.TrySetParent(parentNetObj.transform);
+        }
+        else
+        {
+            NetworkObject.TryRemoveParent();
+        }
     }
 
     private void OnTriggerDown(ActivateEventArgs args)
