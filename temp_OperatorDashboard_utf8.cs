@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
 using XRMultiplayer;
@@ -6,7 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// PC Operator Dashboard — UI-ONLY controller.
+/// PC Operator Dashboard ÔÇö UI-ONLY controller.
 /// Provides buttons for map loading, weapon management, and game control.
 /// Does NOT create or manage any cameras. Spectator camera is handled entirely by NetworkPlayerLoadout.
 /// </summary>
@@ -288,7 +288,7 @@ public class OperatorDashboard : MonoBehaviour
         
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
-            Debug.LogError("[OperatorDashboard] Cannot force spawn — not connected to network!");
+            Debug.LogError("[OperatorDashboard] Cannot force spawn ÔÇö not connected to network!");
             return;
         }
 
