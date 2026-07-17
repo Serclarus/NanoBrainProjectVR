@@ -22,7 +22,7 @@ public struct RecoilTier
 }
 
 [RequireComponent(typeof(TwoHandGrabInteractable))]
-public class WeaponController : NetworkBehaviour
+public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilter
 {
     [Header("Fire Mode")]
     [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
