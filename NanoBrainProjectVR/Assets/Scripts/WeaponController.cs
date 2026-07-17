@@ -406,10 +406,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             NetworkObject netObj = mag.GetComponent<NetworkObject>();
             if (netObj != null)
             {
-                // Network parenting for physics/transform stability
-                if (IsServer) netObj.TrySetParent(this.transform);
-                else if (IsOwner) SetMagazineParentServerRpc(new NetworkObjectReference(netObj), true);
-
                 if (IsServer)
                 {
                     syncedMagazine.Value = new NetworkObjectReference(netObj);
@@ -417,6 +413,19 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                 else if (IsOwner)
                 {
                     SetSyncedMagazineServerRpc(new NetworkObjectReference(netObj));
+                }
+
+                // Explicit Network Parenting
+                if (IsServer || IsOwner)
+                {
+                    try
+                    {
+                        netObj.TrySetParent(transform);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"[WeaponController] Could not apply network parent to magazine: {e.Message}");
+                    }
                 }
             }
             
@@ -427,6 +436,22 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
+        if (currentMagazine != null)
+        {
+            NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
+            if (netObj != null && (IsServer || IsOwner))
+            {
+                try
+                {
+                    netObj.TryRemoveParent();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[WeaponController] Could not remove network parent from magazine: {e.Message}");
+                }
+            }
+        }
+
         currentMagazine = null;
         if (IsServer)
         {
@@ -436,31 +461,10 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             SetSyncedMagazineServerRpc(new NetworkObjectReference());
         }
-
-        Magazine mag = args.interactableObject.transform.GetComponent<Magazine>();
-        if (mag != null)
-        {
-            NetworkObject netObj = mag.GetComponent<NetworkObject>();
-            if (netObj != null)
-            {
-                if (IsServer) netObj.TryRemoveParent();
-                else if (IsOwner) SetMagazineParentServerRpc(new NetworkObjectReference(netObj), false);
-            }
-        }
     }
 
-    [ServerRpc]
-    private void SetMagazineParentServerRpc(NetworkObjectReference magRef, bool setParent)
-    {
-        if (magRef.TryGet(out NetworkObject netObj))
-        {
-            if (setParent) netObj.TrySetParent(this.transform);
-            else netObj.TryRemoveParent();
-        }
-    }
-
-    [ServerRpc]
-    private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef)
+    [ServerRpc(RequireOwnership = false)]
+    private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef, ServerRpcParams rpcParams = default)
     {
         syncedMagazine.Value = magRef;
     }
