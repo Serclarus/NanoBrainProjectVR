@@ -270,6 +270,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private void SpawnWeaponsForClient(ulong clientId)
     {
+        if (hasSpawnedWeapons) 
+        {
+            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Weapons already spawned for Client {clientId}. Skipping duplicate spawn.");
+            return;
+        }
+
         Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> SpawnWeaponsForClient({clientId}) called." +
                   $" shotgun={(shotgunPrefab != null ? shotgunPrefab.name : "NULL")}" +
                   $" rifle={(riflePrefab != null ? riflePrefab.name : "NULL")}" +

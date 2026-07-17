@@ -46,16 +46,32 @@ public class MainMenuController : MonoBehaviour
         // Do NOT cache the result! If a dummy player exists in the scene, the cache will latch onto the dummy
         // and completely ignore the real player when they spawn! We must search the entire scene every frame!
         
-        var providers = FindObjectsOfType<LocomotionProvider>();
+        var providers = FindObjectsByType<LocomotionProvider>(FindObjectsSortMode.None);
         foreach (var provider in providers)
         {
             if (provider != null && provider.enabled) provider.enabled = false;
         }
         
-        var controllers = FindObjectsOfType<CharacterController>();
+        var controllers = FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
         foreach (var controller in controllers)
         {
             if (controller != null && controller.enabled) controller.enabled = false;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // Re-enable locomotion when leaving the main menu!
+        var providers = FindObjectsByType<LocomotionProvider>(FindObjectsSortMode.None);
+        foreach (var provider in providers)
+        {
+            if (provider != null && !provider.enabled) provider.enabled = true;
+        }
+        
+        var controllers = FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
+        foreach (var controller in controllers)
+        {
+            if (controller != null && !controller.enabled) controller.enabled = true;
         }
     }
 
