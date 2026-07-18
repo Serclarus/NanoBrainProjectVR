@@ -219,6 +219,39 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
 
+        if (IsOwner && isVRUser.Value)
+        {
+            StartCoroutine(RebuildInteractionManagerRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator RebuildInteractionManagerRoutine()
+    {
+        // Wait briefly for the new scene's Interaction Manager to finish initializing
+        yield return new UnityEngine.WaitForSeconds(0.5f);
+
+        var newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+        if (newManager != null)
+        {
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager. Rebuilding socket links...");
+
+            // Re-link all sockets on the player
+            var sockets = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true);
+            foreach (var socket in sockets)
+            {
+                socket.interactionManager = newManager;
+            }
+
+            // Command all owned weapons to violently re-socket themselves using the new manager!
+            var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
+            foreach (var weapon in weapons)
+            {
+                if (weapon.IsOwner)
+                {
+                    weapon.ForceReturnToSocket();
+                }
+            }
+        }
     }
 
     private void TeleportToSpawnPoint()

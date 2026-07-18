@@ -248,6 +248,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             grabInteractable.enabled = false;
             yield return new WaitForEndOfFrame();
 
+            // CRITICAL: Pull the fresh Interaction Manager from the socket so the weapon knows about it!
             if (grabInteractable.interactionManager != homeSocket.interactionManager)
             {
                 grabInteractable.interactionManager = homeSocket.interactionManager;
