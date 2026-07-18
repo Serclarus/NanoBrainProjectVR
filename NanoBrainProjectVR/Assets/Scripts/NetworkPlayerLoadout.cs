@@ -10,6 +10,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     public GameObject riflePrefab;
     public GameObject pistolPrefab;
 
+    [Header("Spectator Tracking")]
+    [Tooltip("Drag the networked transform that represents the player's head here (e.g., your VRHeadAnchor or HeadVisual). The PC Dashboard will track this object over the network.")]
+    public Transform spectatorHeadSource;
+
     private string debugStatus = "Waiting for Spawn...";
     private bool hasSpawnedWeapons = false;
     private static List<GameObject> activeWeapons = new List<GameObject>();
@@ -183,8 +187,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // can hijack the local VR player's rendering, making it look like the VR player dropped to waist level!
         foreach (var cam in GetComponentsInChildren<Camera>(true))
         {
-            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Destroying remote camera to prevent hijack: {cam.gameObject.name}");
-            Destroy(cam.gameObject); 
+            Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Destroying remote camera component to prevent hijack: {cam.gameObject.name}");
+            
+            // CRITICAL FIX: Only destroy the Camera component, NOT the gameObject!
+            // If we destroy the gameObject, the PC loses the VR player's networked head transform!
+            Destroy(cam); 
         }
         
         foreach (var listener in GetComponentsInChildren<AudioListener>(true))
