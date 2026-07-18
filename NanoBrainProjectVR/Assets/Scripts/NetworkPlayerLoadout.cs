@@ -342,8 +342,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     {
         try
         {
-            // Spawn slightly above the player to prevent clipping into the floor
-            Vector3 spawnPos = transform.position + (Vector3.up * 1.5f);
+            // Spawn deep underground so the weapons are completely invisible to the player
+            // while they wait for WeaponAutoReturn.cs to snap them into their holsters!
+            Vector3 spawnPos = transform.position + (Vector3.down * 5.0f);
             Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Instantiating {prefab.name} at {spawnPos}...");
             
             GameObject wep = Instantiate(prefab, spawnPos, Quaternion.identity);

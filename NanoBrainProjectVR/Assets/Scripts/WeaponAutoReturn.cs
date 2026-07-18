@@ -23,6 +23,13 @@ public class WeaponAutoReturn : NetworkBehaviour
     private void Awake()
     {
         grabInteractable = GetComponent<XRGrabInteractable>();
+        
+        // Immediately freeze physics on spawn to prevent 1-frame collision noises!
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
     }
 
     private void OnEnable()
