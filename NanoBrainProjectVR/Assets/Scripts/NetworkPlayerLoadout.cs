@@ -219,11 +219,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
 
-        // When a new scene loads, the old weapons were destroyed. Respawn them!
-        if (isVRUser.Value)
-        {
-            SpawnWeaponsForClient(OwnerClientId);
-        }
     }
 
     private void TeleportToSpawnPoint()
@@ -254,6 +249,21 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
 
             if (cc != null) cc.enabled = true;
+
+            // CRITICAL FIX: Because weapons use retainTransformParent in XRI, they are not children of the player in the Unity Hierarchy locally.
+            // When the player teleports to the new spawn point, the weapons are left behind in the world!
+            // We must explicitly teleport anything the player is currently holding in their holsters/sockets.
+            var sockets = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true);
+            foreach (var socket in sockets)
+            {
+                if (socket.hasSelection && socket.interactablesSelected.Count > 0)
+                {
+                    var interactable = socket.interactablesSelected[0];
+                    Transform attach = socket.attachTransform != null ? socket.attachTransform : socket.transform;
+                    interactable.transform.position = attach.position;
+                    interactable.transform.rotation = attach.rotation;
+                }
+            }
         }
         else
         {
