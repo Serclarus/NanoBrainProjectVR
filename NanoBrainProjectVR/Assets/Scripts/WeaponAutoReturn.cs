@@ -110,6 +110,14 @@ public class WeaponAutoReturn : NetworkBehaviour
                     if (slotType == WeaponSlotType.Rifle) homeSocket = holsters.rightShoulderSocket;
                     else if (slotType == WeaponSlotType.Shotgun) homeSocket = holsters.leftShoulderSocket;
                     else if (slotType == WeaponSlotType.Pistol) homeSocket = holsters.rightBeltSocket;
+                    
+                    // [NETWORK PARENTING]: We found our owned Avatar root! Parent the weapon to the Avatar.
+                    if (IsOwner) 
+                    {
+                        if (IsServer) GetComponent<NetworkObject>().TrySetParent(holsterNetObj.transform);
+                        else SetNetworkParentServerRpc(new NetworkObjectReference(holsterNetObj));
+                        Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Network Parented {gameObject.name} to Avatar {holsterNetObj.gameObject.name}");
+                    }
                     break;
                 }
             }
@@ -190,6 +198,14 @@ public class WeaponAutoReturn : NetworkBehaviour
     private void OnGrabbed(SelectEnterEventArgs args)
     {
         if (returnRoutine != null) StopCoroutine(returnRoutine);
+
+        // [NETWORK PARENTING]: If a player grabs the weapon out of the socket with their hand, remove the parent.
+        if (IsOwner && !(args.interactorObject is XRSocketInteractor))
+        {
+            if (IsServer) GetComponent<NetworkObject>().TryRemoveParent();
+            else RemoveNetworkParentServerRpc();
+            Debug.Log($"<color=cyan>[WeaponAutoReturn]</color> Removed Network Parent from {gameObject.name} (Now held in hand)");
+        }
     }
 
     public void ForceReturnToSocket()
@@ -216,6 +232,17 @@ public class WeaponAutoReturn : NetworkBehaviour
         if (homeSocket != null)
         {
             Debug.Log($"Weapon Auto-Returned to {slotType} Holster!");
+
+            // [NETWORK PARENTING]: Weapon is returning to holster. Re-parent to the Avatar.
+            if (IsOwner)
+            {
+                NetworkObject avatarNetObj = homeSocket.GetComponentInParent<NetworkObject>();
+                if (avatarNetObj != null)
+                {
+                    if (IsServer) GetComponent<NetworkObject>().TrySetParent(avatarNetObj.transform);
+                    else SetNetworkParentServerRpc(new NetworkObjectReference(avatarNetObj));
+                }
+            }
             
             // Logically return the weapon directly to the socket!
             grabInteractable.enabled = false;
@@ -288,5 +315,20 @@ public class WeaponAutoReturn : NetworkBehaviour
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> SelectEnter failed during auto-return: {e.Message}");
             }
         }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetNetworkParentServerRpc(NetworkObjectReference parentRef, ServerRpcParams rpcParams = default)
+    {
+        if (parentRef.TryGet(out NetworkObject parentObj))
+        {
+            GetComponent<NetworkObject>().TrySetParent(parentObj.transform);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RemoveNetworkParentServerRpc(ServerRpcParams rpcParams = default)
+    {
+        GetComponent<NetworkObject>().TryRemoveParent();
     }
 }

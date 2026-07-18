@@ -316,32 +316,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                 }
             }
 
-            // Explicit Network Un-Parenting (Removing from Holster)
-            if (IsServer)
-            {
-                NetworkObject.TryRemoveParent();
-            }
-            else
-            {
-                SetWeaponParentServerRpc(new NetworkObjectReference());
-            }
-        }
-        else
-        {
-            // Socket Logic (Holstered)
-            // Explicit Network Parenting
-            NetworkObject playerRoot = interactor.transform.root.GetComponent<NetworkObject>();
-            if (playerRoot != null)
-            {
-                if (IsServer)
-                {
-                    NetworkObject.TrySetParent(playerRoot.transform);
-                }
-                else
-                {
-                    SetWeaponParentServerRpc(new NetworkObjectReference(playerRoot));
-                }
-            }
+            // Explicit Network Un-Parenting is now handled strictly by WeaponAutoReturn.cs OnGrabbed!
         }
 
         // Cache the interactor so we can read its analog trigger value for trigger animation
@@ -494,19 +469,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     private void SetSyncedMagazineServerRpc(NetworkObjectReference magRef, ServerRpcParams rpcParams = default)
     {
         syncedMagazine.Value = magRef;
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void SetWeaponParentServerRpc(NetworkObjectReference parentRef, ServerRpcParams rpcParams = default)
-    {
-        if (parentRef.TryGet(out NetworkObject parentNetObj))
-        {
-            NetworkObject.TrySetParent(parentNetObj.transform);
-        }
-        else
-        {
-            NetworkObject.TryRemoveParent();
-        }
     }
 
     private void OnTriggerDown(ActivateEventArgs args)

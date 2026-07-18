@@ -220,32 +220,7 @@ public class ShotgunController : NetworkBehaviour
                 }
             }
 
-            // Explicit Network Un-Parenting (Removing from Holster)
-            if (IsServer)
-            {
-                NetworkObject.TryRemoveParent();
-            }
-            else
-            {
-                SetWeaponParentServerRpc(new NetworkObjectReference());
-            }
-        }
-        else
-        {
-            // Socket Logic (Holstered)
-            // Explicit Network Parenting
-            NetworkObject playerRoot = interactor.transform.root.GetComponent<NetworkObject>();
-            if (playerRoot != null)
-            {
-                if (IsServer)
-                {
-                    NetworkObject.TrySetParent(playerRoot.transform);
-                }
-                else
-                {
-                    SetWeaponParentServerRpc(new NetworkObjectReference(playerRoot));
-                }
-            }
+            // Explicit Network Un-Parenting is now handled strictly by WeaponAutoReturn.cs OnGrabbed!
         }
 
         currentHoldingInteractor = args.interactorObject as XRBaseInputInteractor;
@@ -332,19 +307,6 @@ public class ShotgunController : NetworkBehaviour
         else FireWeaponLocal();
     }
 
-
-    [ServerRpc(RequireOwnership = false)]
-    private void SetWeaponParentServerRpc(NetworkObjectReference parentRef, ServerRpcParams rpcParams = default)
-    {
-        if (parentRef.TryGet(out NetworkObject parentNetObj))
-        {
-            NetworkObject.TrySetParent(parentNetObj.transform);
-        }
-        else
-        {
-            NetworkObject.TryRemoveParent();
-        }
-    }
 
     [ServerRpc]
     private void FireWeaponServerRpc()
