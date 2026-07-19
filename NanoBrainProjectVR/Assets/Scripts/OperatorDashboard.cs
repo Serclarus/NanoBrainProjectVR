@@ -24,6 +24,7 @@ public class OperatorDashboard : MonoBehaviour
     private UnityEngine.UI.Text connectionStatusText;
     private UnityEngine.UI.Text connectedClientsText;
     private UnityEngine.UI.Text spectatingText;
+    private GameObject pcPauseOverlay;
 
     private void Awake()
     {
@@ -81,15 +82,47 @@ public class OperatorDashboard : MonoBehaviour
         uiCam.cullingMask = 1 << 5; // UI Layer only
         
         // Setup Canvas
-        GameObject canvasObj = new GameObject("OperatorDashboardCanvas");
-        canvasObj.transform.SetParent(this.transform); // Ensure it survives DontDestroyOnLoad
+        GameObject canvasObj = new GameObject("Operator_Dashboard_Canvas");
+        canvasObj.transform.SetParent(this.transform);
         dashboardCanvas = canvasObj.AddComponent<Canvas>();
-        dashboardCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-        dashboardCanvas.worldCamera = uiCam;
-        canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        dashboardCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        dashboardCanvas.sortingOrder = 999;
+        
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Create a background panel
+        // PC Pause Overlay
+        pcPauseOverlay = new GameObject("PC_Pause_Overlay");
+        pcPauseOverlay.transform.SetParent(canvasObj.transform, false);
+        Image pauseBg = pcPauseOverlay.AddComponent<Image>();
+        pauseBg.color = new Color(0, 0, 0, 0.8f); // 80% black
+        RectTransform pbRT = pcPauseOverlay.GetComponent<RectTransform>();
+        pbRT.anchorMin = Vector2.zero;
+        pbRT.anchorMax = Vector2.one;
+        pbRT.offsetMin = Vector2.zero;
+        pbRT.offsetMax = Vector2.zero;
+
+        // PC Pause Text
+        GameObject pcPauseTxtObj = new GameObject("PC_Pause_Text");
+        pcPauseTxtObj.transform.SetParent(pcPauseOverlay.transform, false);
+        var pcPauseTxt = pcPauseTxtObj.AddComponent<UnityEngine.UI.Text>();
+        pcPauseTxt.text = "PAUSED";
+        pcPauseTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        pcPauseTxt.fontSize = 100;
+        pcPauseTxt.alignment = TextAnchor.MiddleCenter;
+        pcPauseTxt.color = Color.white;
+        RectTransform ptRT = pcPauseTxtObj.GetComponent<RectTransform>();
+        ptRT.anchorMin = Vector2.zero;
+        ptRT.anchorMax = Vector2.one;
+        ptRT.offsetMin = Vector2.zero;
+        ptRT.offsetMax = Vector2.zero;
+
+        pcPauseOverlay.SetActive(false);
+
+        // A nice semi-transparent background panel
         GameObject panelObj = new GameObject("BackgroundPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);
         Image bgImage = panelObj.AddComponent<Image>();
@@ -261,6 +294,15 @@ public class OperatorDashboard : MonoBehaviour
         {
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_TogglePause", NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_TogglePause", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+            
+            // Toggle local PC overlay based on the current time scale!
+            if (pcPauseOverlay != null)
+            {
+                // Note: timeScale might not have updated yet because the command is networked,
+                // but since the server executes it immediately or is the host, it's safer to just track a local bool or read the inverse of timescale
+                bool isCurrentlyPaused = (Time.timeScale == 0f);
+                pcPauseOverlay.SetActive(!isCurrentlyPaused);
+            }
         }
     }
 
