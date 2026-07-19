@@ -301,6 +301,8 @@ public class ShotgunController : NetworkBehaviour
 
     private void OnTriggerPulled(ActivateEventArgs args)
     {
+        Debug.Log($"<color=cyan>[ShotgunController]</color> OnTriggerPulled called! IsSpawned: {IsSpawned}, IsOwner: {IsOwner}");
+        
         if (IsSpawned && !IsOwner) return;
         
         if (IsSpawned) FireWeaponServerRpc();
@@ -316,13 +318,17 @@ public class ShotgunController : NetworkBehaviour
 
     private void FireWeaponLocal()
     {
+        Debug.Log($"<color=cyan>[ShotgunController]</color> FireWeaponLocal called! Current ChamberState: {chamberState.Value}");
+        
         if (chamberState.Value != ChamberState.LiveRound)
         {
+            Debug.Log("<color=yellow>[ShotgunController]</color> Click! Dry fire because no live round in chamber.");
             if (IsSpawned) PlayDryFireClientRpc();
             else PlayDryFireLocal();
             return;
         }
 
+        Debug.Log("<color=green>[ShotgunController]</color> BOOM! Firing Live Round!");
         chamberState.Value = ChamberState.SpentShell;
 
         // Report to Training Grounds Manager
