@@ -310,8 +310,8 @@ public class ShotgunController : NetworkBehaviour
     {
         if (chamberState.Value != ChamberState.LiveRound)
         {
+            PlayDryFireLocal();
             if (IsSpawned) PlayDryFireRpc();
-            else PlayDryFireLocal();
             return;
         }
 
@@ -422,8 +422,8 @@ public class ShotgunController : NetworkBehaviour
             }
         }
 
+        PlayShootEffectsLocal();
         if (IsSpawned) PlayShootEffectsRpc();
-        else PlayShootEffectsLocal();
     }
 
     [Rpc(SendTo.NotOwner)]
