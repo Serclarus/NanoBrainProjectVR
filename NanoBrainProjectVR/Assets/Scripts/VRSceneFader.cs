@@ -47,7 +47,7 @@ public class VRSceneFader : MonoBehaviour
         GameObject canvasObj = new GameObject("VR_Fade_Canvas");
         canvasObj.transform.SetParent(this.transform);
         canvasObj.transform.localPosition = new Vector3(0, 0, 0.2f); // 20cm in front of eyes
-        canvasObj.transform.localRotation = Quaternion.Euler(0, 180, 0); // Face the camera to prevent backface culling!
+        canvasObj.transform.localRotation = Quaternion.identity;
         
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
@@ -93,8 +93,8 @@ public class VRSceneFader : MonoBehaviour
         RectTransform txtRT = pauseText.GetComponent<RectTransform>();
         txtRT.sizeDelta = new Vector2(10f, 10f);
         
-        // Move the text slightly up (+0.05 on Y) and slightly closer to the player (+0.05 on local Z since Canvas is rotated 180)
-        txtRT.localPosition = new Vector3(0f, 0.05f, 0.05f);
+        // Move the text slightly up (+0.05 on Y) and slightly closer to the player (-0.05 on Z)
+        txtRT.localPosition = new Vector3(0f, 0.05f, -0.05f);
     }
 
     private void OnEnable()

@@ -85,8 +85,7 @@ public class OperatorDashboard : MonoBehaviour
         GameObject canvasObj = new GameObject("Operator_Dashboard_Canvas");
         canvasObj.transform.SetParent(this.transform);
         dashboardCanvas = canvasObj.AddComponent<Canvas>();
-        dashboardCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-        dashboardCanvas.worldCamera = uiCam;
+        dashboardCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         dashboardCanvas.sortingOrder = 999;
         
         CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
@@ -293,6 +292,7 @@ public class OperatorDashboard : MonoBehaviour
         Debug.Log("[OperatorDashboard] Sending Toggle Pause command...");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_TogglePause", NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
             NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_TogglePause", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
             
             // Toggle local PC overlay based on the current time scale!
