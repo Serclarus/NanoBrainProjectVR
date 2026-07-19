@@ -92,9 +92,6 @@ public class VRSceneFader : MonoBehaviour
         
         RectTransform txtRT = pauseText.GetComponent<RectTransform>();
         txtRT.sizeDelta = new Vector2(10f, 10f);
-        
-        // Move the text slightly up (+0.05 on Y) and slightly closer to the player (-0.05 on Z)
-        txtRT.localPosition = new Vector3(0f, 0.05f, -0.05f);
     }
 
     private void OnEnable()
