@@ -29,6 +29,9 @@ public class VRSceneFader : MonoBehaviour
 
     [Tooltip("Optional custom material for the PAUSED TextMeshPro text")]
     public Material pauseTextMaterial;
+    
+    [Tooltip("The font size of the PAUSED text")]
+    public float pauseTextFontSize = 10f;
 
     private void Awake()
     {
@@ -72,9 +75,13 @@ public class VRSceneFader : MonoBehaviour
         txtObj.transform.SetParent(canvasObj.transform, false);
         pauseText = txtObj.AddComponent<TMPro.TextMeshProUGUI>();
         pauseText.text = "PAUSED";
-        pauseText.fontSize = 0.2f; // 0.2 meters tall (20cm) in World Space!
+        pauseText.fontSize = pauseTextFontSize;
         pauseText.alignment = TMPro.TextAlignmentOptions.Center;
         pauseText.color = Color.white;
+        
+        // Prevent large font sizes from disappearing by letting them overflow the Rect box
+        pauseText.enableWordWrapping = false;
+        pauseText.overflowMode = TMPro.TextOverflowModes.Overflow;
         
         if (pauseTextMaterial != null)
         {
@@ -84,7 +91,7 @@ public class VRSceneFader : MonoBehaviour
         pauseText.gameObject.SetActive(false);
         
         RectTransform txtRT = pauseText.GetComponent<RectTransform>();
-        txtRT.sizeDelta = new Vector2(2f, 0.5f);
+        txtRT.sizeDelta = new Vector2(10f, 10f);
     }
 
     private void OnEnable()
