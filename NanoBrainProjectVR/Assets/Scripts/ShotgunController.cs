@@ -301,34 +301,20 @@ public class ShotgunController : NetworkBehaviour
 
     private void OnTriggerPulled(ActivateEventArgs args)
     {
-        Debug.Log($"<color=cyan>[ShotgunController]</color> OnTriggerPulled called! IsSpawned: {IsSpawned}, IsOwner: {IsOwner}");
-        
         if (IsSpawned && !IsOwner) return;
         
-        if (IsSpawned) FireWeaponServerRpc();
-        else FireWeaponLocal();
-    }
-
-
-    [ServerRpc]
-    private void FireWeaponServerRpc()
-    {
         FireWeaponLocal();
     }
 
     private void FireWeaponLocal()
     {
-        Debug.Log($"<color=cyan>[ShotgunController]</color> FireWeaponLocal called! Current ChamberState: {chamberState.Value}");
-        
         if (chamberState.Value != ChamberState.LiveRound)
         {
-            Debug.Log("<color=yellow>[ShotgunController]</color> Click! Dry fire because no live round in chamber.");
-            if (IsSpawned) PlayDryFireClientRpc();
+            if (IsSpawned) PlayDryFireRpc();
             else PlayDryFireLocal();
             return;
         }
 
-        Debug.Log("<color=green>[ShotgunController]</color> BOOM! Firing Live Round!");
         chamberState.Value = ChamberState.SpentShell;
 
         // Report to Training Grounds Manager
@@ -436,7 +422,7 @@ public class ShotgunController : NetworkBehaviour
             }
         }
 
-        if (IsSpawned) PlayShootEffectsClientRpc();
+        if (IsSpawned) PlayShootEffectsRpc();
         else PlayShootEffectsLocal();
     }
 
@@ -454,8 +440,8 @@ public class ShotgunController : NetworkBehaviour
         }
     }
 
-    [ClientRpc]
-    private void PlayDryFireClientRpc()
+    [Rpc(SendTo.NotOwner)]
+    private void PlayDryFireRpc()
     {
         PlayDryFireLocal();
     }
@@ -466,8 +452,8 @@ public class ShotgunController : NetworkBehaviour
             audioSource.PlayOneShot(dryFireSound, shootVolume);
     }
 
-    [ClientRpc]
-    private void PlayShootEffectsClientRpc()
+    [Rpc(SendTo.NotOwner)]
+    private void PlayShootEffectsRpc()
     {
         PlayShootEffectsLocal();
     }
@@ -512,13 +498,13 @@ public class ShotgunController : NetworkBehaviour
         if (chamberState.Value == ChamberState.SpentShell || chamberState.Value == ChamberState.LiveRound)
         {
             EjectShellLocal();
-            if (IsSpawned) EjectShellServerRpc();
+            if (IsSpawned) EjectShellRpc();
         }
 
         chamberState.Value = ChamberState.Empty;
         
         PlaySoundLocal(true);
-        if (IsSpawned) PlaySoundServerRpc(true);
+        if (IsSpawned) PlaySoundRpc(true);
     }
 
     // Call this via UnityEvent on the TwoHandGrabInteractable!
@@ -533,19 +519,12 @@ public class ShotgunController : NetworkBehaviour
         }
 
         PlaySoundLocal(false);
-        if (IsSpawned) PlaySoundServerRpc(false);
+        if (IsSpawned) PlaySoundRpc(false);
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void EjectShellServerRpc()
+    [Rpc(SendTo.NotOwner)]
+    private void EjectShellRpc()
     {
-        EjectShellClientRpc();
-    }
-
-    [ClientRpc]
-    private void EjectShellClientRpc()
-    {
-        if (IsOwner) return; // Prevent double ejection for the owner!
         EjectShellLocal();
     }
 
@@ -592,16 +571,9 @@ public class ShotgunController : NetworkBehaviour
         if (shell != null) shell.SetActive(false);
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void PlaySoundServerRpc(bool isPullBack, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.NotOwner)]
+    private void PlaySoundRpc(bool isPullBack)
     {
-        PlaySoundClientRpc(isPullBack);
-    }
-
-    [ClientRpc]
-    private void PlaySoundClientRpc(bool isPullBack)
-    {
-        if (IsOwner) return; // Prevent double sound for the owner!
         PlaySoundLocal(isPullBack);
     }
 
