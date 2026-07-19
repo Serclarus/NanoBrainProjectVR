@@ -25,6 +25,10 @@ public class VRSceneFader : MonoBehaviour
     public Color fadeColor = Color.black;
 
     private Image fadeImage;
+    private TMPro.TMP_Text pauseText;
+
+    [Tooltip("Optional custom material for the PAUSED TextMeshPro text")]
+    public Material pauseTextMaterial;
 
     private void Awake()
     {
@@ -62,6 +66,25 @@ public class VRSceneFader : MonoBehaviour
         imageRT.anchorMax = Vector2.one;
         imageRT.offsetMin = Vector2.zero;
         imageRT.offsetMax = Vector2.zero;
+
+        // Pause Text
+        GameObject txtObj = new GameObject("Pause_Text");
+        txtObj.transform.SetParent(canvasObj.transform, false);
+        pauseText = txtObj.AddComponent<TMPro.TextMeshProUGUI>();
+        pauseText.text = "PAUSED";
+        pauseText.fontSize = 0.2f; // 0.2 meters tall (20cm) in World Space!
+        pauseText.alignment = TMPro.TextAlignmentOptions.Center;
+        pauseText.color = Color.white;
+        
+        if (pauseTextMaterial != null)
+        {
+            pauseText.fontSharedMaterial = pauseTextMaterial;
+        }
+        
+        pauseText.gameObject.SetActive(false);
+        
+        RectTransform txtRT = pauseText.GetComponent<RectTransform>();
+        txtRT.sizeDelta = new Vector2(2f, 0.5f);
     }
 
     private void OnEnable()
@@ -146,5 +169,22 @@ public class VRSceneFader : MonoBehaviour
         
         // Guarantee exact final alpha
         fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, endAlpha);
+    }
+
+    public void PausedVignette(bool isPaused)
+    {
+        if (fadeImage == null) return;
+        if (pauseText != null) pauseText.gameObject.SetActive(isPaused);
+
+        if (isPaused)
+        {
+            StopAllCoroutines();
+            fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0.8f);
+        }
+        else
+        {
+            StopAllCoroutines();
+            fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0f);
+        }
     }
 }
