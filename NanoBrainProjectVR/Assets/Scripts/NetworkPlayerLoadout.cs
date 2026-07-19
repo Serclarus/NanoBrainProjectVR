@@ -46,8 +46,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" OwnerClientId: {OwnerClientId}" +
                   $" Platform: {Application.platform}");
 
+        if (IsOwner)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+        }
+
         InitializePlayer();
     }
+
+
 
     public override void OnGainedOwnership()
     {
@@ -217,6 +224,13 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
+
+        if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_TogglePause");
+        }
+        
+        base.OnNetworkDespawn();
     }
 
     private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -377,6 +391,44 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         {
             debugStatus = $"EXCEPTION spawning {prefab.name}: {e.Message}";
             Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
+        }
+    }
+    // --- CUSTOM COMMAND RECEIVERS ---
+    private void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
+    {
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Toggle Pause command received!");
+
+        if (Time.timeScale == 0f)
+        {
+            Time.timeScale = 1f;
+            if (VRSceneFader.Instance != null) VRSceneFader.Instance.PausedVignette(false);
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Game Resumed.");
+        }
+        else
+        {
+            Time.timeScale = 0f;
+            if (VRSceneFader.Instance != null) VRSceneFader.Instance.PausedVignette(true);
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Game Paused.");
+
+            // Force drop held weapons so they auto-return to holsters!
+            ForceDropWeapons();
+        }
+    }
+
+    private void ForceDropWeapons()
+    {
+        var weapons = FindObjectsByType<WeaponController>(FindObjectsSortMode.None);
+        foreach (var weapon in weapons)
+        {
+            var interactable = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (interactable != null && interactable.isSelected)
+            {
+                if (interactable.interactionManager != null)
+                {
+                    interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
+                    Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
+                }
+            }
         }
     }
 }
