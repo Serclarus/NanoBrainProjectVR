@@ -25,13 +25,9 @@ public class VRSceneFader : MonoBehaviour
     public Color fadeColor = Color.black;
 
     private Image fadeImage;
-    private TMPro.TMP_Text pauseText;
 
-    [Tooltip("Optional custom material for the PAUSED TextMeshPro text")]
-    public Material pauseTextMaterial;
-    
-    [Tooltip("The font size of the PAUSED text")]
-    public float pauseTextFontSize = 10f;
+    [Tooltip("Drag a custom Canvas or GameObject here that you want to appear when the game pauses (optional)")]
+    public GameObject pauseCanvas;
 
     private void Awake()
     {
@@ -69,29 +65,11 @@ public class VRSceneFader : MonoBehaviour
         imageRT.anchorMax = Vector2.one;
         imageRT.offsetMin = Vector2.zero;
         imageRT.offsetMax = Vector2.zero;
-
-        // Pause Text
-        GameObject txtObj = new GameObject("Pause_Text");
-        txtObj.transform.SetParent(canvasObj.transform, false);
-        pauseText = txtObj.AddComponent<TMPro.TextMeshProUGUI>();
-        pauseText.text = "PAUSED";
-        pauseText.fontSize = pauseTextFontSize;
-        pauseText.alignment = TMPro.TextAlignmentOptions.Center;
-        pauseText.color = Color.white;
         
-        // Prevent large font sizes from disappearing by letting them overflow the Rect box
-        pauseText.enableWordWrapping = false;
-        pauseText.overflowMode = TMPro.TextOverflowModes.Overflow;
-        
-        if (pauseTextMaterial != null)
+        if (pauseCanvas != null)
         {
-            pauseText.fontSharedMaterial = pauseTextMaterial;
+            pauseCanvas.SetActive(false);
         }
-        
-        pauseText.gameObject.SetActive(false);
-        
-        RectTransform txtRT = pauseText.GetComponent<RectTransform>();
-        txtRT.sizeDelta = new Vector2(10f, 10f);
     }
 
     private void OnEnable()
@@ -181,7 +159,7 @@ public class VRSceneFader : MonoBehaviour
     public void PausedVignette(bool isPaused)
     {
         if (fadeImage == null) return;
-        if (pauseText != null) pauseText.gameObject.SetActive(isPaused);
+        if (pauseCanvas != null) pauseCanvas.SetActive(isPaused);
 
         if (isPaused)
         {
