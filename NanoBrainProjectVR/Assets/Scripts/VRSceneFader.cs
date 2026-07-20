@@ -112,7 +112,9 @@ public class VRSceneFader : MonoBehaviour
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            if (NetworkManager.Singleton.IsServer)
+            // In Distributed Authority, IsServer is always false! 
+            // We must check if we are Peer 0 (the session creator).
+            if (NetworkManager.Singleton.LocalClientId == NetworkManager.ServerClientId)
             {
                 NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
