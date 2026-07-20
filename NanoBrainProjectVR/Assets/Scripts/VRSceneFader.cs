@@ -128,11 +128,12 @@ public class VRSceneFader : MonoBehaviour
             }
             else
             {
-                ulong targetId = NetworkManager.Singleton.IsServer ? NetworkManager.ServerClientId : NetworkManager.Singleton.CurrentSessionOwner;
+                // Only the SERVER is legally allowed by Netcode to call SceneManager.LoadScene()
+                ulong targetId = NetworkManager.ServerClientId;
 
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Owner/Server ({targetId})");
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Server ({targetId})");
                 
-                // Send direct transport packet to Server / SessionOwner
+                // Send direct transport packet to Server
                 FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
                 using (writer)
                 {

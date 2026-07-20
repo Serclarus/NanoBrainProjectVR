@@ -244,6 +244,14 @@ public class OperatorDashboard : MonoBehaviour
         Debug.Log($"[OperatorDashboard] Requesting VR headsets to fade out and load map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
+            // If the PC Operator is alone (no VR headsets connected), load the scene immediately.
+            if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
+            {
+                Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                return;
+            }
+
             // Instead of instantly yanking the scene away, tell all VR headsets to start their fade process.
             // When they finish fading, they will send a 'GlobalRequest_SceneChange' back to the Server to actually load it!
             FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
