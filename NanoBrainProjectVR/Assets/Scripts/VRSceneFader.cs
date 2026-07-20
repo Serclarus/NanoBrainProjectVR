@@ -106,34 +106,28 @@ public class VRSceneFader : MonoBehaviour
 
     private IEnumerator FadeAndLoadRoutine(string sceneName)
     {
-        Debug.Log($"<color=yellow>[VRSceneFader]</color> Starting fade to black for scene: {sceneName}");
         // 1. Fully complete the fade to black (wait for it!)
         yield return StartCoroutine(FadeRoutine(0f, 1f, fadeToBlackDuration));
         
-        Debug.Log($"<color=yellow>[VRSceneFader]</color> Fade complete. Attempting to load scene: {sceneName}");
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             if (NetworkManager.Singleton.IsServer)
             {
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are SERVER. Loading scene directly: {sceneName}");
                 NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
             else
             {
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Sending ClientRequest_LoadScene for {sceneName}");
                 // We are a client in Distributed Authority! Ask the server to load the scene.
                 using (var writer = new FastBufferWriter(64, Unity.Collections.Allocator.Temp))
                 {
                     writer.WriteValueSafe(sceneName);
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId}");
                 }
             }
         }
         else
         {
-            Debug.Log($"<color=yellow>[VRSceneFader]</color> Not connected. Loading scene locally: {sceneName}");
             SceneManager.LoadScene(sceneName);
         }
     }
