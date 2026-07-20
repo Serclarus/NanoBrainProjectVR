@@ -231,12 +231,15 @@ public class OperatorDashboard : MonoBehaviour
 
     private void Update()
     {
-        // Bulletproof listener registration. It doesn't rely on events, just waits until we are actively the Server.
-        if (!hasRegisteredSceneListener && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        // Bulletproof listener registration. It doesn't rely on events, just waits until we are actively the Server AND the UI is ready!
+        if (!hasRegisteredSceneListener && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer)
         {
-            hasRegisteredSceneListener = true;
-            Debug.Log("<color=magenta>[OperatorDashboard]</color> Actively running as Server. Registering ClientRequest_LoadScene listener!");
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+            if (logTextUI != null) // Only execute if the UI has finished its 0.5s initialization, so we don't miss the log!
+            {
+                hasRegisteredSceneListener = true;
+                Debug.Log("<color=magenta>[OperatorDashboard]</color> Actively running as Server. Registering ClientRequest_LoadScene listener!");
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+            }
         }
 
         // Update Connection Status UI
@@ -386,7 +389,8 @@ public class OperatorDashboard : MonoBehaviour
     {
         if (NetworkManager.Singleton.IsServer)
         {
-            messagePayload.ReadValueSafe(out string sceneName);
+            messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes safeSceneName);
+            string sceneName = safeSceneName.ToString();
             Debug.Log($"<color=magenta>[OperatorDashboard]</color> VR Client {senderId} requested to load scene: {sceneName}");
             LoadMap(sceneName);
         }

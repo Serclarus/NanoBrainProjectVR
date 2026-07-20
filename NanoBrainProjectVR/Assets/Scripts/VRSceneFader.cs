@@ -129,9 +129,10 @@ public class VRSceneFader : MonoBehaviour
                 // Using string-based Custom Messaging completely bypasses assembly hash synchronization errors.
                 using (var writer = new FastBufferWriter(64, Unity.Collections.Allocator.Temp))
                 {
-                    writer.WriteValueSafe(sceneName);
+                    Unity.Collections.FixedString32Bytes safeSceneName = new Unity.Collections.FixedString32Bytes(sceneName);
+                    writer.WriteValueSafe(safeSceneName);
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId}");
+                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId} for {safeSceneName}");
                 }
             }
         }
