@@ -286,6 +286,22 @@ namespace XRMultiplayer
                     Utils.Log($"{k_DebugPrepend}Local Client Connected with ID: {id}", 0);
                 }
             };
+
+            // Register the server-side scene load request handler unconditionally.
+            NetworkManager.Singleton.OnServerStarted += () =>
+            {
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+            };
+        }
+
+        private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
+        {
+            if (NetworkManager.Singleton.IsServer)
+            {
+                messagePayload.ReadValueSafe(out string sceneName);
+                Utils.Log($"{k_DebugPrepend}Client {senderId} requested to load scene: {sceneName}", 0);
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
         }
 
         void SessionOwnerPromoted(ulong sessionOwnerId)
