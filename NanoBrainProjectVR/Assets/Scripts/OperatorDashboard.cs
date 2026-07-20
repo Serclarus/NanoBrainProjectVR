@@ -244,22 +244,30 @@ public class OperatorDashboard : MonoBehaviour
         Debug.Log($"[OperatorDashboard] Requesting VR headsets to fade out and load map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            // If the PC Operator is alone (no VR headsets connected), load the scene immediately.
-            if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
-            {
-                Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
-                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-                return;
-            }
-
-            // Instead of instantly yanking the scene away, tell all VR headsets to start their fade process.
-            // When they finish fading, they will send a 'GlobalRequest_SceneChange' back to the Server to actually load it!
             FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
             using (writer)
             {
                 Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
                 writer.WriteValueSafe(safeName);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_FadeAndChangeScene", writer, NetworkDelivery.Reliable);
+
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    // If the PC Operator is the Server and alone, load immediately.
+                    if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
+                    {
+                        Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
+                        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                        return;
+                    }
+
+                    // Otherwise tell all connected VR headsets to start their fade process.
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_FadeAndChangeScene", writer, NetworkDelivery.Reliable);
+                }
+                else
+                {
+                    // If the PC Operator is a Client, it CANNOT broadcast. It must send the command directly to the Server.
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                }
             }
         }
     }
@@ -270,32 +278,37 @@ public class OperatorDashboard : MonoBehaviour
         LoadMap(currentScene);
     }
 
+    private void SendOperatorCommand(string commandName)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (NetworkManager.Singleton.IsServer)
+            {
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(commandName, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+            }
+            else
+            {
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(commandName, NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+            }
+        }
+    }
+
     private void TogglePause()
     {
         Debug.Log("[OperatorDashboard] Sending Toggle Pause command...");
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_TogglePause", NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_TogglePause", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
-        }
+        SendOperatorCommand("OperatorCommand_TogglePause");
     }
 
     private void RefillMags()
     {
         Debug.Log("[OperatorDashboard] Sending Refill Mags command...");
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_RefillMags", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
-        }
+        SendOperatorCommand("OperatorCommand_RefillMags");
     }
 
     private void LoadShotgun()
     {
         Debug.Log("[OperatorDashboard] Sending Load Shotgun command...");
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_LoadShotgun", new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
-        }
+        SendOperatorCommand("OperatorCommand_LoadShotgun");
     }
 
     private void ForceSpawnWeaponsForVR()
