@@ -393,6 +393,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
         }
     }
+
+    // --- NEW: SCENE CHANGE RPC ---
+    [ServerRpc]
+    public void RequestSceneChangeServerRpc(string sceneName)
+    {
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {sceneName}. Loading now...");
+        
+        if (NetworkManager.Singleton.SceneManager != null)
+        {
+            // The Server actually executes the scene change for everyone
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    }
+
     // --- CUSTOM COMMAND RECEIVERS ---
     private void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
     {

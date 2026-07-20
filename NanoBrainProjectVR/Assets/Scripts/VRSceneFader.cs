@@ -106,16 +106,49 @@ public class VRSceneFader : MonoBehaviour
 
     private IEnumerator FadeAndLoadRoutine(string sceneName)
     {
+        Debug.Log($"<color=yellow>[VRSceneFader]</color> Starting fade to black for scene: {sceneName}");
         // 1. Fully complete the fade to black (wait for it!)
         yield return StartCoroutine(FadeRoutine(0f, 1f, fadeToBlackDuration));
         
+        Debug.Log($"<color=yellow>[VRSceneFader]</color> Fade complete. Attempting to load scene: {sceneName}");
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            if (NetworkManager.Singleton.IsServer)
+            {
+                // We are the PC Host (or playing offline in the editor). We can change the scene directly.
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are SERVER. Loading scene directly: {sceneName}");
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            }
+            else
+            {
+                // We are the VR Client! We must ask the Server to change the scene.
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Looking for local player object to invoke ServerRpc...");
+                
+                // Find our local player object that we have authority over
+                var localPlayer = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
+                if (localPlayer != null)
+                {
+                    var loadout = localPlayer.GetComponent<NetworkPlayerLoadout>();
+                    if (loadout != null)
+                    {
+                        Debug.Log($"<color=yellow>[VRSceneFader]</color> Invoking RequestSceneChangeServerRpc on local player!");
+                        loadout.RequestSceneChangeServerRpc(sceneName);
+                    }
+                    else
+                    {
+                        Debug.LogError("[VRSceneFader] Local Player Object does not have a NetworkPlayerLoadout component!");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[VRSceneFader] Could not find Local Player Object to send scene change request!");
+                }
+            }
         }
         else
         {
+            Debug.Log($"<color=yellow>[VRSceneFader]</color> Not connected. Loading scene locally: {sceneName}");
             SceneManager.LoadScene(sceneName);
         }
     }
