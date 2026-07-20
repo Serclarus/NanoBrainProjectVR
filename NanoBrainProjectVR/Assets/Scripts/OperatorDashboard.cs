@@ -32,26 +32,7 @@ public class OperatorDashboard : MonoBehaviour
         DontDestroyOnLoad(this.gameObject);
     }
 
-    private void OnEnable()
-    {
-        Application.logMessageReceived += HandleLog;
-    }
-
-    private void OnDisable()
-    {
-        Application.logMessageReceived -= HandleLog;
-    }
-
-    private void HandleLog(string logString, string stackTrace, LogType type)
-    {
-        // Only show our specific custom logs on the UI to prevent spam
-        if (logString.Contains("[NetworkPlayerLoadout]") || logString.Contains("[OperatorDashboard]") || logString.Contains("[VRSceneFader]"))
-        {
-            // Strip out rich text color tags for the UI so it looks clean
-            string cleanLog = System.Text.RegularExpressions.Regex.Replace(logString, "<.*?>", string.Empty);
-            LogToUI(cleanLog);
-        }
-    }
+    // Removed HandleLog per user request
 
     private void Start()
     {
@@ -162,22 +143,7 @@ public class OperatorDashboard : MonoBehaviour
         CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -320f), btnWidth, btnHeight, RefillMags);
         CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -320f), btnWidth, btnHeight, LoadShotgun);
 
-        // DIAGNOSTIC LOGS (Moved to Bottom Left, made wider)
-        GameObject rightPanel = new GameObject("DiagnosticLogs");
-        rightPanel.transform.SetParent(canvasObj.transform, false);
-        RectTransform rightRt = rightPanel.AddComponent<RectTransform>();
-        rightRt.anchorMin = new Vector2(0, 0); // Bottom left
-        rightRt.anchorMax = new Vector2(0, 0); // Bottom left
-        rightRt.pivot = new Vector2(0, 0);     // Bottom left
-        rightRt.sizeDelta = new Vector2(800, 400); // Much wider so text doesn't cut off
-        rightRt.anchoredPosition = new Vector2(15f, 15f); // Just above bottom edge
-
-        Image rightImg = rightPanel.AddComponent<Image>();
-        rightImg.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
-
-        logTextUI = CreateText(rightPanel.transform, "Waiting for network...", new Vector2(0f, 0f), 14, 780, 380);
-        logTextUI.alignment = TextAnchor.LowerLeft; // Text builds from the bottom up
-        logTextUI.color = Color.green;
+        // DIAGNOSTIC LOGS (Removed per user request)
 
         // Fix: The UI Camera only renders Layer 5 (UI). All dynamically created objects default to Layer 0.
         // We must set the Canvas and all its children to Layer 5.
@@ -298,20 +264,7 @@ public class OperatorDashboard : MonoBehaviour
         }
     }
 
-    private void LogToUI(string msg)
-    {
-        if (logTextUI != null)
-        {
-            // Keep logs to a reasonable length so it doesn't overflow
-            string currentText = logTextUI.text;
-            string[] lines = currentText.Split('\n');
-            if (lines.Length > 20)
-            {
-                currentText = string.Join("\n", lines, 1, lines.Length - 1);
-            }
-            logTextUI.text = currentText + $"\n> {msg}";
-        }
-    }
+    // Removed LogToUI per user request
 
     // --- NETWORK COMMANDS ---
 
