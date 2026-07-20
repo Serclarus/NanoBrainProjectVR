@@ -395,7 +395,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     }
 
     // --- NEW: SCENE CHANGE RPC ---
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     public void RequestSceneChangeServerRpc(string sceneName)
     {
         Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {sceneName}. Loading now...");
