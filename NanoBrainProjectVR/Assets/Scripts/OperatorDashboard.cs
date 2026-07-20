@@ -229,8 +229,16 @@ public class OperatorDashboard : MonoBehaviour
 
     private bool hasRegisteredSceneListener = false;
 
+    private bool hasLoggedDiagnostics = false;
+
     private void Update()
     {
+        if (!hasLoggedDiagnostics && logTextUI != null)
+        {
+            hasLoggedDiagnostics = true;
+            Debug.Log($"<color=magenta>[OperatorDashboard]</color> UI Ready! IsListening: {(NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)}, IsServer: {(NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)}");
+        }
+
         // Bulletproof listener registration. It doesn't rely on events, just waits until we are actively the Server AND the UI is ready!
         if (!hasRegisteredSceneListener && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer)
         {
