@@ -227,8 +227,18 @@ public class OperatorDashboard : MonoBehaviour
         return txt;
     }
 
+    private bool hasRegisteredSceneListener = false;
+
     private void Update()
     {
+        // Bulletproof listener registration. It doesn't rely on events, just waits until we are actively the Server.
+        if (!hasRegisteredSceneListener && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            hasRegisteredSceneListener = true;
+            Debug.Log("<color=magenta>[OperatorDashboard]</color> Actively running as Server. Registering ClientRequest_LoadScene listener!");
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+        }
+
         // Update Connection Status UI
         if (connectionStatusText != null && XRINetworkGameManager.Instance != null)
         {
@@ -370,5 +380,15 @@ public class OperatorDashboard : MonoBehaviour
         }
 
         Debug.Log($"[OperatorDashboard] Connected Client IDs: {string.Join(", ", NetworkManager.Singleton.ConnectedClientsIds)}");
+    }
+
+    private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            messagePayload.ReadValueSafe(out string sceneName);
+            Debug.Log($"<color=magenta>[OperatorDashboard]</color> VR Client {senderId} requested to load scene: {sceneName}");
+            LoadMap(sceneName);
+        }
     }
 }

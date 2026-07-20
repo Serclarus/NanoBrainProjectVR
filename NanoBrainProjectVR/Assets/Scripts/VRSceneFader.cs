@@ -123,26 +123,15 @@ public class VRSceneFader : MonoBehaviour
             else
             {
                 // We are the VR Client! We must ask the Server to change the scene.
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Looking for local player object to invoke ServerRpc...");
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Sending ClientRequest_LoadScene for {sceneName}");
                 
-                // Find our local player object that we have authority over
-                var localPlayer = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
-                if (localPlayer != null)
+                // We are a client in Distributed Authority! Ask the server to load the scene.
+                // Using string-based Custom Messaging completely bypasses assembly hash synchronization errors.
+                using (var writer = new FastBufferWriter(64, Unity.Collections.Allocator.Temp))
                 {
-                    var loadout = localPlayer.GetComponent<NetworkPlayerLoadout>();
-                    if (loadout != null)
-                    {
-                        Debug.Log($"<color=yellow>[VRSceneFader]</color> Invoking RequestSceneChangeServerRpc on local player!");
-                        loadout.RequestSceneChangeServerRpc(sceneName);
-                    }
-                    else
-                    {
-                        Debug.LogError("[VRSceneFader] Local Player Object does not have a NetworkPlayerLoadout component!");
-                    }
-                }
-                else
-                {
-                    Debug.LogError("[VRSceneFader] Could not find Local Player Object to send scene change request!");
+                    writer.WriteValueSafe(sceneName);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId}");
                 }
             }
         }
