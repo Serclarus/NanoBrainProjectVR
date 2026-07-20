@@ -222,7 +222,17 @@ public class VRSceneFader : MonoBehaviour
         {
             if (interactable != null && interactable.isSelected)
             {
-                if (interactable.interactionManager != null)
+                bool isSocketed = false;
+                foreach (var interactor in interactable.interactorsSelecting)
+                {
+                    if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor)
+                    {
+                        isSocketed = true;
+                        break;
+                    }
+                }
+
+                if (!isSocketed && interactable.interactionManager != null)
                 {
                     interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
                     Debug.Log($"<color=yellow>[VRSceneFader]</color> Forced player to drop interactable: {interactable.gameObject.name} before scene change.");
