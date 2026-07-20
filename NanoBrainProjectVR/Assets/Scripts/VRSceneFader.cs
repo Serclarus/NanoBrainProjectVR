@@ -123,13 +123,31 @@ public class VRSceneFader : MonoBehaviour
             else
             {
                 // We are the VR Client! We must ask the Server to change the scene.
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT, sending ClientRequest_LoadScene for {sceneName}");
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT, attempting to request scene load via NetworkVariable for {sceneName}");
                 
-                using (FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp))
+                // Find our local avatar's NetworkPlayerLoadout
+                var localLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
+                NetworkPlayerLoadout ourLoadout = null;
+                
+                foreach (var loadout in localLoadouts)
                 {
-                    writer.WriteValueSafe(new Unity.Collections.FixedString32Bytes(sceneName));
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId} for {sceneName}");
+                    if (loadout.IsOwner)
+                    {
+                        ourLoadout = loadout;
+                        break;
+                    }
+                }
+
+                if (ourLoadout != null)
+                {
+                    // By setting this NetworkVariable, NGO's core system mathematically guarantees the server receives it
+                    Unity.Collections.FixedString32Bytes safeSceneName = new Unity.Collections.FixedString32Bytes(sceneName);
+                    ourLoadout.requestedScene.Value = safeSceneName;
+                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Successfully updated NetworkVariable to request {safeSceneName}");
+                }
+                else
+                {
+                    Debug.LogError("<color=red>[VRSceneFader]</color> Could not find our local NetworkPlayerLoadout! Are we missing our avatar?");
                 }
             }
         }

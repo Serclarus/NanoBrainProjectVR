@@ -23,10 +23,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+    public NetworkVariable<Unity.Collections.FixedString32Bytes> requestedScene = new NetworkVariable<Unity.Collections.FixedString32Bytes>(
+        "",
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner);
+
     private bool isInitialized = false;
 
     public override void OnNetworkSpawn()
     {
+        if (IsServer)
+        {
+            requestedScene.OnValueChanged += OnSceneRequested;
+        }
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
         // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
         if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
@@ -443,6 +452,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                     Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
                 }
             }
+        }
+    }
+
+    private void OnSceneRequested(Unity.Collections.FixedString32Bytes previousValue, Unity.Collections.FixedString32Bytes newValue)
+    {
+        if (IsServer && !string.IsNullOrEmpty(newValue.ToString()))
+        {
+            Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {newValue.ToString()} via NetworkVariable! Executing...");
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(newValue.ToString(), UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            requestedScene.Value = ""; // Reset
         }
     }
 }
