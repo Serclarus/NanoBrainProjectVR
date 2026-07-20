@@ -122,33 +122,27 @@ public class VRSceneFader : MonoBehaviour
             }
             else
             {
-                // We are the VR Client! We must ask the Server to change the scene.
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT, attempting to request scene load via NetworkVariable for {sceneName}");
+                // We are the VR Client! Send a direct transport packet to bypass scene sync issues.
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Sending direct connection message for: {sceneName}");
                 
-                // Find our local avatar's NetworkPlayerLoadout
-                var localLoadouts = FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
-                NetworkPlayerLoadout ourLoadout = null;
+                // Write the string directly to a safe network buffer
+                FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
                 
-                foreach (var loadout in localLoadouts)
+                using (writer)
                 {
-                    if (loadout.IsOwner)
-                    {
-                        ourLoadout = loadout;
-                        break;
-                    }
-                }
+                    Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
+                    writer.WriteValueSafe(safeName);
 
-                if (ourLoadout != null)
-                {
-                    // By setting this NetworkVariable, NGO's core system mathematically guarantees the server receives it
-                    Unity.Collections.FixedString32Bytes safeSceneName = new Unity.Collections.FixedString32Bytes(sceneName);
-                    ourLoadout.requestedScene.Value = safeSceneName;
-                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Successfully updated NetworkVariable to request {safeSceneName}");
+                    // Send to NetworkManager.ServerClientId (0) using the NetworkDelivery type Reliable
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
+                        "GlobalRequest_SceneChange",
+                        NetworkManager.ServerClientId,
+                        writer,
+                        NetworkDelivery.Reliable
+                    );
                 }
-                else
-                {
-                    Debug.LogError("<color=red>[VRSceneFader]</color> Could not find our local NetworkPlayerLoadout! Are we missing our avatar?");
-                }
+                
+                Debug.Log($"<color=green>[VRSceneFader]</color> Direct transport packet sent to Server socket successfully.");
             }
         }
         else

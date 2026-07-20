@@ -32,10 +32,17 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        // Register this on EVERYONE so the Server/Host can listen to direct connection messages
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("GlobalRequest_SceneChange", OnGlobalSceneChangeRequest);
+        }
+
         if (IsServer)
         {
             requestedScene.OnValueChanged += OnSceneRequested;
         }
+        
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
         // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
         if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
@@ -233,6 +240,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("GlobalRequest_SceneChange");
+        }
+
+        if (IsServer)
+        {
+            requestedScene.OnValueChanged -= OnSceneRequested;
+        }
 
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
@@ -465,6 +482,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 NetworkManager.Singleton.SceneManager.LoadScene(newValue.ToString(), UnityEngine.SceneManagement.LoadSceneMode.Single);
             }
             requestedScene.Value = ""; // Reset
+        }
+    }
+
+    // THIS METHOD RUNS ON THE PC HOST VIA DIRECT MESSAGING EXTRACTION
+    private void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
+    {
+        messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
+        string sceneToLoad = sceneNameBytes.ToString();
+
+        Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> CRITICAL: Bypassed scene-sync constraint! Received direct scene change request for: {sceneToLoad}");
+
+        if (IsServer && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
