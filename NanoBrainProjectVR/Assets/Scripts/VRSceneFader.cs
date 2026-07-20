@@ -123,16 +123,13 @@ public class VRSceneFader : MonoBehaviour
             else
             {
                 // We are the VR Client! We must ask the Server to change the scene.
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT. Sending ClientRequest_LoadScene for {sceneName}");
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> We are CLIENT, sending ClientRequest_LoadScene for {sceneName}");
                 
-                // We are a client in Distributed Authority! Ask the server to load the scene.
-                // Using string-based Custom Messaging completely bypasses assembly hash synchronization errors.
-                using (var writer = new FastBufferWriter(64, Unity.Collections.Allocator.Temp))
+                using (FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp))
                 {
-                    Unity.Collections.FixedString32Bytes safeSceneName = new Unity.Collections.FixedString32Bytes(sceneName);
-                    writer.WriteValueSafe(safeSceneName);
+                    writer.WriteValueSafe(new Unity.Collections.FixedString32Bytes(sceneName));
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
-                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId} for {safeSceneName}");
+                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Message successfully sent to Server {NetworkManager.ServerClientId} for {sceneName}");
                 }
             }
         }

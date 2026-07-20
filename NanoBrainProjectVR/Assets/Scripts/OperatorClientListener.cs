@@ -5,14 +5,39 @@ public class OperatorClientListener : NetworkBehaviour
 {
 
 
+    public NetworkVariable<Unity.Collections.FixedString32Bytes> requestedScene = new NetworkVariable<Unity.Collections.FixedString32Bytes>(
+        "",
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner);
+
     public override void OnNetworkSpawn()
     {
+        // Listen for scene change requests from the VR Client (executed on the Server)
+        if (IsServer)
+        {
+            requestedScene.OnValueChanged += OnSceneRequested;
+        }
+
         if (IsOwner)
         {
             // Register listeners for the Custom Messaging commands from the PC Operator
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+        }
+    }
+
+    private void OnSceneRequested(Unity.Collections.FixedString32Bytes previousValue, Unity.Collections.FixedString32Bytes newValue)
+    {
+        if (IsServer && !string.IsNullOrEmpty(newValue.ToString()))
+        {
+            Debug.Log($"<color=magenta>[OperatorClientListener]</color> VR Client requested scene change to: {newValue.ToString()} via NetworkVariable! Executing...");
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(newValue.ToString(), UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            // Reset it so they can request it again later if needed
+            requestedScene.Value = "";
         }
     }
 
