@@ -128,31 +128,27 @@ public class VRSceneFader : MonoBehaviour
             }
             else
             {
-                // In Distributed Authority, the Server is a logicless cloud relay. The SessionOwner handles the logic.
-                ulong targetId = NetworkManager.Singleton.IsServer ? NetworkManager.ServerClientId : NetworkManager.Singleton.CurrentSessionOwner;
-
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Server ({targetId})");
-                
-                // Send direct transport packet to Server
-                FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
-                using (writer)
+                // In Distributed Authority, Custom Messages CANNOT be sent from Client-to-Client.
+                // We MUST use a ServerRpc, which DA automatically routes to the SessionOwner!
+                if (NetworkManager.Singleton.LocalClient != null && NetworkManager.Singleton.LocalClient.PlayerObject != null)
                 {
-                    Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
-                    writer.WriteValueSafe(safeName);
-
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
-                        "GlobalRequest_SceneChange",
-                        targetId,
-                        writer,
-                        NetworkDelivery.Reliable
-                    );
+                    var localLoadout = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<NetworkPlayerLoadout>();
+                    if (localLoadout != null)
+                    {
+                        Debug.Log($"<color=yellow>[VRSceneFader]</color> Sending ServerRpc to SessionOwner to load scene: {sceneName}");
+                        localLoadout.RequestSceneChangeServerRpc(sceneName);
+                    }
+                    else
+                    {
+                        Debug.LogError("[VRSceneFader] Could not find NetworkPlayerLoadout on LocalClient!");
+                    }
                 }
-
+                
                 // If they are alone in a dead ghost lobby and want to force a local load anyway
-                if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
+                if (NetworkManager.Singleton.IsServer && NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
                 {
                     Debug.Log($"<color=red>[VRSceneFader]</color> Forcing local scene load because we seem to be alone in a dead server!");
-                    SceneManager.LoadScene(sceneName);
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
                 }
             }
         }

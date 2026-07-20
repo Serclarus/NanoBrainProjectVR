@@ -457,4 +457,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestSceneChangeServerRpc(string sceneName)
+    {
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Received ServerRpc request to load scene: {sceneName}");
+        bool isHostOrOwner = NetworkManager.Singleton.IsServer || (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.CurrentSessionOwner);
+
+        if (isHostOrOwner && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    }
 }
