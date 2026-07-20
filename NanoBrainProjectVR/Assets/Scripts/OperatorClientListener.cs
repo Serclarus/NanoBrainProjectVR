@@ -91,4 +91,24 @@ public class OperatorClientListener : NetworkBehaviour
             Debug.Log($"<color=green>[OperatorClientListener]</color> Game Paused.");
         }
     }
+
+    private void OnFadeAndChangeSceneReceived(ulong senderId, FastBufferReader messagePayload)
+    {
+        messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
+        string sceneToLoad = sceneNameBytes.ToString();
+        sceneToLoad = sceneToLoad.Trim('\0', ' ');
+
+        Debug.Log($"<color=cyan>[OperatorClientListener]</color> Operator requested graceful scene change to: {sceneToLoad}");
+
+        if (VRSceneFader.Instance != null)
+        {
+            VRSceneFader.Instance.FadeToScene(sceneToLoad);
+        }
+        else
+        {
+            // Fallback if no fader exists
+            Debug.LogWarning($"<color=cyan>[OperatorClientListener]</color> VRSceneFader not found! Requesting raw network load...");
+            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("GlobalRequest_SceneChange", NetworkManager.ServerClientId, messagePayload, NetworkDelivery.Reliable);
+        }
+    }
 }
