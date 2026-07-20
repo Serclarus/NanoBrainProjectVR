@@ -162,18 +162,21 @@ public class OperatorDashboard : MonoBehaviour
         CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -320f), btnWidth, btnHeight, RefillMags);
         CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -320f), btnWidth, btnHeight, LoadShotgun);
 
-        // RIGHT PANEL: Diagnostic Logs
+        // DIAGNOSTIC LOGS (Moved to Bottom Left, made wider)
         GameObject rightPanel = new GameObject("DiagnosticLogs");
         rightPanel.transform.SetParent(canvasObj.transform, false);
         RectTransform rightRt = rightPanel.AddComponent<RectTransform>();
-        rightRt.sizeDelta = new Vector2(400, 400);
-        rightRt.anchoredPosition = new Vector2(300f, 0f);
+        rightRt.anchorMin = new Vector2(0, 0); // Bottom left
+        rightRt.anchorMax = new Vector2(0, 0); // Bottom left
+        rightRt.pivot = new Vector2(0, 0);     // Bottom left
+        rightRt.sizeDelta = new Vector2(800, 400); // Much wider so text doesn't cut off
+        rightRt.anchoredPosition = new Vector2(15f, 15f); // Just above bottom edge
 
         Image rightImg = rightPanel.AddComponent<Image>();
         rightImg.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
 
-        logTextUI = CreateText(rightPanel.transform, "Waiting for network...", new Vector2(0f, 180f), 12, 380, 380);
-        logTextUI.alignment = TextAnchor.UpperLeft;
+        logTextUI = CreateText(rightPanel.transform, "Waiting for network...", new Vector2(0f, 0f), 14, 780, 380);
+        logTextUI.alignment = TextAnchor.LowerLeft; // Text builds from the bottom up
         logTextUI.color = Color.green;
 
         // Fix: The UI Camera only renders Layer 5 (UI). All dynamically created objects default to Layer 0.

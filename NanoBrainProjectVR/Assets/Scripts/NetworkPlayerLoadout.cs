@@ -495,7 +495,8 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         if (IsServer && NetworkManager.Singleton.SceneManager != null)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> LoadScene result for {sceneToLoad}: {status}");
         }
     }
 }
