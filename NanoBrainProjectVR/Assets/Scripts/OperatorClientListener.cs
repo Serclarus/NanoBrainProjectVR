@@ -5,13 +5,20 @@ public class OperatorClientListener : NetworkBehaviour
 {
 
 
+    private static bool isRegistered = false;
+
     public override void OnNetworkSpawn()
     {
-        // Register listeners statically. No IsOwner check, because we want all VR headsets to ALWAYS listen.
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
-        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene", OnFadeAndChangeSceneReceived);
+        if (isRegistered) return;
+        
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene", OnFadeAndChangeSceneReceived);
+            isRegistered = true;
+        }
     }
 
     public override void OnNetworkDespawn()

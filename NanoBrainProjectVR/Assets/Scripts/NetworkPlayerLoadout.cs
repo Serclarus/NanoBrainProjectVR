@@ -25,11 +25,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private bool isInitialized = false;
 
+    private static bool isGlobalListenerRegistered = false;
+    private static bool isTogglePauseRegistered = false;
+
     public override void OnNetworkSpawn()
     {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        if (!isGlobalListenerRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("GlobalRequest_SceneChange", OnGlobalSceneChangeRequest);
+            isGlobalListenerRegistered = true;
         }
 
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
@@ -51,9 +55,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" OwnerClientId: {OwnerClientId}" +
                   $" Platform: {Application.platform}");
 
-        if (IsOwner)
+        if (IsOwner && !isTogglePauseRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+            isTogglePauseRegistered = true;
         }
 
         InitializePlayer();
