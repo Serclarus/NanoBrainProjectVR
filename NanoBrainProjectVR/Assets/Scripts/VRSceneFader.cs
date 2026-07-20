@@ -112,7 +112,24 @@ public class VRSceneFader : MonoBehaviour
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            if (NetworkManager.Singleton.IsServer)
+            {
+                // The Server can load the scene directly!
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            }
+            else if (NetworkManager.Singleton.IsClient)
+            {
+                // Clients must ask the Server to load the scene via their local player object!
+                var localPlayerObject = NetworkManager.Singleton.LocalClient.PlayerObject;
+                if (localPlayerObject != null && localPlayerObject.TryGetComponent<NetworkPlayerLoadout>(out var loadout))
+                {
+                    loadout.RequestSceneLoadServerRpc(sceneName);
+                }
+                else
+                {
+                    Debug.LogError("[VRSceneFader] Could not find local player to request scene load!");
+                }
+            }
         }
         else
         {
