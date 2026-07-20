@@ -107,6 +107,9 @@ public class VRSceneFader : MonoBehaviour
     {
         Debug.Log($"<color=yellow>[VRSceneFader]</color> Fading to black to load {sceneName}...");
 
+        // Force drop everything to prevent cross-scene grab bugs
+        ForceDropAllInteractables();
+
         // 1. Fully complete the fade to black (wait for it!)
         yield return StartCoroutine(FadeRoutine(0f, 1f, fadeToBlackDuration));
         
@@ -209,6 +212,22 @@ public class VRSceneFader : MonoBehaviour
         {
             StopAllCoroutines();
             fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0f);
+        }
+    }
+
+    private void ForceDropAllInteractables()
+    {
+        var allInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(FindObjectsSortMode.None);
+        foreach (var interactable in allInteractables)
+        {
+            if (interactable != null && interactable.isSelected)
+            {
+                if (interactable.interactionManager != null)
+                {
+                    interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
+                    Debug.Log($"<color=yellow>[VRSceneFader]</color> Forced player to drop interactable: {interactable.gameObject.name} before scene change.");
+                }
+            }
         }
     }
 }
