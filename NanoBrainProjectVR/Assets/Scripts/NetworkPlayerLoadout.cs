@@ -65,9 +65,27 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (IsOwner)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+            
+            // Listen to Scene Events to force drop items right before a scene change!
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+            }
         }
 
         InitializePlayer();
+    }
+
+    // Merged into the main OnNetworkDespawn at the bottom
+
+    private void OnSceneEvent(SceneEvent sceneEvent)
+    {
+        // When ANY scene load begins across the network, immediately force drop all held items!
+        if (sceneEvent.SceneEventType == SceneEventType.Load)
+        {
+            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Network Scene Load detected! Forcing drop of all items...");
+            ForceDropAllInteractables();
+        }
     }
 
 
@@ -238,6 +256,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
+            
+            if (IsOwner)
+            {
+                NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+            }
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
 
@@ -451,22 +474,30 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Game Paused.");
 
             // Force drop held weapons so they auto-return to holsters!
-            ForceDropWeapons();
+            ForceDropAllInteractables();
         }
     }
 
-    private void ForceDropWeapons()
+    private void ForceDropAllInteractables()
     {
-        var weapons = FindObjectsByType<WeaponController>(FindObjectsSortMode.None);
-        foreach (var weapon in weapons)
+        var grabInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
+        foreach (var grab in grabInteractables)
         {
-            var interactable = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-            if (interactable != null && interactable.isSelected)
+            if (grab != null && grab.isSelected && grab.interactorsSelecting.Count > 0)
             {
-                if (interactable.interactionManager != null)
+                // Must iterate backward when modifying collections or cancelling selections
+                for (int i = grab.interactorsSelecting.Count - 1; i >= 0; i--)
                 {
-                    interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
-                    Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
+                    var interactor = grab.interactorsSelecting[i];
+                    
+                    // Exclude sockets so magazines don't fall out of guns, and attachments don't break!
+                    if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
+                    
+                    if (grab.interactionManager != null)
+                    {
+                        grab.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grab);
+                        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop object: {grab.gameObject.name}");
+                    }
                 }
             }
         }
