@@ -108,6 +108,7 @@ public class OperatorDashboard : MonoBehaviour
         dashboardCanvas = canvasObj.AddComponent<Canvas>();
         dashboardCanvas.renderMode = RenderMode.ScreenSpaceCamera;
         dashboardCanvas.worldCamera = uiCam;
+        dashboardCanvas.sortingOrder = 999;
         canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         canvasObj.AddComponent<GraphicRaycaster>();
 
