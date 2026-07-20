@@ -173,16 +173,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             interactor.enabled = false;
         }
 
-        // Disable all XR Base Controllers so they don't overwrite NetworkTransform positions with empty local inputs!
-        foreach (var controller in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.XRBaseController>(true))
+        // Disable all XR Controllers so they don't process input
+        foreach (var controller in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>(true))
         {
             controller.enabled = false;
-        }
-
-        // Disable TrackedPoseDrivers so they don't force hands/heads to (0,0,0) on the PC spectator view
-        foreach (var poseDriver in GetComponentsInChildren<UnityEngine.InputSystem.XR.TrackedPoseDriver>(true))
-        {
-            poseDriver.enabled = false;
         }
 
         // Disable any XR Interaction Manager on this avatar
@@ -338,19 +332,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         SpawnWeaponsForClient(clientId);
     }
 
-    [ServerRpc]
-    public void RequestSceneLoadServerRpc(string sceneName)
-    {
-        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Client {OwnerClientId} requested scene load: {sceneName}");
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-        }
-    }
-
-    // ====================================================================================================
-    // SCENE LOAD HANDLING (Spawning and Re-arming)
-    // ====================================================================================================
     private void SpawnWeaponsForClient(ulong clientId)
     {
         if (hasSpawnedWeapons) 
