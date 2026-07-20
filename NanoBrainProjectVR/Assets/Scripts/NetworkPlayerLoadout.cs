@@ -230,11 +230,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
 
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("GlobalRequest_SceneChange");
-        }
-
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_TogglePause");
@@ -443,7 +438,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     }
 
     // THIS METHOD RUNS ON THE PC HOST VIA DIRECT MESSAGING EXTRACTION
-    private void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
+    private static void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
     {
         messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
         string sceneToLoad = sceneNameBytes.ToString();
