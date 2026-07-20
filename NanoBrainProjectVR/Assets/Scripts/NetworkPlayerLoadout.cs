@@ -50,6 +50,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
         }
+        
+        if (IsServer)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+        }
 
         InitializePlayer();
     }
@@ -234,6 +239,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_TogglePause");
+        }
+        
+        if (IsServer && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("ClientRequest_LoadScene");
         }
         
         base.OnNetworkDespawn();
@@ -435,6 +445,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                     Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
                 }
             }
+        }
+    }
+
+    private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
+    {
+        if (IsServer)
+        {
+            messagePayload.ReadValueSafe(out string sceneName);
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Client {senderId} requested to load scene: {sceneName}");
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
