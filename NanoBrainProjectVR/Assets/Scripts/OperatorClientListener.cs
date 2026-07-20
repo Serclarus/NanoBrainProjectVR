@@ -108,7 +108,13 @@ public class OperatorClientListener : NetworkBehaviour
         {
             // Fallback if no fader exists
             Debug.LogWarning($"<color=cyan>[OperatorClientListener]</color> VRSceneFader not found! Requesting raw network load...");
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("GlobalRequest_SceneChange", NetworkManager.ServerClientId, messagePayload, NetworkDelivery.Reliable);
+            
+            FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
+            using (writer)
+            {
+                writer.WriteValueSafe(sceneNameBytes);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("GlobalRequest_SceneChange", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+            }
         }
     }
 }
