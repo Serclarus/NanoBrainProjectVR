@@ -21,11 +21,9 @@ public class VRSceneFader : MonoBehaviour
     public float blinkToClearDuration = 0.25f;
 
     [Header("Colors")]
-    [Tooltip("The color of the fade (pitch black is best for VR)")]
     public Color fadeColor = Color.black;
 
     private Image fadeImage;
-    private TMPro.TextMeshProUGUI debugText;
 
     [Tooltip("Drag a custom Canvas or GameObject here that you want to appear when the game pauses (optional)")]
     public GameObject pauseCanvas;
@@ -57,14 +55,6 @@ public class VRSceneFader : MonoBehaviour
         GameObject imageObj = new GameObject("Fade_Image");
         imageObj.transform.SetParent(canvasObj.transform, false);
         fadeImage = imageObj.AddComponent<Image>();
-
-        GameObject textObj = new GameObject("Debug_Text");
-        textObj.transform.SetParent(canvasObj.transform, false);
-        debugText = textObj.AddComponent<TMPro.TextMeshProUGUI>();
-        debugText.fontSize = 0.1f;
-        debugText.alignment = TMPro.TextAlignmentOptions.Center;
-        debugText.color = Color.green;
-        debugText.text = "";
         
         // Start pitch black so we wake up smoothly when the scene loads!
         fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 1f); 
@@ -115,7 +105,6 @@ public class VRSceneFader : MonoBehaviour
 
     private IEnumerator FadeAndLoadRoutine(string sceneName)
     {
-        if (debugText != null) debugText.text = "Fading to black...";
         Debug.Log($"<color=yellow>[VRSceneFader]</color> Fading to black to load {sceneName}...");
 
         // 1. Fully complete the fade to black (wait for it!)
@@ -129,18 +118,15 @@ public class VRSceneFader : MonoBehaviour
 
             if (isHostOrOwner)
             {
-                if (debugText != null) debugText.text = "IsListening: TRUE\nIsHost/SessionOwner: TRUE\nCalling SceneManager.LoadScene()";
                 Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/SessionOwner: TRUE. Calling SceneManager.LoadScene()");
                 
                 var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-                if (debugText != null) debugText.text += $"\nStatus: {status}";
                 Debug.Log($"<color=yellow>[VRSceneFader]</color> LoadScene Status: {status}");
             }
             else
             {
                 ulong targetId = NetworkManager.Singleton.IsServer ? NetworkManager.ServerClientId : NetworkManager.Singleton.CurrentSessionOwner;
 
-                if (debugText != null) debugText.text = $"IsListening: TRUE\nIsHost/Owner: FALSE\nSending CustomMessage to {targetId}";
                 Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Owner/Server ({targetId})");
                 
                 // Send direct transport packet to Server / SessionOwner
@@ -168,7 +154,6 @@ public class VRSceneFader : MonoBehaviour
         }
         else
         {
-            if (debugText != null) debugText.text = "IsListening: FALSE (Offline Mode)\nCalling normal SceneManager.LoadScene()";
             Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: FALSE (Offline Mode). Calling normal SceneManager.LoadScene()");
             SceneManager.LoadScene(sceneName);
         }
