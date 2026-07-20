@@ -124,10 +124,13 @@ public class VRSceneFader : MonoBehaviour
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.LocalClientId == 0)
+            // Support both standard Host/Server and Distributed Authority "Session Owner"
+            bool isHostOrOwner = NetworkManager.Singleton.IsServer || (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.CurrentSessionOwner);
+
+            if (isHostOrOwner)
             {
-                if (debugText != null) debugText.text = "IsListening: TRUE\nIsServer/Host: TRUE\nCalling SceneManager.LoadScene()";
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsServer/Host: TRUE. Calling SceneManager.LoadScene()");
+                if (debugText != null) debugText.text = "IsListening: TRUE\nIsHost/SessionOwner: TRUE\nCalling SceneManager.LoadScene()";
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/SessionOwner: TRUE. Calling SceneManager.LoadScene()");
                 
                 var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
                 if (debugText != null) debugText.text += $"\nStatus: {status}";
@@ -135,9 +138,12 @@ public class VRSceneFader : MonoBehaviour
             }
             else
             {
-                if (debugText != null) debugText.text = "IsListening: TRUE\nIsServer/Host: FALSE\nSending CustomMessage to Server";
-                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsServer/Host: FALSE. Sending CustomMessage to Server (Client 0)");
-                // Send direct transport packet to Server
+                ulong targetId = NetworkManager.Singleton.IsServer ? NetworkManager.ServerClientId : NetworkManager.Singleton.CurrentSessionOwner;
+
+                if (debugText != null) debugText.text = $"IsListening: TRUE\nIsHost/Owner: FALSE\nSending CustomMessage to {targetId}";
+                Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Owner/Server ({targetId})");
+                
+                // Send direct transport packet to Server / SessionOwner
                 FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
                 using (writer)
                 {
@@ -146,10 +152,17 @@ public class VRSceneFader : MonoBehaviour
 
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
                         "GlobalRequest_SceneChange",
-                        NetworkManager.ServerClientId,
+                        targetId,
                         writer,
                         NetworkDelivery.Reliable
                     );
+                }
+
+                // If they are alone in a dead ghost lobby and want to force a local load anyway
+                if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
+                {
+                    Debug.Log($"<color=red>[VRSceneFader]</color> Forcing local scene load because we seem to be alone in a dead server!");
+                    SceneManager.LoadScene(sceneName);
                 }
             }
         }
