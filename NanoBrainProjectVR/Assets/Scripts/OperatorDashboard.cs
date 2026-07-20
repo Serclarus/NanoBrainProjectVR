@@ -241,56 +241,26 @@ public class OperatorDashboard : MonoBehaviour
 
     private void LoadMap(string sceneName)
     {
-        Debug.Log($"[OperatorDashboard] Requesting VR headsets to fade out and load map: {sceneName}");
+        Debug.Log($"[OperatorDashboard] Requesting instant network load for map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            if (NetworkManager.Singleton.IsServer)
-            {
-                // If the PC Operator is the Server and alone, load immediately.
-                if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
-                {
-                    Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
-                    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-                    return;
-                }
+            bool isHostOrOwner = NetworkManager.Singleton.IsServer || (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.CurrentSessionOwner);
 
-                // Otherwise tell all connected VR headsets to start their fade process.
+            if (isHostOrOwner)
+            {
+                Debug.Log($"[OperatorDashboard] We are Host/SessionOwner. Loading map immediately.");
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.Log($"[OperatorDashboard] We are a Client. Requesting SessionOwner to load the map.");
                 FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
                 using (writer)
                 {
                     Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
                     writer.WriteValueSafe(safeName);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_FadeAndChangeScene", writer, NetworkDelivery.Reliable);
-                }
-            }
-            else
-            {
-                // If the PC Operator is a Client (e.g. DA mode), it CANNOT broadcast. 
-                // We must manually find all VR headsets and send the command directly to their ClientIds!
-                var allVRPlayers = Object.FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
-                bool foundAnyVR = false;
-
-                foreach (var vrPlayer in allVRPlayers)
-                {
-                    var netObj = vrPlayer.GetComponent<NetworkObject>();
-                    if (netObj != null && netObj.OwnerClientId != NetworkManager.Singleton.LocalClientId)
-                    {
-                        foundAnyVR = true;
-                        FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
-                        using (writer)
-                        {
-                            Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
-                            writer.WriteValueSafe(safeName);
-                            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", netObj.OwnerClientId, writer, NetworkDelivery.Reliable);
-                        }
-                    }
-                }
-
-                // If no VR headsets were found in DA, the PC Operator is alone, just yank the scene
-                if (!foundAnyVR)
-                {
-                    Debug.Log($"[OperatorDashboard] No VR headsets connected (DA). Loading map immediately.");
-                    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                    ulong targetId = NetworkManager.Singleton.CurrentSessionOwner;
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("GlobalRequest_SceneChange", targetId, writer, NetworkDelivery.Reliable);
                 }
             }
         }
