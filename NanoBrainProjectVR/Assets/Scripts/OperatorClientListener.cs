@@ -7,33 +7,24 @@ public class OperatorClientListener : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (IsOwner)
-        {
-            // Register listeners for the Custom Messaging commands from the PC Operator
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene", OnFadeAndChangeSceneReceived);
-        }
+        // Register listeners statically. No IsOwner check, because we want all VR headsets to ALWAYS listen.
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene", OnFadeAndChangeSceneReceived);
     }
 
     public override void OnNetworkDespawn()
     {
-        if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_RefillMags");
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_LoadShotgun");
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_TogglePause");
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene");
-        }
+        // We do not unregister the static handlers here, so they permanently listen as long as the app is running.
     }
 
-    private void OnRefillMagsReceived(ulong senderId, FastBufferReader messagePayload)
+    private static void OnRefillMagsReceived(ulong senderId, FastBufferReader messagePayload)
     {
         Debug.Log($"<color=green>[OperatorClientListener]</color> Refill Mags command received!");
 
         // Find all WeaponControllers to see if a weapon is being held and has a magazine
-        var weapons = FindObjectsOfType<WeaponController>();
+        var weapons = Object.FindObjectsOfType<WeaponController>();
         foreach (var weapon in weapons)
         {
             var grab = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
@@ -55,11 +46,11 @@ public class OperatorClientListener : NetworkBehaviour
         }
     }
 
-    private void OnLoadShotgunReceived(ulong senderId, FastBufferReader messagePayload)
+    private static void OnLoadShotgunReceived(ulong senderId, FastBufferReader messagePayload)
     {
         Debug.Log($"<color=green>[OperatorClientListener]</color> Load Shotgun command received!");
 
-        var shotguns = FindObjectsOfType<ShotgunController>();
+        var shotguns = Object.FindObjectsOfType<ShotgunController>();
         foreach (var sg in shotguns)
         {
             var grab = sg.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
@@ -74,7 +65,7 @@ public class OperatorClientListener : NetworkBehaviour
         }
     }
 
-    private void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
+    private static void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
     {
         Debug.Log($"<color=green>[OperatorClientListener]</color> Toggle Pause command received!");
 
@@ -92,7 +83,7 @@ public class OperatorClientListener : NetworkBehaviour
         }
     }
 
-    private void OnFadeAndChangeSceneReceived(ulong senderId, FastBufferReader messagePayload)
+    private static void OnFadeAndChangeSceneReceived(ulong senderId, FastBufferReader messagePayload)
     {
         messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
         string sceneToLoad = sceneNameBytes.ToString();
