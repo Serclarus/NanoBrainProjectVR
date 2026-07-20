@@ -112,7 +112,27 @@ public class VRSceneFader : MonoBehaviour
         // 2. ONLY once it is perfectly pitch black, load the next scene!
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            if (NetworkManager.Singleton.IsServer)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            }
+            else
+            {
+                // Send direct transport packet to Server
+                FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
+                using (writer)
+                {
+                    Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
+                    writer.WriteValueSafe(safeName);
+
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
+                        "GlobalRequest_SceneChange",
+                        NetworkManager.ServerClientId,
+                        writer,
+                        NetworkDelivery.Reliable
+                    );
+                }
+            }
         }
         else
         {

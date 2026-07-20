@@ -27,6 +27,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("GlobalRequest_SceneChange", OnGlobalSceneChangeRequest);
+        }
+
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
         // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
         if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
@@ -224,6 +229,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("GlobalRequest_SceneChange");
+        }
 
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
@@ -429,6 +439,22 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                     Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
                 }
             }
+        }
+    }
+
+    // THIS METHOD RUNS ON THE PC HOST VIA DIRECT MESSAGING EXTRACTION
+    private void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
+    {
+        messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
+        string sceneToLoad = sceneNameBytes.ToString();
+
+        // Remove any null terminators just in case
+        sceneToLoad = sceneToLoad.Trim('\0', ' ');
+
+        // Use the EXACT same condition that OperatorDashboard uses successfully
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
