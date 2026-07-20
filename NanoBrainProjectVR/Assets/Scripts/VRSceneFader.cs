@@ -114,15 +114,20 @@ public class VRSceneFader : MonoBehaviour
         {
             if (NetworkManager.Singleton.IsServer)
             {
+                // The Server can load the scene directly!
                 NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
-            else
+            else if (NetworkManager.Singleton.IsClient)
             {
-                // We are a client in Distributed Authority! Ask the server to load the scene.
-                using (var writer = new FastBufferWriter(64, Unity.Collections.Allocator.Temp))
+                // Clients must ask the Server to load the scene via their local player object!
+                var localPlayerObject = NetworkManager.Singleton.LocalClient.PlayerObject;
+                if (localPlayerObject != null && localPlayerObject.TryGetComponent<NetworkPlayerLoadout>(out var loadout))
                 {
-                    writer.WriteValueSafe(sceneName);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("ClientRequest_LoadScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                    loadout.RequestSceneLoadServerRpc(sceneName);
+                }
+                else
+                {
+                    Debug.LogError("[VRSceneFader] Could not find local player to request scene load!");
                 }
             }
         }
