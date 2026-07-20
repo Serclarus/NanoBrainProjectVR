@@ -13,6 +13,7 @@ public class OperatorClientListener : NetworkBehaviour
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_RefillMags", OnRefillMagsReceived);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_LoadShotgun", OnLoadShotgunReceived);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene", OnFadeAndChangeSceneReceived);
         }
     }
 
@@ -23,6 +24,7 @@ public class OperatorClientListener : NetworkBehaviour
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_RefillMags");
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_LoadShotgun");
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_TogglePause");
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OperatorCommand_FadeAndChangeScene");
         }
     }
 

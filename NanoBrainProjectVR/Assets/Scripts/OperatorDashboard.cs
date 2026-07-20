@@ -241,10 +241,18 @@ public class OperatorDashboard : MonoBehaviour
 
     private void LoadMap(string sceneName)
     {
-        Debug.Log($"[OperatorDashboard] Requesting network load for map: {sceneName}");
+        Debug.Log($"[OperatorDashboard] Requesting VR headsets to fade out and load map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            // Instead of instantly yanking the scene away, tell all VR headsets to start their fade process.
+            // When they finish fading, they will send a 'GlobalRequest_SceneChange' back to the Server to actually load it!
+            FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
+            using (writer)
+            {
+                Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
+                writer.WriteValueSafe(safeName);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_FadeAndChangeScene", writer, NetworkDelivery.Reliable);
+            }
         }
     }
 
