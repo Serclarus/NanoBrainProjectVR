@@ -128,8 +128,8 @@ public class VRSceneFader : MonoBehaviour
             }
             else
             {
-                // Only the SERVER is legally allowed by Netcode to call SceneManager.LoadScene()
-                ulong targetId = NetworkManager.ServerClientId;
+                // In Distributed Authority, the Server is a logicless cloud relay. The SessionOwner handles the logic.
+                ulong targetId = NetworkManager.Singleton.IsServer ? NetworkManager.ServerClientId : NetworkManager.Singleton.CurrentSessionOwner;
 
                 Debug.Log($"<color=yellow>[VRSceneFader]</color> IsListening: TRUE, IsHost/Owner: FALSE. Sending CustomMessage to Server ({targetId})");
                 

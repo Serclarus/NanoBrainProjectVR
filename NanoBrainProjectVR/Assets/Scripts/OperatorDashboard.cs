@@ -265,8 +265,9 @@ public class OperatorDashboard : MonoBehaviour
                 }
                 else
                 {
-                    // If the PC Operator is a Client, it CANNOT broadcast. It must send the command directly to the Server.
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                    // If the PC Operator is a Client (e.g. DA mode), send the command to the SessionOwner
+                    ulong targetId = NetworkManager.Singleton.CurrentSessionOwner;
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", targetId, writer, NetworkDelivery.Reliable);
                 }
             }
         }
@@ -288,7 +289,8 @@ public class OperatorDashboard : MonoBehaviour
             }
             else
             {
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(commandName, NetworkManager.ServerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+                ulong targetId = NetworkManager.Singleton.CurrentSessionOwner;
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(commandName, targetId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
             }
         }
     }
