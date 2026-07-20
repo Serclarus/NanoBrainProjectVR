@@ -68,6 +68,30 @@ public class OperatorDashboard : MonoBehaviour
         {
             Debug.Log("[OperatorDashboard] VR Headset detected. Operator Dashboard will remain hidden.");
         }
+
+        // Wait until NetworkManager is initialized
+        while (NetworkManager.Singleton == null)
+        {
+            yield return null;
+        }
+
+        // Register the server-side scene load request handler!
+        // This is necessary because VR clients cannot load scenes, they must ask the server.
+        // We do this in OperatorDashboard because this script survives across scenes and is never despawned.
+        NetworkManager.Singleton.OnServerStarted += () => 
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+        };
+    }
+
+    private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            messagePayload.ReadValueSafe(out string sceneName);
+            Debug.Log($"<color=green>[OperatorDashboard]</color> Client {senderId} requested to load scene: {sceneName}");
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
     }
 
     private void BuildDashboardUI()
