@@ -493,11 +493,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> CRITICAL: Bypassed scene-sync constraint! Received direct scene change request for: {sceneToLoad}");
 
-        bool isSrv = IsServer;
+        bool isSrv = NetworkManager.Singleton.IsServer;
         bool hasSceneMgr = (NetworkManager.Singleton.SceneManager != null);
-        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Checking conditions -> IsServer: {isSrv}, HasSceneManager: {hasSceneMgr}");
+        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Checking conditions -> Singleton.IsServer: {isSrv}, HasSceneManager: {hasSceneMgr}");
 
-        if (IsServer && NetworkManager.Singleton.SceneManager != null)
+        if (NetworkManager.Singleton.IsServer && NetworkManager.Singleton.SceneManager != null)
         {
             var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
             Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> LoadScene result for {sceneToLoad}: {status}");
