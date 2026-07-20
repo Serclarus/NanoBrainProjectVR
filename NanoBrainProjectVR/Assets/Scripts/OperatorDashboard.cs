@@ -244,30 +244,53 @@ public class OperatorDashboard : MonoBehaviour
         Debug.Log($"[OperatorDashboard] Requesting VR headsets to fade out and load map: {sceneName}");
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
-            using (writer)
+            if (NetworkManager.Singleton.IsServer)
             {
-                Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
-                writer.WriteValueSafe(safeName);
-
-                if (NetworkManager.Singleton.IsServer)
+                // If the PC Operator is the Server and alone, load immediately.
+                if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
                 {
-                    // If the PC Operator is the Server and alone, load immediately.
-                    if (NetworkManager.Singleton.ConnectedClientsIds.Count <= 1)
-                    {
-                        Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
-                        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-                        return;
-                    }
+                    Debug.Log($"[OperatorDashboard] No VR headsets connected. Loading map immediately.");
+                    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                    return;
+                }
 
-                    // Otherwise tell all connected VR headsets to start their fade process.
+                // Otherwise tell all connected VR headsets to start their fade process.
+                FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
+                using (writer)
+                {
+                    Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
+                    writer.WriteValueSafe(safeName);
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("OperatorCommand_FadeAndChangeScene", writer, NetworkDelivery.Reliable);
                 }
-                else
+            }
+            else
+            {
+                // If the PC Operator is a Client (e.g. DA mode), it CANNOT broadcast. 
+                // We must manually find all VR headsets and send the command directly to their ClientIds!
+                var allVRPlayers = Object.FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
+                bool foundAnyVR = false;
+
+                foreach (var vrPlayer in allVRPlayers)
                 {
-                    // If the PC Operator is a Client (e.g. DA mode), send the command to the SessionOwner
-                    ulong targetId = NetworkManager.Singleton.CurrentSessionOwner;
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", targetId, writer, NetworkDelivery.Reliable);
+                    var netObj = vrPlayer.GetComponent<NetworkObject>();
+                    if (netObj != null && netObj.OwnerClientId != NetworkManager.Singleton.LocalClientId)
+                    {
+                        foundAnyVR = true;
+                        FastBufferWriter writer = new FastBufferWriter(32, Unity.Collections.Allocator.Temp);
+                        using (writer)
+                        {
+                            Unity.Collections.FixedString32Bytes safeName = new Unity.Collections.FixedString32Bytes(sceneName);
+                            writer.WriteValueSafe(safeName);
+                            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("OperatorCommand_FadeAndChangeScene", netObj.OwnerClientId, writer, NetworkDelivery.Reliable);
+                        }
+                    }
+                }
+
+                // If no VR headsets were found in DA, the PC Operator is alone, just yank the scene
+                if (!foundAnyVR)
+                {
+                    Debug.Log($"[OperatorDashboard] No VR headsets connected (DA). Loading map immediately.");
+                    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
                 }
             }
         }
@@ -289,8 +312,16 @@ public class OperatorDashboard : MonoBehaviour
             }
             else
             {
-                ulong targetId = NetworkManager.Singleton.CurrentSessionOwner;
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(commandName, targetId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+                // Find all VR headsets and send the command directly to them
+                var allVRPlayers = Object.FindObjectsByType<NetworkPlayerLoadout>(FindObjectsSortMode.None);
+                foreach (var vrPlayer in allVRPlayers)
+                {
+                    var netObj = vrPlayer.GetComponent<NetworkObject>();
+                    if (netObj != null && netObj.OwnerClientId != NetworkManager.Singleton.LocalClientId)
+                    {
+                        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(commandName, netObj.OwnerClientId, new FastBufferWriter(0, Unity.Collections.Allocator.Temp), NetworkDelivery.Reliable);
+                    }
+                }
             }
         }
     }
