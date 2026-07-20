@@ -24,6 +24,7 @@ public class OperatorDashboard : MonoBehaviour
     private UnityEngine.UI.Text connectionStatusText;
     private UnityEngine.UI.Text connectedClientsText;
     private UnityEngine.UI.Text spectatingText;
+    private UnityEngine.UI.Text logTextUI;
 
     private void Awake()
     {
@@ -75,22 +76,42 @@ public class OperatorDashboard : MonoBehaviour
             yield return null;
         }
 
-        // Register the server-side scene load request handler!
+        Debug.Log($"<color=magenta>[OperatorDashboard]</color> NetworkManager initialized. Setting up scene load request handler.");
+
+        // If the server is already running (e.g. Host clicked), register immediately!
+        if (NetworkManager.Singleton.IsServer)
+        {
+            LogToUI("Server running. Registering handler immediately.");
+            Debug.Log($"<color=magenta>[OperatorDashboard]</color> Server is already running. Registering handler immediately.");
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+        }
+
+        // Register the server-side scene load request handler in case it starts later!
         // This is necessary because VR clients cannot load scenes, they must ask the server.
         // We do this in OperatorDashboard because this script survives across scenes and is never despawned.
         NetworkManager.Singleton.OnServerStarted += () => 
         {
+            LogToUI("OnServerStarted fired! Registering handler.");
+            Debug.Log($"<color=magenta>[OperatorDashboard]</color> OnServerStarted fired! Registering ClientRequest_LoadScene handler.");
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
         };
     }
 
     private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
     {
+        LogToUI($"Received LoadScene request from Client {senderId}");
+        Debug.Log($"<color=magenta>[OperatorDashboard]</color> Received ClientRequest_LoadScene message from Client {senderId}!");
         if (NetworkManager.Singleton.IsServer)
         {
             messagePayload.ReadValueSafe(out string sceneName);
-            Debug.Log($"<color=green>[OperatorDashboard]</color> Client {senderId} requested to load scene: {sceneName}");
+            LogToUI($"Server executing load: {sceneName}");
+            Debug.Log($"<color=green>[OperatorDashboard]</color> Server executing scene load: {sceneName}");
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+        else
+        {
+            LogToUI("ERROR: Not the server!");
+            Debug.LogError($"<color=red>[OperatorDashboard]</color> Received ClientRequest_LoadScene but we are NOT the server!");
         }
     }
 
@@ -163,9 +184,32 @@ public class OperatorDashboard : MonoBehaviour
         CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -320f), btnWidth, btnHeight, RefillMags);
         CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -320f), btnWidth, btnHeight, LoadShotgun);
 
+        // Add Log Text Area
+        logTextUI = CreateText(panelObj.transform, "Logs:", new Vector2(0, -400f), 11, 280, 100);
+        logTextUI.alignment = TextAnchor.UpperLeft;
+        logTextUI.color = new Color(0.4f, 1f, 0.4f); // Light green
+        logTextUI.horizontalOverflow = HorizontalWrapMode.Wrap;
+
         // Fix: The UI Camera only renders Layer 5 (UI). All dynamically created objects default to Layer 0.
         // We must set the Canvas and all its children to Layer 5.
         SetLayerRecursively(canvasObj, 5);
+    }
+
+    private void LogToUI(string msg)
+    {
+        if (logTextUI != null)
+        {
+            // Keep only the last 6 lines
+            string[] lines = logTextUI.text.Split('\n');
+            if (lines.Length > 6)
+            {
+                logTextUI.text = string.Join("\n", lines, 1, lines.Length - 1) + "\n> " + msg;
+            }
+            else
+            {
+                logTextUI.text += "\n> " + msg;
+            }
+        }
     }
 
     private void SetLayerRecursively(GameObject obj, int newLayer)
