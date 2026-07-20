@@ -685,5 +685,42 @@ namespace XRMultiplayer
             }
             return localIP;
         }
+        private bool hasRegisteredSceneListener = false;
+        private bool hasLoggedDiagnostics = false;
+
+        private void Update()
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer)
+            {
+                if (!hasLoggedDiagnostics)
+                {
+                    hasLoggedDiagnostics = true;
+                    Utils.Log($"{k_DebugPrepend} Core Network Manager actively running as Server! Diagnostics passed.", 0);
+                }
+
+                if (!hasRegisteredSceneListener)
+                {
+                    hasRegisteredSceneListener = true;
+                    Utils.Log($"{k_DebugPrepend} Registering bulletproof ClientRequest_LoadScene listener on Server!", 0);
+                    NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("ClientRequest_LoadScene", OnClientRequestLoadScene);
+                }
+            }
+        }
+
+        private void OnClientRequestLoadScene(ulong senderId, FastBufferReader messagePayload)
+        {
+            if (NetworkManager.Singleton.IsServer)
+            {
+                messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
+                string sceneName = sceneNameBytes.ToString();
+                
+                Utils.Log($"{k_DebugPrepend} VR Client {senderId} requested scene change to: {sceneName}. Executing now!", 0);
+                
+                if (NetworkManager.Singleton.SceneManager != null)
+                {
+                    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                }
+            }
+        }
     }
 }
