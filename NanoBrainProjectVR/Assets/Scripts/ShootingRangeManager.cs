@@ -46,6 +46,8 @@ public class ShootingRangeManager : MonoBehaviour
     public AudioClip phaseChangeSound;
 
     private bool isGameActive = false;
+    public bool IsGameActive => isGameActive;
+
     private bool isCountingDown = false;
     private float currentTimer = 0f;
     private float countdownTimer = 0f;

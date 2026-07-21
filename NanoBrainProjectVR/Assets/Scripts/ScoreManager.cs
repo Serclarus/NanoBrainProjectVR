@@ -104,6 +104,12 @@ public class ScoreManager : NetworkBehaviour
 
     private void CheckHighScore(int currentScore)
     {
+        // Only update the high score if the timer is actively running
+        if (ShootingRangeManager.Instance != null && !ShootingRangeManager.Instance.IsGameActive)
+        {
+            return;
+        }
+
         if (currentScore > localHighScore)
         {
             localHighScore = currentScore;
