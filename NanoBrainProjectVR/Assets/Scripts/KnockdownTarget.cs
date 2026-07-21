@@ -170,7 +170,7 @@ public class KnockdownTarget : NetworkBehaviour
         while (t < 1f)
         {
             t += Time.deltaTime * speed;
-            pivotTransform.localRotation = Quaternion.Lerp(startRotation, targetRotation, t);
+            pivotTransform.localRotation = Quaternion.Slerp(startRotation, targetRotation, t);
             yield return null;
         }
         
