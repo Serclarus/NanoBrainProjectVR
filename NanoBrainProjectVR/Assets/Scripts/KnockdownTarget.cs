@@ -72,8 +72,7 @@ public class KnockdownTarget : NetworkBehaviour
         
         OnTargetKnockedDown?.Invoke();
         
-        // CLIENT-SIDE PREDICTION: Start the fall animation IMMEDIATELY for the person who shot it!
-        // This makes the shooting range feel incredibly responsive (0ms visual latency).
+        Debug.Log($"[KnockdownTarget] Knockdown() called! isDown: {isDown.Value}, isLocallyDown: {isLocallyDown}, IsSpawned: {IsSpawned}");
         isLocallyDown = true;
         if (audioSource != null && hitSound != null) audioSource.PlayOneShot(hitSound);
         if (animationCoroutine != null) StopCoroutine(animationCoroutine);
@@ -123,9 +122,11 @@ public class KnockdownTarget : NetworkBehaviour
 
     private void OnTargetStateChanged(bool previousValue, bool newValue)
     {
+        Debug.Log($"[KnockdownTarget] OnTargetStateChanged({previousValue}, {newValue}) - isLocallyDown: {isLocallyDown}");
         // If we already predicted the state locally, don't play the sound/animation twice!
         if (newValue == true && isLocallyDown)
         {
+            Debug.Log("[KnockdownTarget] Ignoring OnTargetStateChanged because we already predicted it locally.");
             // We already played the knockdown animation in client-side prediction, so the network just confirmed it.
             // We do NOT clear isLocallyDown here, because we need to know we were the ones who shot it.
             // It will be cleared when it stands back up.
@@ -149,11 +150,13 @@ public class KnockdownTarget : NetworkBehaviour
 
     private IEnumerator AnimateRotation(Quaternion targetRotation, float speed)
     {
+        Debug.Log($"[KnockdownTarget] AnimateRotation started! targetRotation: {targetRotation.eulerAngles}, currentRotation: {pivotTransform.localRotation.eulerAngles}, speed: {speed}");
         while (Quaternion.Angle(pivotTransform.localRotation, targetRotation) > 0.1f)
         {
             pivotTransform.localRotation = Quaternion.Slerp(pivotTransform.localRotation, targetRotation, Time.deltaTime * speed);
             yield return null;
         }
         pivotTransform.localRotation = targetRotation;
+        Debug.Log($"[KnockdownTarget] AnimateRotation finished! Final rotation: {pivotTransform.localRotation.eulerAngles}");
     }
 }
