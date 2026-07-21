@@ -40,6 +40,8 @@ public class KnockdownTarget : NetworkBehaviour
 
         originalRotation = pivotTransform.localRotation;
         knockedRotation = originalRotation * Quaternion.Euler(knockdownAngle, 0, 0);
+
+        Debug.Log($"[KnockdownTarget] Awake() - Target: {gameObject.name} (Root: {transform.root.name}), pivotTransform is: {pivotTransform.name}. Is pivot the root? {pivotTransform == transform}");
     }
 
     public override void OnNetworkSpawn()
