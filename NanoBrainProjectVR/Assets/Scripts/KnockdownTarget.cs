@@ -26,7 +26,8 @@ public class KnockdownTarget : NetworkBehaviour
     public AudioClip restoreSound;
 
     // Network variable to sync the down state automatically across all players!
-    public NetworkVariable<bool> isDown = new NetworkVariable<bool>(false);
+    // In Distributed Authority, the SessionOwner must have Owner write permission to modify scene objects!
+    public NetworkVariable<bool> isDown = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private Quaternion originalRotation;
     private Quaternion knockedRotation;
@@ -61,12 +62,20 @@ public class KnockdownTarget : NetworkBehaviour
     // Global event for the Training Grounds Manager to track score
     public static event System.Action OnTargetKnockedDown;
 
+    // This handles the fallback if the game is completely offline, and also client-side prediction!
+    public bool isLocallyDown = false;
+
     // Call this method from your HittableSurface script's Unity Event!
     public void Knockdown()
     {
-        if (isDown.Value) return; // Already down
+        if (isDown.Value || isLocallyDown) return; // Already down
         
         OnTargetKnockedDown?.Invoke();
+        
+        // CLIENT-SIDE PREDICTION: Start the fall animation IMMEDIATELY for the person who shot it!
+        // This makes the shooting range feel incredibly responsive (0ms visual latency).
+        isLocallyDown = true;
+        OnTargetStateChanged(false, true);
 
         // If we are playing offline without a server, just do it locally
         if (!IsSpawned)
@@ -75,7 +84,7 @@ public class KnockdownTarget : NetworkBehaviour
             return;
         }
 
-        // Send a message to the server telling it we shot the target
+        // Send a message to the SessionOwner telling it we shot the target
         KnockdownServerRpc();
     }
 
@@ -84,10 +93,10 @@ public class KnockdownTarget : NetworkBehaviour
     {
         if (isDown.Value) return;
 
-        // The server officially marks it as down, which syncs to all clients!
+        // The SessionOwner officially marks it as down, which syncs to all clients!
         isDown.Value = true;
         
-        // The server starts a timer to pop it back up
+        // The SessionOwner starts a timer to pop it back up
         StartCoroutine(ServerRestoreTimer());
     }
 
@@ -100,26 +109,30 @@ public class KnockdownTarget : NetworkBehaviour
         }
     }
 
-    // This handles the fallback if the game is completely offline
-    public bool isLocallyDown = false;
-
     private IEnumerator OfflineSequence()
     {
-        isLocallyDown = true;
-        OnTargetStateChanged(false, true);
         yield return new WaitForSeconds(timeToStandUp);
         if (autoRestore)
         {
+            isLocallyDown = false;
             OnTargetStateChanged(true, false);
         }
-        isLocallyDown = false;
     }
 
     private void OnTargetStateChanged(bool previousValue, bool newValue)
     {
+        // If we already predicted the state locally, don't play the sound/animation twice!
+        if (newValue == true && isLocallyDown)
+        {
+            // We already played the knockdown animation in client-side prediction, so do nothing.
+            // But we must clear the flag so it can stand back up later!
+            isLocallyDown = false; 
+            return; 
+        }
+
         if (animationCoroutine != null) StopCoroutine(animationCoroutine);
 
-        if (newValue == true) // Falling down
+        if (newValue == true) // Falling down (triggered over network by another player)
         {
             if (audioSource != null && hitSound != null) audioSource.PlayOneShot(hitSound);
             animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallSpeed));
