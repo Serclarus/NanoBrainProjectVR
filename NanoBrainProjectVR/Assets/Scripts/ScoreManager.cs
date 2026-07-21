@@ -62,15 +62,6 @@ public class ScoreManager : NetworkBehaviour
         {
             // If playing offline, just add to the offline score
             offlineScore += finalPoints;
-            
-            // Check for high score
-            if (offlineScore > offlineHighScore)
-            {
-                offlineHighScore = offlineScore;
-                PlayerPrefs.SetInt("OfflineHighScore", offlineHighScore);
-                PlayerPrefs.Save();
-            }
-
             UpdateScoreUI();
             return;
         }
@@ -116,20 +107,41 @@ public class ScoreManager : NetworkBehaviour
 
     private void UpdateScoreUI()
     {
+        int myCurrentScore = 0;
+
         if (player1ScoreText != null)
         {
             if (IsSpawned)
+            {
                 player1ScoreText.text = hostScore.Value.ToString();
+                if (IsServer) myCurrentScore = hostScore.Value; // Host's score
+            }
             else
+            {
                 player1ScoreText.text = offlineScore.ToString();
+                myCurrentScore = offlineScore; // Offline player's score
+            }
         }
 
         if (player2ScoreText != null)
         {
             if (IsSpawned)
+            {
                 player2ScoreText.text = clientScore.Value.ToString();
+                if (!IsServer) myCurrentScore = clientScore.Value; // Client's score
+            }
             else
+            {
                 player2ScoreText.text = "0"; // Offline, P2 doesn't exist
+            }
+        }
+
+        // Check if the current local player beat their high score!
+        if (myCurrentScore > offlineHighScore)
+        {
+            offlineHighScore = myCurrentScore;
+            PlayerPrefs.SetInt("OfflineHighScore", offlineHighScore);
+            PlayerPrefs.Save();
         }
 
         if (highScoreText != null)
