@@ -153,11 +153,18 @@ public class KnockdownTarget : NetworkBehaviour
     private IEnumerator AnimateRotation(Quaternion targetRotation, float speed)
     {
         Debug.Log($"[KnockdownTarget] AnimateRotation started! targetRotation: {targetRotation.eulerAngles}, currentRotation: {pivotTransform.localRotation.eulerAngles}, speed: {speed}");
-        while (Quaternion.Angle(pivotTransform.localRotation, targetRotation) > 0.1f)
+        
+        Quaternion startRotation = pivotTransform.localRotation;
+        float t = 0f;
+        
+        // Use a robust linear time increment so it guarantees completion in (1 / speed) seconds
+        while (t < 1f)
         {
-            pivotTransform.localRotation = Quaternion.Slerp(pivotTransform.localRotation, targetRotation, Time.deltaTime * speed);
+            t += Time.deltaTime * speed;
+            pivotTransform.localRotation = Quaternion.Lerp(startRotation, targetRotation, t);
             yield return null;
         }
+        
         pivotTransform.localRotation = targetRotation;
         Debug.Log($"[KnockdownTarget] AnimateRotation finished! Final rotation: {pivotTransform.localRotation.eulerAngles}");
     }
