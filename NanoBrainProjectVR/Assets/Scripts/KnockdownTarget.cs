@@ -12,7 +12,7 @@ public class KnockdownTarget : NetworkBehaviour
     [Tooltip("How many degrees backward the target should fall (along the local X axis).")]
     public float knockdownAngle = 90f;
     [Tooltip("How fast the target falls down.")]
-    public float fallSpeed = 10f;
+    public float fallSpeed = 5f;
     [Tooltip("How many seconds the target stays down before popping back up.")]
     public float timeToStandUp = 3f;
     [Tooltip("If true, the target automatically pops back up. If false, it stays down forever!")]
@@ -53,9 +53,6 @@ public class KnockdownTarget : NetworkBehaviour
 
         originalRotation = pivotTransform.localRotation;
         knockedRotation = originalRotation * Quaternion.Euler(knockdownAngle, 0, 0);
-
-        var allTargets = FindObjectsByType<KnockdownTarget>(FindObjectsSortMode.None);
-        Debug.Log($"[KnockdownTarget] Awake() - Target: {gameObject.name}. Total KnockdownTargets in scene: {allTargets.Length}. Instance ID: {gameObject.GetInstanceID()}");
     }
 
     public override void OnNetworkSpawn()
@@ -166,8 +163,6 @@ public class KnockdownTarget : NetworkBehaviour
 
     private IEnumerator AnimateRotation(Quaternion targetRotation, float speed)
     {
-        Debug.Log($"[KnockdownTarget] AnimateRotation started! targetRotation: {targetRotation.eulerAngles}, currentRotation: {pivotTransform.localRotation.eulerAngles}, speed: {speed}");
-        
         Quaternion startRotation = pivotTransform.localRotation;
         float t = 0f;
         
@@ -180,7 +175,6 @@ public class KnockdownTarget : NetworkBehaviour
         }
         
         pivotTransform.localRotation = targetRotation;
-        Debug.Log($"[KnockdownTarget] AnimateRotation finished! Final rotation: {pivotTransform.localRotation.eulerAngles}");
         animationCoroutine = null;
     }
 }
