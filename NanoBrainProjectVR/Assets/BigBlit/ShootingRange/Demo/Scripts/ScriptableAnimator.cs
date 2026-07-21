@@ -61,6 +61,7 @@ namespace BigBlit.ShootingRange
         public float Time {   
             get => _time;
             private set {
+                return;
                  
                 _time = Mathf.Clamp(value, 0.0f, 1.0f);
                 Assert.IsTrue(_playableGraph.IsValid());
@@ -146,6 +147,8 @@ namespace BigBlit.ShootingRange
         #region INTERNAL FUNCTIONS
 
         private void setupAnimationGraph() {
+            return;
+            /*
             _playableGraph = PlayableGraph.Create();
             _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
 
@@ -153,10 +156,11 @@ namespace BigBlit.ShootingRange
 
             _clipPlayable = AnimationClipPlayable.Create(_playableGraph, _animationClip);
             playableOutput.SetSourcePlayable(_clipPlayable);
+            */
         }
 
         private void releaseAnimationGraph() {
-            _playableGraph.Destroy();
+            // _playableGraph.Destroy();
         }
 
         private void onTimeChanged(IAnimable animeable) {
