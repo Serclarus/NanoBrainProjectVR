@@ -32,6 +32,19 @@ public class KnockdownTarget : NetworkBehaviour
     private Quaternion originalRotation;
     private Quaternion knockedRotation;
     private Coroutine animationCoroutine;
+    
+    private void LateUpdate()
+    {
+        if (isLocallyDown && animationCoroutine == null && IsSpawned)
+        {
+            if (Quaternion.Angle(pivotTransform.localRotation, knockedRotation) > 0.1f)
+            {
+                Debug.Log($"[KnockdownTarget] LATE UPDATE ROTATION MISMATCH! Expected: {knockedRotation.eulerAngles}, Actual: {pivotTransform.localRotation.eulerAngles}");
+                // FORCE it back
+                pivotTransform.localRotation = knockedRotation;
+            }
+        }
+    }
 
     private void Awake()
     {
@@ -41,7 +54,8 @@ public class KnockdownTarget : NetworkBehaviour
         originalRotation = pivotTransform.localRotation;
         knockedRotation = originalRotation * Quaternion.Euler(knockdownAngle, 0, 0);
 
-        Debug.Log($"[KnockdownTarget] Awake() - Target: {gameObject.name} (Root: {transform.root.name}), pivotTransform is: {pivotTransform.name}. Is pivot the root? {pivotTransform == transform}");
+        var allTargets = FindObjectsByType<KnockdownTarget>(FindObjectsSortMode.None);
+        Debug.Log($"[KnockdownTarget] Awake() - Target: {gameObject.name}. Total KnockdownTargets in scene: {allTargets.Length}. Instance ID: {gameObject.GetInstanceID()}");
     }
 
     public override void OnNetworkSpawn()
@@ -167,5 +181,6 @@ public class KnockdownTarget : NetworkBehaviour
         
         pivotTransform.localRotation = targetRotation;
         Debug.Log($"[KnockdownTarget] AnimateRotation finished! Final rotation: {pivotTransform.localRotation.eulerAngles}");
+        animationCoroutine = null;
     }
 }
