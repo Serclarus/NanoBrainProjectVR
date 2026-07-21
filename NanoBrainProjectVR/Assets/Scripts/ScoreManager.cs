@@ -112,6 +112,16 @@ public class ScoreManager : NetworkBehaviour
         }
     }
 
+    [ContextMenu("Reset High Score")]
+    public void ResetHighScore()
+    {
+        localHighScore = 0;
+        PlayerPrefs.SetInt("OfflineHighScore", 0);
+        PlayerPrefs.Save();
+        UpdateUI();
+        Debug.Log("[ScoreManager] High Score has been reset to 0!");
+    }
+
     [ContextMenu("Reset Current Score")]
     public void ResetCurrentScore()
     {
@@ -148,7 +158,7 @@ public class ScoreManager : NetworkBehaviour
 
         if (highScoreText != null)
         {
-            highScoreText.text = "HI: " + localHighScore.ToString();
+            highScoreText.text = localHighScore.ToString();
         }
     }
 }
