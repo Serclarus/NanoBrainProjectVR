@@ -11,6 +11,42 @@ public class PCSpectatorMonitor : MonoBehaviour
     private Transform targetVRHead;
     private RenderTexture videoFeed; // Hard reference to prevent Garbage Collection!
     private Camera spectatorCamera;
+    
+    private static PCSpectatorMonitor instance;
+
+    void Awake()
+    {
+        // Enforce Singleton pattern so we don't get duplicate cameras when returning to MainMenu
+        if (instance != null && instance != this)
+        {
+            Debug.Log("<color=cyan>[PCSpectator]</color> Duplicate Spectator setup detected on scene load! Destroying the duplicate.");
+            // If the duplicate has a separate canvas root, destroy it too
+            if (dashboardMonitor != null && dashboardMonitor.transform.root != transform.root)
+            {
+                Destroy(dashboardMonitor.transform.root.gameObject);
+            }
+            Destroy(transform.root.gameObject);
+            return;
+        }
+
+        instance = this;
+
+        // Automatically preserve the Spectator setup across all scene changes!
+        GameObject rootObj = transform.root.gameObject;
+        
+        // If the Canvas is a separate root object in the hierarchy, parent it to us 
+        // so it gets saved by our DontDestroyOnLoad call!
+        if (dashboardMonitor != null)
+        {
+            Transform canvasRoot = dashboardMonitor.transform.root;
+            if (canvasRoot != rootObj.transform)
+            {
+                canvasRoot.SetParent(rootObj.transform);
+            }
+        }
+
+        DontDestroyOnLoad(rootObj);
+    }
 
     void Start()
     {
