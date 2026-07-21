@@ -79,7 +79,7 @@ public class ScoreManager : NetworkBehaviour
         AddScoreServerRpc(finalPoints, NetworkManager.Singleton.LocalClientId);
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void AddScoreServerRpc(int points, ulong clientId)
     {
         if (clientId == 0) // Client 0 is always the Host (Player 1)
@@ -107,7 +107,7 @@ public class ScoreManager : NetworkBehaviour
         UpdateScoreUI();
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void ResetScoreServerRpc()
     {
         hostScore.Value = 0;
