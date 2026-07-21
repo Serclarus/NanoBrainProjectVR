@@ -11,14 +11,14 @@ public class KnockdownTarget : NetworkBehaviour
     [Header("Knockdown Settings")]
     [Tooltip("How many degrees backward the target should fall (along the local X axis).")]
     public float knockdownAngle = 90f;
-    [Tooltip("How fast the target falls down.")]
-    public float fallSpeed = 5f;
+    [Tooltip("How many seconds it takes for the target to fall completely.")]
+    public float fallDuration = 0.5f;
     [Tooltip("How many seconds the target stays down before popping back up.")]
     public float timeToStandUp = 3f;
     [Tooltip("If true, the target automatically pops back up. If false, it stays down forever!")]
     public bool autoRestore = true;
-    [Tooltip("How fast the target pops back up.")]
-    public float restoreSpeed = 5f;
+    [Tooltip("How many seconds it takes for the target to pop back up.")]
+    public float restoreDuration = 0.5f;
 
     [Header("Audio (Optional)")]
     public AudioSource audioSource;
@@ -89,7 +89,7 @@ public class KnockdownTarget : NetworkBehaviour
         isLocallyDown = true;
         if (audioSource != null && hitSound != null) audioSource.PlayOneShot(hitSound);
         if (animationCoroutine != null) StopCoroutine(animationCoroutine);
-        animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallSpeed));
+        animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallDuration));
 
         // If we are playing offline without a server, just do it locally
         if (!IsSpawned)
@@ -151,25 +151,25 @@ public class KnockdownTarget : NetworkBehaviour
         if (newValue == true) // Falling down (triggered over network by another player)
         {
             if (audioSource != null && hitSound != null) audioSource.PlayOneShot(hitSound);
-            animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallSpeed));
+            animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallDuration));
         }
         else // Popping back up
         {
             isLocallyDown = false; // Reset prediction flag when standing up
             if (audioSource != null && restoreSound != null) audioSource.PlayOneShot(restoreSound);
-            animationCoroutine = StartCoroutine(AnimateRotation(originalRotation, restoreSpeed));
+            animationCoroutine = StartCoroutine(AnimateRotation(originalRotation, restoreDuration));
         }
     }
 
-    private IEnumerator AnimateRotation(Quaternion targetRotation, float speed)
+    private IEnumerator AnimateRotation(Quaternion targetRotation, float duration)
     {
         Quaternion startRotation = pivotTransform.localRotation;
         float t = 0f;
         
-        // Use a robust linear time increment so it guarantees completion in (1 / speed) seconds
+        // Use a robust linear time increment so it guarantees completion in duration seconds
         while (t < 1f)
         {
-            t += Time.deltaTime * speed;
+            t += Time.deltaTime / duration;
             pivotTransform.localRotation = Quaternion.Slerp(startRotation, targetRotation, t);
             yield return null;
         }
