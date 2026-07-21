@@ -75,7 +75,9 @@ public class KnockdownTarget : NetworkBehaviour
         // CLIENT-SIDE PREDICTION: Start the fall animation IMMEDIATELY for the person who shot it!
         // This makes the shooting range feel incredibly responsive (0ms visual latency).
         isLocallyDown = true;
-        OnTargetStateChanged(false, true);
+        if (audioSource != null && hitSound != null) audioSource.PlayOneShot(hitSound);
+        if (animationCoroutine != null) StopCoroutine(animationCoroutine);
+        animationCoroutine = StartCoroutine(AnimateRotation(knockedRotation, fallSpeed));
 
         // If we are playing offline without a server, just do it locally
         if (!IsSpawned)
@@ -124,9 +126,9 @@ public class KnockdownTarget : NetworkBehaviour
         // If we already predicted the state locally, don't play the sound/animation twice!
         if (newValue == true && isLocallyDown)
         {
-            // We already played the knockdown animation in client-side prediction, so do nothing.
-            // But we must clear the flag so it can stand back up later!
-            isLocallyDown = false; 
+            // We already played the knockdown animation in client-side prediction, so the network just confirmed it.
+            // We do NOT clear isLocallyDown here, because we need to know we were the ones who shot it.
+            // It will be cleared when it stands back up.
             return; 
         }
 
@@ -139,6 +141,7 @@ public class KnockdownTarget : NetworkBehaviour
         }
         else // Popping back up
         {
+            isLocallyDown = false; // Reset prediction flag when standing up
             if (audioSource != null && restoreSound != null) audioSource.PlayOneShot(restoreSound);
             animationCoroutine = StartCoroutine(AnimateRotation(originalRotation, restoreSpeed));
         }
