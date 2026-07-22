@@ -415,6 +415,31 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             }
         }
 
+        // Re-enable locomotion providers and character controllers if we are in a gameplay scene
+        string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (activeSceneName != "MainMenu")
+        {
+            var locomotionProviders = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true);
+            foreach (var provider in locomotionProviders)
+            {
+                if (provider != null)
+                {
+                    provider.enabled = true;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled LocomotionProvider '{provider.name}' for scene '{activeSceneName}'");
+                }
+            }
+
+            var charControllers = GetComponentsInChildren<CharacterController>(true);
+            foreach (var cc in charControllers)
+            {
+                if (cc != null)
+                {
+                    cc.enabled = true;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled CharacterController '{cc.name}' for scene '{activeSceneName}'");
+                }
+            }
+        }
+
         // ── Re-socket weapons into holsters ──
         yield return null;
         var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);

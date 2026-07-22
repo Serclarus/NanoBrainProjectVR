@@ -107,6 +107,19 @@ public class MapSelectionManager : MonoBehaviour
         {
             XRMultiplayer.XRINetworkGameManager.Instance.OnConnectionFailedAction -= HandleConnectionFailure;
         }
+
+        // Re-enable locomotion when leaving the main menu!
+        var providers = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var provider in providers)
+        {
+            if (provider != null && !provider.enabled) provider.enabled = true;
+        }
+        
+        var controllers = FindObjectsByType<CharacterController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var controller in controllers)
+        {
+            if (controller != null && !controller.enabled) controller.enabled = true;
+        }
     }
 
     private void HandleConnectionFailure(string reason)
