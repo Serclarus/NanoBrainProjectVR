@@ -297,29 +297,69 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private System.Collections.IEnumerator RebuildInteractionManagerRoutine()
     {
-        // Wait briefly for the new scene's Interaction Manager to finish initializing
+        // Wait for the new scene to fully initialize its XRInteractionManager
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
         var newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-        if (newManager != null)
+        if (newManager == null)
         {
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager. Rebuilding socket links...");
+            Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> No XRInteractionManager found in the new scene!");
+            yield break;
+        }
 
-            // Re-link ALL interactors on the player (Hands, Rays, Sockets)
-            var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
-            foreach (var interactor in interactors)
-            {
-                interactor.interactionManager = newManager;
-            }
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager '{newManager.name}'. Rebuilding ALL interaction links...");
 
-            // Command all owned weapons to violently re-socket themselves using the new manager!
-            var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
-            foreach (var weapon in weapons)
+        // ── STEP 1: Disable all interactors so they unregister from the old (destroyed) manager ──
+        var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
+        foreach (var interactor in interactors)
+        {
+            interactor.enabled = false;
+        }
+
+        // ── STEP 2: Re-assign the new manager to all interactors on the player ──
+        foreach (var interactor in interactors)
+        {
+            interactor.interactionManager = newManager;
+        }
+
+        // ── STEP 3: Re-assign the new manager to all persistent interactables (weapons) ──
+        // Weapons are NetworkObjects that survive scene changes, so their XRGrabInteractable
+        // still references the old destroyed manager. We must update them too!
+        var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
+        foreach (var interactable in allInteractables)
+        {
+            interactable.enabled = false;
+        }
+        foreach (var interactable in allInteractables)
+        {
+            interactable.interactionManager = newManager;
+        }
+
+        // Wait one frame for Unity to process all the disable calls
+        yield return null;
+
+        // ── STEP 4: Re-enable everything to force fresh registration with the new manager ──
+        foreach (var interactable in allInteractables)
+        {
+            interactable.enabled = true;
+        }
+        foreach (var interactor in interactors)
+        {
+            interactor.enabled = true;
+        }
+
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered {interactors.Length} interactors and {allInteractables.Length} interactables with the new manager.");
+
+        // Wait another frame for registrations to complete before re-socketing weapons
+        yield return null;
+
+        // ── STEP 5: Re-socket weapons into holsters ──
+        var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
+        foreach (var weapon in weapons)
+        {
+            if (weapon.IsOwner)
             {
-                if (weapon.IsOwner)
-                {
-                    weapon.ForceReturnToSocket();
-                }
+                weapon.ForceReturnToSocket();
             }
         }
     }
