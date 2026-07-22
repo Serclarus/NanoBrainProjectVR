@@ -304,6 +304,44 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Wait for the new scene to fully settle
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
+        // Force refresh all input action managers in the scene to kick-start controller tracking
+        var inputManagers = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+        foreach (var iam in inputManagers)
+        {
+            if (iam != null && iam.enabled)
+            {
+                try
+                {
+                    iam.DisableInput();
+                    iam.EnableInput();
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Force-refreshed InputActionManager inputs: {iam.gameObject.name}");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> Failed to refresh InputActionManager '{iam.name}': {e.Message}");
+                }
+            }
+        }
+
+        // Force refresh all XRInputModalityManagers to re-detect controller tracking state
+        var modalityManagers = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Inputs.XRInputModalityManager>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+        foreach (var xmm in modalityManagers)
+        {
+            if (xmm != null && xmm.enabled)
+            {
+                try
+                {
+                    xmm.enabled = false;
+                    xmm.enabled = true;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Force-refreshed XRInputModalityManager: {xmm.gameObject.name}");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> Failed to refresh XRInputModalityManager '{xmm.name}': {e.Message}");
+                }
+            }
+        }
+
         // Find the active interaction manager (preferring the one on the player, fallback to scene)
         var newManager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
         if (newManager == null)
