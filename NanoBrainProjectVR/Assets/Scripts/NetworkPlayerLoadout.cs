@@ -395,13 +395,31 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Binding interactors and weapons to manager '{newManager.name}'");
 
-        // Bind all interactors on the player
+        // 1. Find and bind all Interaction Groups on the player first
+        var groups = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRInteractionGroup>(true);
+        foreach (var group in groups)
+        {
+            if (group.interactionManager != newManager)
+            {
+                group.interactionManager = newManager;
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Bound XRInteractionGroup '{group.name}' to manager '{newManager.name}'");
+            }
+        }
+
+        // 2. Bind all standalone interactors on the player, skipping group members
         var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
         foreach (var interactor in interactors)
         {
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRGroupMember gm && gm.containingGroup != null)
+            {
+                // Skip child interactors that are part of a group; setting interactionManager on the group handles this!
+                continue;
+            }
+
             if (interactor.interactionManager != newManager)
             {
                 interactor.interactionManager = newManager;
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Bound standalone interactor '{interactor.name}' to manager '{newManager.name}'");
             }
         }
 
