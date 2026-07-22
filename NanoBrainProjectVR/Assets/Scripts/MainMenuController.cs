@@ -62,13 +62,14 @@ public class MainMenuController : MonoBehaviour
     private void OnDestroy()
     {
         // Re-enable locomotion when leaving the main menu!
-        var providers = FindObjectsByType<LocomotionProvider>(FindObjectsSortMode.None);
+        // CRITICAL: We must include disabled components (FindObjectsInactive.Include) because we disabled them in Update!
+        var providers = FindObjectsByType<LocomotionProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var provider in providers)
         {
             if (provider != null && !provider.enabled) provider.enabled = true;
         }
         
-        var controllers = FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
+        var controllers = FindObjectsByType<CharacterController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var controller in controllers)
         {
             if (controller != null && !controller.enabled) controller.enabled = true;
