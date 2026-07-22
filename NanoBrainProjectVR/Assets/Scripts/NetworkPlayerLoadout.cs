@@ -377,10 +377,12 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
         foreach (var interactor in interactors)
         {
+            interactor.interactionManager = newManager;
+
             if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRGroupMember gm && gm.containingGroup != null)
             {
-                // Toggle enabled state to force registration refresh within group
-                if (interactor.enabled)
+                // Toggle enabled state to force registration refresh within group (only if not a socket and has no active selection)
+                if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
                 {
                     interactor.enabled = false;
                     interactor.enabled = true;
@@ -388,8 +390,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 continue;
             }
 
-            interactor.interactionManager = newManager;
-            if (interactor.enabled)
+            // Only toggle enabled state on standalone interactors if they are NOT sockets and have no active selection!
+            // Toggling enabled on an XRSocketInteractor causes it to drop its socketed items (like magazines/weapons)!
+            if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
             {
                 interactor.enabled = false;
                 interactor.enabled = true;
@@ -402,7 +405,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         foreach (var interactable in allInteractables)
         {
             interactable.interactionManager = newManager;
-            if (interactable.enabled)
+
+            // NEVER toggle enabled state if the interactable is currently selected or socketed!
+            // Toggling enabled on a socketed item (like a magazine in a gun or pouch) triggers OnDisable(), which breaks socket selection!
+            if (!interactable.isSelected && interactable.enabled)
             {
                 interactable.enabled = false;
                 interactable.enabled = true;
