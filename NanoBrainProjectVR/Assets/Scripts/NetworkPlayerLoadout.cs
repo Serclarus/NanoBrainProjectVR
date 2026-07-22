@@ -350,6 +350,23 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
         Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered {interactors.Length} interactors and {allInteractables.Length} interactables with the new manager.");
 
+        // ── STEP 5: Refresh DistanceGrabber's cached InteractionManager ──
+        // The DistanceGrabber script caches its own private 'interactionManager' field.
+        // After a scene change it still references the destroyed manager, which causes
+        // the ray to bend to garbage coordinates and prevents auto-grab (SelectEnter fails).
+        var distanceGrabbers = GetComponentsInChildren<MikeNspired.XRIStarterKit.DistanceGrabber>(true);
+        foreach (var dg in distanceGrabbers)
+        {
+            // Use reflection to set the private 'interactionManager' field
+            var field = typeof(MikeNspired.XRIStarterKit.DistanceGrabber).GetField("interactionManager", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                field.SetValue(dg, newManager);
+                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Refreshed DistanceGrabber interactionManager on {dg.gameObject.name}");
+            }
+        }
+
         // Wait another frame for registrations to complete before re-socketing weapons
         yield return null;
 
