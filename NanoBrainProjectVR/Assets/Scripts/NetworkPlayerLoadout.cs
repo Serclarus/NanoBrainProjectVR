@@ -122,6 +122,10 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
                 SpawnWeaponsForClient(OwnerClientId);
 
+                // Dynamically attach detailed diagnostics loop
+                gameObject.AddComponent<VRLastResortDiagnostics>();
+                Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Dynamically attached VRLastResortDiagnostics to player.");
+
                 if (NetworkManager.Singleton.SceneManager != null)
                 {
                     NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
@@ -559,3 +563,149 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         }
     }
 }
+
+public class VRLastResortDiagnostics : MonoBehaviour
+{
+    private void Start()
+    {
+        StartCoroutine(DiagnosticLoop());
+    }
+
+    private System.Collections.IEnumerator DiagnosticLoop()
+    {
+        Debug.Log("<color=cyan>[VRDiagnostics]</color> Started detailed VR diagnostics loop.");
+        yield return new UnityEngine.WaitForSeconds(2f); // Wait for scene to settle
+
+        while (true)
+        {
+            try
+            {
+                RunDiagnostics();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"<color=red>[VRDiagnostics]</color> Exception during diagnostics: {e.Message}\n{e.StackTrace}");
+            }
+            yield return new UnityEngine.WaitForSeconds(3f); // Repeat every 3 seconds
+        }
+    }
+
+    private void RunDiagnostics()
+    {
+        Debug.Log("<color=yellow>================= VR RUNTIME DIAGNOSTICS =================</color>");
+
+        // 1. Check Active XRInteractionManager
+        var managers = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        Debug.Log($"[Manager Info] Found {managers.Length} XRInteractionManager(s) in scene:");
+        foreach (var mgr in managers)
+        {
+            Debug.Log($" - Manager Name: '{mgr.gameObject.name}' | Active: {mgr.gameObject.activeInHierarchy} | Enabled: {mgr.enabled} | Scene: {mgr.gameObject.scene.name}");
+        }
+
+        var activeManager = Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+        if (activeManager == null)
+        {
+            Debug.LogError("[Manager Info] CRITICAL: No active XRInteractionManager found!");
+            return;
+        }
+
+        // 2. Query Manager's registered list
+        var registeredInteractors = new System.Collections.Generic.List<UnityEngine.XR.Interaction.Toolkit.Interactors.IXRInteractor>();
+        activeManager.GetRegisteredInteractors(registeredInteractors);
+        Debug.Log($"[Manager Registrations] Registered Interactors in '{activeManager.name}' ({registeredInteractors.Count}):");
+        foreach (var ri in registeredInteractors)
+        {
+            if (ri is MonoBehaviour mb)
+            {
+                Debug.Log($"   * Interactor: '{mb.gameObject.name}' | Type: {ri.GetType().Name} | Enabled: {mb.enabled}");
+            }
+        }
+
+        var registeredInteractables = new System.Collections.Generic.List<UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable>();
+        activeManager.GetRegisteredInteractables(registeredInteractables);
+        Debug.Log($"[Manager Registrations] Registered Interactables in '{activeManager.name}' ({registeredInteractables.Count}):");
+        foreach (var ri in registeredInteractables)
+        {
+            if (ri is MonoBehaviour mb)
+            {
+                Debug.Log($"   * Interactable: '{mb.gameObject.name}' | Type: {ri.GetType().Name} | Enabled: {mb.enabled}");
+            }
+        }
+
+        // 3. Inspect Local Interactors (Hands/Rays/Sockets on this player)
+        var playerInteractors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
+        Debug.Log($"[Local Player Interactors] Found {playerInteractors.Length} interactors on local player rig:");
+        foreach (var interactor in playerInteractors)
+        {
+            string managerStr = interactor.interactionManager != null ? interactor.interactionManager.gameObject.name : "NULL";
+            bool isRegistered = registeredInteractors.Contains(interactor);
+            
+            // Check targets
+            string hoverTargetsStr = "None";
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor hoverInteractor)
+            {
+                var hovers = hoverInteractor.interactablesHovered;
+                if (hovers != null && hovers.Count > 0)
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    foreach (var h in hovers)
+                    {
+                        if (h is MonoBehaviour mb) names.Add(mb.gameObject.name);
+                    }
+                    hoverTargetsStr = string.Join(", ", names);
+                }
+            }
+
+            string selectTargetsStr = "None";
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor selectInteractor)
+            {
+                var selects = selectInteractor.interactablesSelected;
+                if (selects != null && selects.Count > 0)
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    foreach (var s in selects)
+                    {
+                        if (s is MonoBehaviour mb) names.Add(mb.gameObject.name);
+                    }
+                    selectTargetsStr = string.Join(", ", names);
+                }
+            }
+
+            Debug.Log($"   * Name: '{interactor.gameObject.name}' | Type: {interactor.GetType().Name}\n" +
+                      $"     Enabled: {interactor.enabled} | Assigned Manager: '{managerStr}' | Registered: {isRegistered}\n" +
+                      $"     Hovering: [{hoverTargetsStr}] | Selecting: [{selectTargetsStr}]\n" +
+                      $"     Local Position: {interactor.transform.localPosition} | Local Rotation: {interactor.transform.localRotation.eulerAngles}");
+
+            // Additional Ray Interactor specific check
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor rayInteractor)
+            {
+                if (rayInteractor.TryGetHitInfo(out Vector3 hitPosition, out Vector3 hitNormal, out int positionInLine, out bool isValidTarget))
+                {
+                    Debug.Log($"     [Ray Interactor] Ray is HIT! Target position: {hitPosition} | Valid Target: {isValidTarget}");
+                }
+                else
+                {
+                    Debug.Log("     [Ray Interactor] Ray is NOT hitting any physics colliders.");
+                }
+            }
+        }
+
+        // 4. Check global inputs & actions
+        Debug.Log("[Input Tracking Check]");
+        var inputManagers = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var iam in inputManagers)
+        {
+            Debug.Log($" - InputActionManager: '{iam.gameObject.name}' | Enabled: {iam.enabled}");
+            if (iam.actionAssets != null)
+            {
+                foreach (var asset in iam.actionAssets)
+                {
+                    Debug.Log($"   * Action Asset: '{asset.name}' | Enabled: {asset.enabled}");
+                }
+            }
+        }
+
+        Debug.Log("<color=yellow>==========================================================</color>");
+    }
+}
+
