@@ -29,6 +29,21 @@ public class VRLoadingCamera : MonoBehaviour
 
     private void Update()
     {
+        // Automatically track the VR Headset position and rotation!
+        var inputStates = new System.Collections.Generic.List<UnityEngine.XR.XRNodeState>();
+        UnityEngine.XR.InputTracking.GetNodeStates(inputStates);
+        foreach (var state in inputStates)
+        {
+            if (state.nodeType == UnityEngine.XR.XRNode.Head)
+            {
+                if (state.TryGetPosition(out Vector3 pos))
+                    transform.localPosition = pos;
+                if (state.TryGetRotation(out Quaternion rot))
+                    transform.localRotation = rot;
+                break;
+            }
+        }
+
         // If the NetworkManager doesn't exist yet, do nothing
         if (NetworkManager.Singleton == null) return;
 
