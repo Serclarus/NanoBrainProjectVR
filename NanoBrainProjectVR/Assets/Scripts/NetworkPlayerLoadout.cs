@@ -305,11 +305,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         {
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager. Rebuilding socket links...");
 
-            // Re-link all sockets on the player
-            var sockets = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true);
-            foreach (var socket in sockets)
+            // Re-link ALL interactors on the player (Hands, Rays, Sockets)
+            var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
+            foreach (var interactor in interactors)
             {
-                socket.interactionManager = newManager;
+                interactor.interactionManager = newManager;
             }
 
             // Command all owned weapons to violently re-socket themselves using the new manager!
