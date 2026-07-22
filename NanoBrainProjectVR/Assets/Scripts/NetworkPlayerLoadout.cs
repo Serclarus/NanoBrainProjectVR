@@ -364,37 +364,48 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         var groups = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRInteractionGroup>(true);
         foreach (var group in groups)
         {
-            if (group.interactionManager != newManager)
+            group.interactionManager = newManager;
+            if (group.enabled)
             {
-                group.interactionManager = newManager;
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Bound XRInteractionGroup '{group.name}' to manager '{newManager.name}'");
+                group.enabled = false;
+                group.enabled = true;
             }
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered XRInteractionGroup '{group.name}' with manager '{newManager.name}'");
         }
 
-        // 2. Bind all standalone interactors on the player, skipping group members
+        // 2. Bind all interactors on the player (including NearFarInteractor)
         var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
         foreach (var interactor in interactors)
         {
             if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRGroupMember gm && gm.containingGroup != null)
             {
-                // Skip child interactors that are part of a group; setting interactionManager on the group handles this!
+                // Toggle enabled state to force registration refresh within group
+                if (interactor.enabled)
+                {
+                    interactor.enabled = false;
+                    interactor.enabled = true;
+                }
                 continue;
             }
 
-            if (interactor.interactionManager != newManager)
+            interactor.interactionManager = newManager;
+            if (interactor.enabled)
             {
-                interactor.interactionManager = newManager;
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Bound standalone interactor '{interactor.name}' to manager '{newManager.name}'");
+                interactor.enabled = false;
+                interactor.enabled = true;
             }
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered standalone interactor '{interactor.name}' with manager '{newManager.name}'");
         }
 
-        // Bind all persistent weapons
+        // 3. Bind all persistent interactables (weapons, magazines, items)
         var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
         foreach (var interactable in allInteractables)
         {
-            if (interactable.interactionManager != newManager)
+            interactable.interactionManager = newManager;
+            if (interactable.enabled)
             {
-                interactable.interactionManager = newManager;
+                interactable.enabled = false;
+                interactable.enabled = true;
             }
         }
 
