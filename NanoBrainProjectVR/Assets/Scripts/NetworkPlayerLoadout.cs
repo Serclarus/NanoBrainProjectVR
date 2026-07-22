@@ -300,20 +300,39 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         // Wait for the new scene to fully settle
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
-        // ── DIAGNOSTIC: Log the state of all interactors to help debug grab issues ──
-        var manager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> XRInteractionManager on player: {(manager != null ? manager.gameObject.name : "NULL")} (scene: {manager?.gameObject.scene.name})");
+        // Find the active interaction manager (preferring the one on the player, fallback to scene)
+        var newManager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
+        if (newManager == null)
+        {
+            newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+        }
 
+        if (newManager == null)
+        {
+            Debug.LogError("<color=red>[NetworkPlayerLoadout]</color> No XRInteractionManager found anywhere!");
+            yield break;
+        }
+
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Binding interactors and weapons to manager '{newManager.name}'");
+
+        // Bind all interactors on the player
         var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
         foreach (var interactor in interactors)
         {
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Interactor: {interactor.gameObject.name} | Type: {interactor.GetType().Name} | Enabled: {interactor.enabled} | Manager: {(interactor.interactionManager != null ? interactor.interactionManager.gameObject.name : "NULL")} | Manager destroyed: {(interactor.interactionManager == null)}");
+            if (interactor.interactionManager != newManager)
+            {
+                interactor.interactionManager = newManager;
+            }
         }
 
+        // Bind all persistent weapons
         var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
         foreach (var interactable in allInteractables)
         {
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Interactable: {interactable.gameObject.name} | Enabled: {interactable.enabled} | Manager: {(interactable.interactionManager != null ? interactable.interactionManager.gameObject.name : "NULL")} | Manager destroyed: {(interactable.interactionManager == null)}");
+            if (interactable.interactionManager != newManager)
+            {
+                interactable.interactionManager = newManager;
+            }
         }
 
         // ── Re-socket weapons into holsters ──

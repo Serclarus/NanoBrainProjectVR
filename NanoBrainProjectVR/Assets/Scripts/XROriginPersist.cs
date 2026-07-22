@@ -35,6 +35,19 @@ public class XROriginPersist : MonoBehaviour
                 }
             }
 
+            // Also find and destroy any duplicate standalone XRInteractionManagers in the scene.
+            // Newly loaded scene interactables might register with the duplicate manager if it is allowed to exist
+            // even for a single frame, leading to dead interaction bindings.
+            var allInteractionManagers = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var manager in allInteractionManagers)
+            {
+                if (manager != null && !manager.transform.IsChildOf(instance.transform) && manager.transform != instance.transform)
+                {
+                    Debug.Log($"<color=orange>[XROriginPersist]</color> Destroying duplicate standalone XRInteractionManager: {manager.gameObject.name}");
+                    Destroy(manager.gameObject);
+                }
+            }
+
             Debug.Log($"<color=orange>[XROriginPersist]</color> Teleported surviving XR Origin to {transform.position}. Destroying duplicate {gameObject.name}.");
             Destroy(gameObject);
 
