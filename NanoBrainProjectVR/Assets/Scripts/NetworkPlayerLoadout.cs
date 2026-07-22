@@ -117,6 +117,48 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (isVR)
             {
+                // CRITICAL MULTIPLAYER VR FIX:
+                // Find and destroy any pre-placed local VR Rigs in the scene to prevent conflicts.
+                // When we spawn as the network player, we are the new active VR Rig.
+                // Any other active XRInteractionManagers or XR Rigs in the scene must be destroyed.
+                var activeManagers = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+                foreach (var manager in activeManagers)
+                {
+                    if (manager != null && !manager.transform.IsChildOf(transform) && manager.transform != transform)
+                    {
+                        Transform rootToDestroy = manager.transform;
+                        var origin = manager.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+                        if (origin != null)
+                        {
+                            rootToDestroy = origin.transform;
+                        }
+                        
+                        var duplicateInputManagers = rootToDestroy.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(true);
+                        foreach (var dim in duplicateInputManagers)
+                        {
+                            dim.actionAssets = new System.Collections.Generic.List<UnityEngine.InputSystem.InputActionAsset>();
+                        }
+                        
+                        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Destroying duplicate pre-placed local VR Rig/Manager: {rootToDestroy.gameObject.name}");
+                        UnityEngine.Object.Destroy(rootToDestroy.gameObject);
+                    }
+                }
+
+                // Re-bind all World Space Canvases to our new camera
+                var localCamera = GetComponentInChildren<Camera>(true);
+                if (localCamera != null)
+                {
+                    var canvases = UnityEngine.Object.FindObjectsByType<Canvas>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+                    foreach (var canvas in canvases)
+                    {
+                        if (canvas.renderMode == RenderMode.WorldSpace)
+                        {
+                            canvas.worldCamera = localCamera;
+                            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-bound WorldSpace Canvas '{canvas.name}' event camera to local player camera.");
+                        }
+                    }
+                }
+
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
@@ -126,10 +168,7 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                 gameObject.AddComponent<VRLastResortDiagnostics>();
                 Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Dynamically attached VRLastResortDiagnostics to player.");
 
-                if (NetworkManager.Singleton.SceneManager != null)
-                {
-                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
-                }
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnUnitySceneLoaded;
             }
             else
             {
@@ -257,10 +296,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnUnitySceneLoaded;
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
-            
             if (IsOwner)
             {
                 NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
@@ -286,9 +324,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    private void OnUnitySceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode)
     {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Native Scene Loaded: {scene.name}. Teleporting and rebuilding interaction manager.");
         
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
@@ -631,6 +669,7 @@ public class VRLastResortDiagnostics : MonoBehaviour
     private void RunDiagnostics()
     {
         Debug.Log("<color=yellow>================= VR RUNTIME DIAGNOSTICS =================</color>");
+        Debug.Log($"[Scene Info] Active Scene: '{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}' | Diagnostics Script Scene: '{gameObject.scene.name}'");
 
         // 1. Check Active XRInteractionManager
         var managers = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
