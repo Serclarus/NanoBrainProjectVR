@@ -25,7 +25,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
     [Tooltip("Deadzone distance. The hand must move this far before the pump slides, preventing jitter while aiming.")]
     public float pumpDeadzone = 0.02f;
     [Tooltip("If true, the hand will automatically let go of the pump grip as soon as the pump action is completed.")]
-    public bool autoReleasePumpOnComplete = true;
+    public bool autoReleasePumpOnComplete = false;
 
     [Tooltip("Optional: The physical bolt object. Unparent it from the pump so they are siblings!")]
     public Transform boltTransform;
@@ -171,13 +171,14 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     }
 
                     // Fire events when it hits the limits!
-                    if (Mathf.Abs(clampedZ - pumpBackZ) < 0.01f && !hasPumpedBack)
+                    float pumpThreshold = 0.025f;
+                    if (Mathf.Abs(clampedZ - pumpBackZ) < pumpThreshold && !hasPumpedBack)
                     {
                         hasPumpedBack = true;
                         hasPumpedForward = false;
                         OnPumpPulledBack?.Invoke();
                     }
-                    else if (Mathf.Abs(clampedZ - pumpForwardZ) < 0.01f && !hasPumpedForward)
+                    else if (Mathf.Abs(clampedZ - pumpForwardZ) < pumpThreshold && !hasPumpedForward)
                     {
                         hasPumpedForward = true;
                         hasPumpedBack = false;

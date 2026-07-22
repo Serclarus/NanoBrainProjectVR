@@ -13,11 +13,13 @@ public class ShotgunController : NetworkBehaviour
     [Header("Shotgun Internals")]
     [Tooltip("How many shells the internal tube can hold")]
     public int maxAmmoCapacity = 8;
-    public NetworkVariable<int> currentAmmo = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    [Tooltip("Initial ammo in the tube when spawned")]
+    public int initialAmmo = 6;
+    public NetworkVariable<int> currentAmmo = new NetworkVariable<int>(6, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     [Tooltip("How many rounds are loaded when 1 physical shell is inserted (QoL)")]
     public int ammoPerShellReloaded = 3;
     
-    public NetworkVariable<ChamberState> chamberState = new NetworkVariable<ChamberState>(ChamberState.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<ChamberState> chamberState = new NetworkVariable<ChamberState>(ChamberState.LiveRound, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Pellet Spread")]
     public float damagePerPellet = 34f;
@@ -133,8 +135,36 @@ public class ShotgunController : NetworkBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (IsServer || IsOwner)
+        {
+            if (currentAmmo.Value == 0 && initialAmmo > 0)
+            {
+                currentAmmo.Value = initialAmmo;
+            }
+            if (chamberState.Value == ChamberState.Empty)
+            {
+                chamberState.Value = ChamberState.LiveRound;
+            }
+        }
+    }
+
     private void Start()
     {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            if (currentAmmo.Value == 0 && initialAmmo > 0)
+            {
+                currentAmmo.Value = initialAmmo;
+            }
+            if (chamberState.Value == ChamberState.Empty)
+            {
+                chamberState.Value = ChamberState.LiveRound;
+            }
+        }
+
         if (shellPrefab != null && shellEjectionPoint != null)
         {
             shellPool = new Queue<GameObject>();
