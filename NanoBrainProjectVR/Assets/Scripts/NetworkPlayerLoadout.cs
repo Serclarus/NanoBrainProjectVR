@@ -297,80 +297,27 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private System.Collections.IEnumerator RebuildInteractionManagerRoutine()
     {
-        // Wait for the new scene to fully initialize its XRInteractionManager
+        // Wait for the new scene to fully settle
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
-        var newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-        if (newManager == null)
-        {
-            Debug.LogWarning("<color=red>[NetworkPlayerLoadout]</color> No XRInteractionManager found in the new scene!");
-            yield break;
-        }
+        // ── DIAGNOSTIC: Log the state of all interactors to help debug grab issues ──
+        var manager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> XRInteractionManager on player: {(manager != null ? manager.gameObject.name : "NULL")} (scene: {manager?.gameObject.scene.name})");
 
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager '{newManager.name}'. Rebuilding ALL interaction links...");
-
-        // ── STEP 1: Disable all interactors so they unregister from the old (destroyed) manager ──
         var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
         foreach (var interactor in interactors)
         {
-            interactor.enabled = false;
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Interactor: {interactor.gameObject.name} | Type: {interactor.GetType().Name} | Enabled: {interactor.enabled} | Manager: {(interactor.interactionManager != null ? interactor.interactionManager.gameObject.name : "NULL")} | Manager destroyed: {(interactor.interactionManager == null)}");
         }
 
-        // ── STEP 2: Re-assign the new manager to all interactors on the player ──
-        foreach (var interactor in interactors)
-        {
-            interactor.interactionManager = newManager;
-        }
-
-        // ── STEP 3: Re-assign the new manager to all persistent interactables (weapons) ──
-        // Weapons are NetworkObjects that survive scene changes, so their XRGrabInteractable
-        // still references the old destroyed manager. We must update them too!
         var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
         foreach (var interactable in allInteractables)
         {
-            interactable.enabled = false;
-        }
-        foreach (var interactable in allInteractables)
-        {
-            interactable.interactionManager = newManager;
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Interactable: {interactable.gameObject.name} | Enabled: {interactable.enabled} | Manager: {(interactable.interactionManager != null ? interactable.interactionManager.gameObject.name : "NULL")} | Manager destroyed: {(interactable.interactionManager == null)}");
         }
 
-        // Wait one frame for Unity to process all the disable calls
+        // ── Re-socket weapons into holsters ──
         yield return null;
-
-        // ── STEP 4: Re-enable everything to force fresh registration with the new manager ──
-        foreach (var interactable in allInteractables)
-        {
-            interactable.enabled = true;
-        }
-        foreach (var interactor in interactors)
-        {
-            interactor.enabled = true;
-        }
-
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered {interactors.Length} interactors and {allInteractables.Length} interactables with the new manager.");
-
-        // ── STEP 5: Refresh DistanceGrabber's cached InteractionManager ──
-        // The DistanceGrabber script caches its own private 'interactionManager' field.
-        // After a scene change it still references the destroyed manager, which causes
-        // the ray to bend to garbage coordinates and prevents auto-grab (SelectEnter fails).
-        var distanceGrabbers = GetComponentsInChildren<MikeNspired.XRIStarterKit.DistanceGrabber>(true);
-        foreach (var dg in distanceGrabbers)
-        {
-            // Use reflection to set the private 'interactionManager' field
-            var field = typeof(MikeNspired.XRIStarterKit.DistanceGrabber).GetField("interactionManager", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field != null)
-            {
-                field.SetValue(dg, newManager);
-                Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Refreshed DistanceGrabber interactionManager on {dg.gameObject.name}");
-            }
-        }
-
-        // Wait another frame for registrations to complete before re-socketing weapons
-        yield return null;
-
-        // ── STEP 5: Re-socket weapons into holsters ──
         var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
         foreach (var weapon in weapons)
         {
