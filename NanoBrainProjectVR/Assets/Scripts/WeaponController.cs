@@ -34,6 +34,10 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     [Header("Audio Settings")]
     public AudioClip shootSound;
     public AudioClip dryFireSound;
+    [Tooltip("Sound played when a magazine is inserted into the socket")]
+    public AudioClip magazineInsertSound;
+    [Tooltip("Sound played when a magazine is removed from the socket")]
+    public AudioClip magazineReleaseSound;
     public Vector2 soundPitchRange = new Vector2(0.95f, 1.05f);
     [Range(0f, 1f)] public float shootVolume = 1f;
 
@@ -433,6 +437,11 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             
             // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
             SetSubInteractablesState(isHeld || syncedIsHeld.Value);
+
+            if (!IsSpawned || IsOwner)
+            {
+                PlayMagazineInsertSound();
+            }
         }
     }
 
@@ -462,6 +471,11 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         else if (IsOwner)
         {
             SetSyncedMagazineServerRpc(new NetworkObjectReference());
+        }
+
+        if (!IsSpawned || IsOwner)
+        {
+            PlayMagazineReleaseSound();
         }
     }
 
@@ -1139,6 +1153,58 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             audioSource.PlayOneShot(dryFireSound, shootVolume);
         }
+    }
+
+    public void PlayMagazineInsertSound()
+    {
+        PlayMagazineInsertSoundLocal();
+        if (IsSpawned)
+        {
+            PlayMagazineInsertSoundRpc();
+        }
+    }
+
+    private void PlayMagazineInsertSoundLocal()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
+        if (audioSource != null && magazineInsertSound != null)
+        {
+            audioSource.PlayOneShot(magazineInsertSound, shootVolume);
+        }
+    }
+
+    [Rpc(SendTo.NotOwner)]
+    private void PlayMagazineInsertSoundRpc()
+    {
+        PlayMagazineInsertSoundLocal();
+    }
+
+    public void PlayMagazineReleaseSound()
+    {
+        PlayMagazineReleaseSoundLocal();
+        if (IsSpawned)
+        {
+            PlayMagazineReleaseSoundRpc();
+        }
+    }
+
+    private void PlayMagazineReleaseSoundLocal()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
+        if (audioSource != null && magazineReleaseSound != null)
+        {
+            audioSource.PlayOneShot(magazineReleaseSound, shootVolume);
+        }
+    }
+
+    [Rpc(SendTo.NotOwner)]
+    private void PlayMagazineReleaseSoundRpc()
+    {
+        PlayMagazineReleaseSoundLocal();
     }
 
     // ────────────────────────────────────────────────────────────────────────
