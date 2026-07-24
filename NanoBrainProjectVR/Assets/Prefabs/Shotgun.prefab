@@ -686,13 +686,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShotgunController
   ShowTopMostFoldoutHeaderGroup: 1
-  maxAmmoCapacity: 8
+  maxAmmoCapacity: 4
+  initialAmmo: 0
   currentAmmo:
     m_InternalValue: 0
-  ammoPerShellReloaded: 3
+  ammoPerShellReloaded: 1
   chamberState:
     m_InternalValue: 0
-  damagePerPellet: 5
+  damagePerPellet: 7
   penetrationDepth: 0.5
   pelletCount: 8
   spreadAngle: 4
@@ -1181,6 +1182,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   slotType: 1
   returnDelay: 3
+  homeSocket: {fileID: 0}
 --- !u!1 &2929825075879975088
 GameObject:
   m_ObjectHideFlags: 0
