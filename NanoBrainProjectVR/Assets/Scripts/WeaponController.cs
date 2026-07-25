@@ -655,13 +655,13 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         // If this weapon specifies a magazinePrefab, verify that the magazine is compatible
         if (magazinePrefab != null)
         {
-            string targetClean = GetCleanPrefabName(magazinePrefab.name);
-            string candidateClean = GetCleanPrefabName(mag.gameObject.name);
+            string targetClean = GetCleanPrefabName(magazinePrefab.name).ToLower();
+            string candidateClean = GetCleanPrefabName(mag.gameObject.name).ToLower();
 
             Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetClean}' (from '{magazinePrefab.name}') with mag candidate '{candidateClean}' (from '{mag.gameObject.name}')");
 
             // Explicit check for MagPistol and MagAKM
-            if (targetClean.Equals("MagPistol", System.StringComparison.OrdinalIgnoreCase) || targetClean.Contains("pistol"))
+            if (targetClean == "magpistol" || targetClean.Contains("pistol"))
             {
                 if (!candidateClean.Contains("magpistol") && !candidateClean.Contains("pistol"))
                 {
@@ -669,7 +669,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                     return false;
                 }
             }
-            else if (targetClean.Equals("MagAKM", System.StringComparison.OrdinalIgnoreCase) || targetClean.Contains("akm") || targetClean.Contains("rifle"))
+            else if (targetClean == "magakm" || targetClean.Contains("akm") || targetClean.Contains("rifle"))
             {
                 if (!candidateClean.Contains("magakm") && !candidateClean.Contains("akm") && !candidateClean.Contains("rifle"))
                 {
@@ -679,8 +679,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             }
             else if (!string.IsNullOrEmpty(targetClean) && !string.IsNullOrEmpty(candidateClean))
             {
-                if (!candidateClean.StartsWith(targetClean, System.StringComparison.OrdinalIgnoreCase) &&
-                    !targetClean.StartsWith(candidateClean, System.StringComparison.OrdinalIgnoreCase))
+                if (!candidateClean.StartsWith(targetClean) && !targetClean.StartsWith(candidateClean))
                 {
                     Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Mismatch between target '{targetClean}' and candidate '{candidateClean}'");
                     return false;
