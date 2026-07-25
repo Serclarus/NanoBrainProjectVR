@@ -196,6 +196,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (magazineSocket != null)
         {
+            magazineSocket.socketActive = true; // Ensure socket active is enabled
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
             
@@ -216,6 +217,12 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     private void SetSubInteractablesState(bool state)
     {
         Debug.LogWarning($"[WeaponController] SetSubInteractablesState called on {gameObject.name}. State: {state}, isHeld: {isHeld}, syncedIsHeld: {syncedIsHeld.Value}");
+        if (magazineSocket != null)
+        {
+            magazineSocket.enabled = true;
+            magazineSocket.socketActive = true;
+        }
+
         if (subInteractablesGroup != null)
         {
             var interactables = subInteractablesGroup.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true);
@@ -223,9 +230,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             {
                 // SAFETY: Never disable the main handle of the gun!
                 if (interactable == grabInteractable) continue;
-                
-                // CRITICAL SAFETY: Never disable the XRSocketInteractor! If you disable a socket, it forcefully drops whatever is inside it!
-                if (interactable is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
                 
                 interactable.enabled = state;
             }
@@ -573,21 +577,52 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
     private bool IsMagazineAllowed(IXRInteractable interactable)
     {
-        Magazine mag = interactable.transform.GetComponent<Magazine>();
+        if (interactable == null || interactable.transform == null) return false;
+
+        // Search for Magazine component on the interactable, its parents, or its children
+        Magazine mag = interactable.transform.GetComponentInParent<Magazine>();
+        if (mag == null)
+        {
+            mag = interactable.transform.GetComponentInChildren<Magazine>();
+        }
+
         if (mag == null) 
         {
             return false; // Not a magazine! Reject it completely.
         }
 
+        // If this weapon specifies a magazinePrefab, verify that the magazine is compatible
         if (magazinePrefab != null)
         {
-            if (!interactable.transform.name.StartsWith(magazinePrefab.name))
+            string targetName = GetCleanPrefabName(magazinePrefab.name);
+            string candidateName = GetCleanPrefabName(mag.gameObject.name);
+
+            if (!string.IsNullOrEmpty(targetName) && !string.IsNullOrEmpty(candidateName))
             {
-                return false; // Wrong type of magazine!
+                if (!candidateName.StartsWith(targetName, System.StringComparison.OrdinalIgnoreCase) &&
+                    !targetName.StartsWith(candidateName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return false; // Wrong type of magazine! (e.g. Pistol mag in Rifle socket)
+                }
             }
         }
 
         return true;
+    }
+
+    private string GetCleanPrefabName(string rawName)
+    {
+        if (string.IsNullOrEmpty(rawName)) return "";
+        string clean = rawName;
+        int cloneIdx = clean.IndexOf("(Clone)", System.StringComparison.OrdinalIgnoreCase);
+        if (cloneIdx >= 0) clean = clean.Substring(0, cloneIdx);
+        int pooledIdx = clean.IndexOf("_Pooled", System.StringComparison.OrdinalIgnoreCase);
+        if (pooledIdx >= 0) clean = clean.Substring(0, pooledIdx);
+        int prefabIdx = clean.IndexOf("_Prefab", System.StringComparison.OrdinalIgnoreCase);
+        if (prefabIdx >= 0) clean = clean.Substring(0, prefabIdx);
+        
+        clean = clean.Trim();
+        return clean;
     }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
