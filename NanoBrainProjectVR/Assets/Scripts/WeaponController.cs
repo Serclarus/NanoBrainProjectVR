@@ -199,9 +199,23 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             magazineSocket.socketActive = true; // Ensure socket active is enabled
             magazineSocket.recycleDelayTime = 0f; // Disable recycle delay lockout
             magazineSocket.hoverSocketSnapping = true; // Allow hover socket snapping
+            magazineSocket.socketSnappingRadius = 0.2f; // Increase snapping radius
+            magazineSocket.showInteractableHoverMeshes = true; // Ensure hover meshes are visible
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
             magazineSocket.hoverEntered.AddListener(OnSocketHoverEntered);
+            
+            // Enlarge the socket's trigger collider so magazines are easier to detect
+            BoxCollider socketCollider = magazineSocket.GetComponent<BoxCollider>();
+            if (socketCollider != null)
+            {
+                socketCollider.isTrigger = true;
+                socketCollider.size = new Vector3(
+                    Mathf.Max(socketCollider.size.x, 0.08f),
+                    Mathf.Max(socketCollider.size.y, 0.12f),
+                    Mathf.Max(socketCollider.size.z, 0.08f)
+                );
+            }
             
             // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
             magazineSocket.hoverFilters.Add(this);
@@ -455,6 +469,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
+        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnMagazineRemoved on '{gameObject.name}'. Removed: '{args.interactableObject.transform.name}'");
+
         if (currentMagazine != null)
         {
             NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
@@ -484,6 +500,24 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         if (!IsSpawned || IsOwner)
         {
             PlayMagazineReleaseSound();
+        }
+
+        // CRITICAL: Force the socket back to fully active state immediately after removal
+        if (magazineSocket != null)
+        {
+            magazineSocket.socketActive = true;
+            magazineSocket.enabled = true;
+            magazineSocket.recycleDelayTime = 0f;
+            
+            // Re-enable the socket's trigger collider in case it was disabled
+            BoxCollider socketCollider = magazineSocket.GetComponent<BoxCollider>();
+            if (socketCollider != null)
+            {
+                socketCollider.enabled = true;
+                socketCollider.isTrigger = true;
+            }
+
+            Debug.LogWarning($"<color=green>[WeaponController]</color> Socket on '{gameObject.name}' re-activated after magazine removal. socketActive={magazineSocket.socketActive}, enabled={magazineSocket.enabled}, hasSelection={magazineSocket.hasSelection}");
         }
     }
 
@@ -627,6 +661,62 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             else
             {
                 Debug.LogError($"[WeaponController] Could not find valid XRInteractionManager for magazineSocket on '{gameObject.name}'!");
+            }
+        }
+    }
+
+    private void TryProximitySocketMagazine()
+    {
+        if (magazineSocket == null || magazineSocket.hasSelection) return;
+
+        Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
+        float checkRadius = 0.15f; // 15cm detection radius
+
+        Collider[] nearby = Physics.OverlapSphere(socketPos, checkRadius);
+        foreach (var col in nearby)
+        {
+            if (col == null || col.gameObject == gameObject) continue;
+
+            // Check if this collider belongs to a magazine
+            Magazine mag = col.GetComponentInParent<Magazine>();
+            if (mag == null) mag = col.GetComponentInChildren<Magazine>();
+            if (mag == null) continue;
+
+            // Check if it's currently held in a hand (not already socketed)
+            var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (grabInteractable == null) continue;
+            if (!grabInteractable.isSelected) continue;
+
+            // Make sure it's held by a HAND, not a socket
+            bool heldByHand = false;
+            foreach (var interactor in grabInteractable.interactorsSelecting)
+            {
+                if (interactor is XRSocketInteractor) continue;
+                heldByHand = true;
+                break;
+            }
+            if (!heldByHand) continue;
+
+            // Check compatibility
+            IXRInteractable interactable = grabInteractable as IXRInteractable;
+            if (!IsMagazineAllowed(interactable)) continue;
+
+            Debug.LogWarning($"<color=cyan>[WeaponController]</color> Proximity detected compatible magazine '{mag.gameObject.name}' near socket on '{gameObject.name}'! Force-socketing...");
+
+            var manager = magazineSocket.interactionManager;
+            if (manager == null) manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+
+            if (manager != null)
+            {
+                IXRSelectInteractable selectInteractable = grabInteractable as IXRSelectInteractable;
+                if (selectInteractable != null)
+                {
+                    manager.SelectEnter(
+                        (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket,
+                        selectInteractable
+                    );
+                    return; // Only socket one magazine
+                }
             }
         }
     }
@@ -958,10 +1048,24 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         }
     }
 
+    private float _magProximityCheckTimer = 0f;
+
     private void Update()
     {
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
+
+        // ── Proximity-based Magazine Socketing Fallback ──
+        // XRI's tiny trigger collider can miss magazines. This polls every 0.1s to catch them.
+        if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
+        {
+            _magProximityCheckTimer -= Time.deltaTime;
+            if (_magProximityCheckTimer <= 0f)
+            {
+                _magProximityCheckTimer = 0.1f; // Check 10 times per second
+                TryProximitySocketMagazine();
+            }
+        }
 
         // Auto-firing logic for when the trigger is held down over multiple frames
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
