@@ -580,7 +580,7 @@ public class WeaponController : NetworkBehaviour
         if (magazineSocket == null || magazineSocket.hasSelection) return;
 
         Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        float checkRadius = 0.15f; // 15cm detection radius
+        float checkRadius = 0.06f; // 6cm detection radius - requires the user to physically insert it deep enough
 
         Collider[] nearby = Physics.OverlapSphere(socketPos, checkRadius);
         foreach (var col in nearby)
@@ -593,10 +593,6 @@ public class WeaponController : NetworkBehaviour
 
             var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
             if (grabInteractable == null) continue;
-            
-            // IF THE PLAYER IS HOLDING IT, DO NOT STEAL IT!
-            // Wait until the player naturally drops it near the socket.
-            if (grabInteractable.isSelected) continue;
 
             // Check compatibility without breaking XRI native filters
             if (magazinePrefab != null)
