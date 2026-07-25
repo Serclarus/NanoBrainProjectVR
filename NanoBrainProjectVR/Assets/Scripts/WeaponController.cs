@@ -199,6 +199,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             magazineSocket.socketActive = true; // Ensure socket active is enabled
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
+            magazineSocket.hoverEntered.AddListener(OnSocketHoverEntered);
             
             // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
             magazineSocket.hoverFilters.Add(this);
@@ -266,6 +267,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
+            magazineSocket.hoverEntered.RemoveListener(OnSocketHoverEntered);
             
             magazineSocket.hoverFilters.Remove(this);
             magazineSocket.selectFilters.Remove(this);
@@ -575,9 +577,65 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         return IsMagazineAllowed(interactable);
     }
 
+    private void OnSocketHoverEntered(HoverEnterEventArgs args)
+    {
+        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnSocketHoverEntered on '{gameObject.name}'. Hovered interactable: '{args.interactableObject.transform.name}'");
+
+        if (magazineSocket == null)
+        {
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket is NULL on '{gameObject.name}'");
+            return;
+        }
+
+        if (magazineSocket.hasSelection)
+        {
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket already has selection ('{magazineSocket.firstInteractableSelected.transform.name}')");
+            return;
+        }
+
+        IXRSelectInteractable selectInteractable = args.interactableObject as IXRSelectInteractable;
+        if (selectInteractable == null)
+        {
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: Hovered object '{args.interactableObject.transform.name}' is not an IXRSelectInteractable");
+            return;
+        }
+
+        if (IsMagazineAllowed(args.interactableObject))
+        {
+            Debug.LogWarning($"<color=green>[WeaponController]</color> Valid magazine '{selectInteractable.transform.name}' hovered socket on '{gameObject.name}'. Forcefully socketing via SelectEnter!");
+            
+            var manager = magazineSocket.interactionManager;
+            if (manager == null)
+            {
+                manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+                if (manager != null) magazineSocket.interactionManager = manager;
+            }
+
+            if (manager != null)
+            {
+                UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable baseInteractable = args.interactableObject as UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+                if (baseInteractable != null && baseInteractable.interactionManager != manager)
+                {
+                    baseInteractable.interactionManager = manager;
+                    manager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)baseInteractable);
+                }
+
+                manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, selectInteractable);
+            }
+            else
+            {
+                Debug.LogError($"[WeaponController] Could not find valid XRInteractionManager for magazineSocket on '{gameObject.name}'!");
+            }
+        }
+    }
+
     private bool IsMagazineAllowed(IXRInteractable interactable)
     {
-        if (interactable == null || interactable.transform == null) return false;
+        if (interactable == null || interactable.transform == null)
+        {
+            Debug.LogWarning("[WeaponController] IsMagazineAllowed: interactable or transform is NULL!");
+            return false;
+        }
 
         // Search for Magazine component on the interactable, its parents, or its children
         Magazine mag = interactable.transform.GetComponentInParent<Magazine>();
@@ -588,6 +646,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (mag == null) 
         {
+            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: No Magazine component found on '{interactable.transform.name}' or its parents/children.");
             return false; // Not a magazine! Reject it completely.
         }
 
@@ -597,16 +656,20 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             string targetName = GetCleanPrefabName(magazinePrefab.name);
             string candidateName = GetCleanPrefabName(mag.gameObject.name);
 
+            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetName}' (from '{magazinePrefab.name}') with mag candidate '{candidateName}' (from '{mag.gameObject.name}')");
+
             if (!string.IsNullOrEmpty(targetName) && !string.IsNullOrEmpty(candidateName))
             {
                 if (!candidateName.StartsWith(targetName, System.StringComparison.OrdinalIgnoreCase) &&
                     !targetName.StartsWith(candidateName, System.StringComparison.OrdinalIgnoreCase))
                 {
-                    return false; // Wrong type of magazine! (e.g. Pistol mag in Rifle socket)
+                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Name mismatch between candidate '{candidateName}' and target '{targetName}'");
+                    return false; // Wrong type of magazine!
                 }
             }
         }
 
+        Debug.LogWarning($"<color=green>[WeaponController] IsMagazineAllowed: ALLOWED!</color> '{mag.gameObject.name}' for weapon '{gameObject.name}'");
         return true;
     }
 
