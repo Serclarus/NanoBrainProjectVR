@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,7 +22,7 @@ public struct RecoilTier
 }
 
 [RequireComponent(typeof(TwoHandGrabInteractable))]
-public class WeaponController : NetworkBehaviour
+public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilter
 {
     [Header("Fire Mode")]
     [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
@@ -197,11 +197,16 @@ public class WeaponController : NetworkBehaviour
         if (magazineSocket != null)
         {
             magazineSocket.socketActive = true; // Ensure socket active is enabled
-            magazineSocket.recycleDelayTime = 0f; // Disable recycle delay lockout
-            magazineSocket.hoverSocketSnapping = true; // Allow hover socket snapping
-            magazineSocket.showInteractableHoverMeshes = true; // Ensure hover meshes are visible
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
+            magazineSocket.hoverEntered.AddListener(OnSocketHoverEntered);
+            
+            // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
+            magazineSocket.hoverFilters.Add(this);
+            magazineSocket.selectFilters.Add(this);
+            
+            // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
+            magazineSocket.interactableCantHoverMeshMaterial = null;
         }
 
         if (triggerTransform != null)
@@ -262,6 +267,10 @@ public class WeaponController : NetworkBehaviour
         {
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
+            magazineSocket.hoverEntered.RemoveListener(OnSocketHoverEntered);
+            
+            magazineSocket.hoverFilters.Remove(this);
+            magazineSocket.selectFilters.Remove(this);
         }
     }
 
@@ -444,8 +453,6 @@ public class WeaponController : NetworkBehaviour
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
-        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnMagazineRemoved on '{gameObject.name}'. Removed: '{args.interactableObject.transform.name}'");
-
         if (currentMagazine != null)
         {
             NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
@@ -475,24 +482,6 @@ public class WeaponController : NetworkBehaviour
         if (!IsSpawned || IsOwner)
         {
             PlayMagazineReleaseSound();
-        }
-
-        // CRITICAL: Force the socket back to fully active state immediately after removal
-        if (magazineSocket != null)
-        {
-            magazineSocket.socketActive = true;
-            magazineSocket.enabled = true;
-            magazineSocket.recycleDelayTime = 0f;
-            
-            // Re-enable the socket's trigger collider in case it was disabled
-            BoxCollider socketCollider = magazineSocket.GetComponent<BoxCollider>();
-            if (socketCollider != null)
-            {
-                socketCollider.enabled = true;
-                socketCollider.isTrigger = true;
-            }
-
-            Debug.LogWarning($"<color=green>[WeaponController]</color> Socket on '{gameObject.name}' re-activated after magazine removal. socketActive={magazineSocket.socketActive}, enabled={magazineSocket.enabled}, hasSelection={magazineSocket.hasSelection}");
         }
     }
 
@@ -575,59 +564,128 @@ public class WeaponController : NetworkBehaviour
         StartCoroutine(SyncMagazineRoutine(newMag));
     }
 
-    private void UpdateDiagnosis()
-    {
-        if (magazineSocket == null || magazineSocket.hasSelection) return;
+    // --- XR SOCKET FILTERING ---
+    public bool canProcess => true;
 
-        // 1. Check if the socket is natively active and enabled
-        if (!magazineSocket.isActiveAndEnabled || !magazineSocket.socketActive)
+    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
+    {
+        return IsMagazineAllowed(interactable);
+    }
+
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+    {
+        return IsMagazineAllowed(interactable);
+    }
+
+    private void OnSocketHoverEntered(HoverEnterEventArgs args)
+    {
+        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnSocketHoverEntered on '{gameObject.name}'. Hovered interactable: '{args.interactableObject.transform.name}'");
+
+        if (magazineSocket == null)
         {
-            Debug.LogError($"[XRI-Diag] Socket is DISABLED! isActiveAndEnabled: {magazineSocket.isActiveAndEnabled}, socketActive: {magazineSocket.socketActive}");
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket is NULL on '{gameObject.name}'");
             return;
         }
 
-        // 2. Check overlap sphere for ANY magazines
-        Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.15f);
-        
-        foreach (var col in nearby)
+        if (magazineSocket.hasSelection)
         {
-            Magazine mag = col.GetComponentInParent<Magazine>();
-            if (mag == null) mag = col.GetComponentInChildren<Magazine>();
-            if (mag != null && mag.gameObject != gameObject)
-            {
-                var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-                if (grabInteractable != null)
-                {
-                    bool canHover = magazineSocket.CanHover((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable)grabInteractable);
-                    bool canSelect = magazineSocket.CanSelect((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
-                    bool isHoverableBy = grabInteractable.IsHoverableBy((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor)magazineSocket);
-                    bool isSelectableBy = grabInteractable.IsSelectableBy((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket);
-                    
-                    int socketLayers = magazineSocket.interactionLayers.value;
-                    int magLayers = grabInteractable.interactionLayers.value;
-                    bool layerMatch = (socketLayers & magLayers) != 0;
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket already has selection ('{magazineSocket.firstInteractableSelected.transform.name}')");
+            return;
+        }
 
-                    Debug.Log($"[XRI-Diag] Found Mag '{mag.gameObject.name}'. CanHover: {canHover}, CanSelect: {canSelect}, isHoverableBy: {isHoverableBy}, isSelectableBy: {isSelectableBy}, LayerMatch: {layerMatch} (Socket: {socketLayers}, Mag: {magLayers})");
-                    
-                    // Force native hover if everything matches but it's just not triggering natively!
-                    if (canHover && layerMatch && !magazineSocket.interactablesHovered.Contains(grabInteractable))
-                    {
-                        var manager = magazineSocket.interactionManager;
-                        if (manager != null)
-                        {
-                            Debug.Log($"[XRI-Diag] FORCING HOVER via InteractionManager!");
-                            manager.HoverEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor)magazineSocket, grabInteractable);
-                        }
-                    }
+        IXRSelectInteractable selectInteractable = args.interactableObject as IXRSelectInteractable;
+        if (selectInteractable == null)
+        {
+            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: Hovered object '{args.interactableObject.transform.name}' is not an IXRSelectInteractable");
+            return;
+        }
+
+        if (IsMagazineAllowed(args.interactableObject))
+        {
+            Debug.LogWarning($"<color=green>[WeaponController]</color> Valid magazine '{selectInteractable.transform.name}' hovered socket on '{gameObject.name}'. Forcefully socketing via SelectEnter!");
+            
+            var manager = magazineSocket.interactionManager;
+            if (manager == null)
+            {
+                manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+                if (manager != null) magazineSocket.interactionManager = manager;
+            }
+
+            if (manager != null)
+            {
+                UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable baseInteractable = args.interactableObject as UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+                if (baseInteractable != null && baseInteractable.interactionManager != manager)
+                {
+                    baseInteractable.interactionManager = manager;
+                    manager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)baseInteractable);
                 }
+
+                manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, selectInteractable);
+            }
+            else
+            {
+                Debug.LogError($"[WeaponController] Could not find valid XRInteractionManager for magazineSocket on '{gameObject.name}'!");
             }
         }
     }
 
+    private bool IsMagazineAllowed(IXRInteractable interactable)
+    {
+        if (interactable == null || interactable.transform == null)
+        {
+            Debug.LogWarning("[WeaponController] IsMagazineAllowed: interactable or transform is NULL!");
+            return false;
+        }
+
+        // Search for Magazine component on the interactable, its parents, or its children
+        Magazine mag = interactable.transform.GetComponentInParent<Magazine>();
+        if (mag == null)
+        {
+            mag = interactable.transform.GetComponentInChildren<Magazine>();
+        }
+
+        if (mag == null) 
+        {
+            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: No Magazine component found on '{interactable.transform.name}' or its parents/children.");
+            return false; // Not a magazine! Reject it completely.
+        }
+
+        // If this weapon specifies a magazinePrefab, verify that the magazine is compatible
+        if (magazinePrefab != null)
+        {
+            string targetName = GetCleanPrefabName(magazinePrefab.name);
+            string candidateName = GetCleanPrefabName(mag.gameObject.name);
+
+            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetName}' (from '{magazinePrefab.name}') with mag candidate '{candidateName}' (from '{mag.gameObject.name}')");
+
+            if (!string.IsNullOrEmpty(targetName) && !string.IsNullOrEmpty(candidateName))
+            {
+                if (!candidateName.StartsWith(targetName, System.StringComparison.OrdinalIgnoreCase) &&
+                    !targetName.StartsWith(candidateName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Name mismatch between candidate '{candidateName}' and target '{targetName}'");
+                    return false; // Wrong type of magazine!
+                }
+            }
+        }
+
+        Debug.LogWarning($"<color=green>[WeaponController] IsMagazineAllowed: ALLOWED!</color> '{mag.gameObject.name}' for weapon '{gameObject.name}'");
+        return true;
+    }
+
     private string GetCleanPrefabName(string rawName)
     {
-        return rawName.Replace("(Clone)", "").Trim();
+        if (string.IsNullOrEmpty(rawName)) return "";
+        string clean = rawName;
+        int cloneIdx = clean.IndexOf("(Clone)", System.StringComparison.OrdinalIgnoreCase);
+        if (cloneIdx >= 0) clean = clean.Substring(0, cloneIdx);
+        int pooledIdx = clean.IndexOf("_Pooled", System.StringComparison.OrdinalIgnoreCase);
+        if (pooledIdx >= 0) clean = clean.Substring(0, pooledIdx);
+        int prefabIdx = clean.IndexOf("_Prefab", System.StringComparison.OrdinalIgnoreCase);
+        if (prefabIdx >= 0) clean = clean.Substring(0, prefabIdx);
+        
+        clean = clean.Trim();
+        return clean;
     }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
@@ -887,12 +945,6 @@ public class WeaponController : NetworkBehaviour
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
 
-        // ── XRI Native Diagnosis ──
-        if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
-        {
-            UpdateDiagnosis();
-        }
-
         // Auto-firing logic for when the trigger is held down over multiple frames
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
         if (IsOwner || isOffline)
@@ -914,7 +966,7 @@ public class WeaponController : NetworkBehaviour
         }
 #endif
 
-        // ── Trigger Animation ──
+        // ÔöÇÔöÇ Trigger Animation ÔöÇÔöÇ
         if (triggerTransform != null)
         {
             float triggerInput = 0f;
@@ -927,7 +979,7 @@ public class WeaponController : NetworkBehaviour
             triggerTransform.localRotation = triggerOriginalRotation * Quaternion.AngleAxis(triggerInput * triggerMaxAngle, triggerRotateAxis);
         }
 
-        // ── Procedural Recoil (Spring Math) ──
+        // ÔöÇÔöÇ Procedural Recoil (Spring Math) ÔöÇÔöÇ
         if (weaponModel != null)
         {
             targetRotation = Vector3.Lerp(targetRotation, Vector3.zero, Time.deltaTime * returnSpeed);
@@ -1253,9 +1305,9 @@ public class WeaponController : NetworkBehaviour
         PlayMagazineReleaseSoundLocal();
     }
 
-    // ────────────────────────────────────────────────────────────────────────
+    // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     // EFFECTS & RECOIL
-    // ────────────────────────────────────────────────────────────────────────
+    // ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
     private void PlayShootEffects()
     {
