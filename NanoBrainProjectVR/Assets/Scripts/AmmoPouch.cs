@@ -374,6 +374,9 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
         // Track this specific instance so we can restore its materials later!
         hiddenAmmoInstance = newAmmo;
         
+        // CRITICAL FIX: The magazine must be active, or XRI physics triggers (and standard sockets) will ignore it!
+        newAmmo.SetActive(true);
+        
         ApplyInvisibleMaterial(newAmmo);
 
         XRBaseInteractable ammoInteractable = newAmmo.GetComponentInChildren<XRBaseInteractable>(true);

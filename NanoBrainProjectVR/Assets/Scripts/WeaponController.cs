@@ -575,6 +575,59 @@ public class WeaponController : NetworkBehaviour
         StartCoroutine(SyncMagazineRoutine(newMag));
     }
 
+    private void TryProximitySocketMagazine()
+    {
+        if (magazineSocket == null || magazineSocket.hasSelection) return;
+
+        Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
+        float checkRadius = 0.15f; // 15cm detection radius
+
+        Collider[] nearby = Physics.OverlapSphere(socketPos, checkRadius);
+        foreach (var col in nearby)
+        {
+            if (col == null || col.gameObject == gameObject) continue;
+
+            Magazine mag = col.GetComponentInParent<Magazine>();
+            if (mag == null) mag = col.GetComponentInChildren<Magazine>();
+            if (mag == null) continue;
+
+            var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (grabInteractable == null) continue;
+            
+            // IF THE PLAYER IS HOLDING IT, DO NOT STEAL IT!
+            // Wait until the player naturally drops it near the socket.
+            if (grabInteractable.isSelected) continue;
+
+            // Check compatibility without breaking XRI native filters
+            if (magazinePrefab != null)
+            {
+                string targetClean = GetCleanPrefabName(magazinePrefab.name).ToLower();
+                string candidateClean = GetCleanPrefabName(mag.gameObject.name).ToLower();
+                
+                if (targetClean.Contains("pistol") && !candidateClean.Contains("pistol")) continue;
+                if ((targetClean.Contains("akm") || targetClean.Contains("rifle")) && !candidateClean.Contains("akm") && !candidateClean.Contains("rifle")) continue;
+            }
+
+            var manager = magazineSocket.interactionManager;
+            if (manager == null) manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+
+            if (manager != null)
+            {
+                UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable selectInteractable = grabInteractable as UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+                if (selectInteractable != null)
+                {
+                    Debug.LogWarning($"<color=cyan>[WeaponController]</color> Proximity caught dropped magazine '{mag.gameObject.name}'!");
+                    manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, selectInteractable);
+                    return; // Only socket one magazine
+                }
+            }
+        }
+    }
+
+    private string GetCleanPrefabName(string rawName)
+    {
+        return rawName.Replace("(Clone)", "").Trim();
+    }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
     {
@@ -833,6 +886,11 @@ public class WeaponController : NetworkBehaviour
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
 
+        // ── Proximity-based Magazine Socketing Fallback ──
+        if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
+        {
+            TryProximitySocketMagazine();
+        }
 
         // Auto-firing logic for when the trigger is held down over multiple frames
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
