@@ -575,49 +575,41 @@ public class WeaponController : NetworkBehaviour
         StartCoroutine(SyncMagazineRoutine(newMag));
     }
 
-    private void UpdateDiagnosis()
+    private void CustomSocketUpdate()
     {
         if (magazineSocket == null || magazineSocket.hasSelection) return;
 
-        // 1. Check if the socket is natively active and enabled
-        if (!magazineSocket.isActiveAndEnabled || !magazineSocket.socketActive)
-        {
-            Debug.LogError($"[XRI-Diag] Socket is DISABLED! isActiveAndEnabled: {magazineSocket.isActiveAndEnabled}, socketActive: {magazineSocket.socketActive}");
-            return;
-        }
+        if (!magazineSocket.isActiveAndEnabled || !magazineSocket.socketActive) return;
 
-        // 2. Check overlap sphere for ANY magazines
         Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.15f);
+        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.10f); // 10cm radius
         
         foreach (var col in nearby)
         {
+            if (col == null || col.gameObject == gameObject) continue;
+
             Magazine mag = col.GetComponentInParent<Magazine>();
             if (mag == null) mag = col.GetComponentInChildren<Magazine>();
-            if (mag != null && mag.gameObject != gameObject)
+            if (mag != null)
             {
                 var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (grabInteractable != null)
                 {
-                    bool canHover = magazineSocket.CanHover((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable)grabInteractable);
-                    bool canSelect = magazineSocket.CanSelect((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable);
-                    bool isHoverableBy = grabInteractable.IsHoverableBy((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor)magazineSocket);
-                    bool isSelectableBy = grabInteractable.IsSelectableBy((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket);
-                    
-                    int socketLayers = magazineSocket.interactionLayers.value;
-                    int magLayers = grabInteractable.interactionLayers.value;
-                    bool layerMatch = (socketLayers & magLayers) != 0;
-
-                    Debug.Log($"[XRI-Diag] Found Mag '{mag.gameObject.name}'. CanHover: {canHover}, CanSelect: {canSelect}, isHoverableBy: {isHoverableBy}, isSelectableBy: {isSelectableBy}, LayerMatch: {layerMatch} (Socket: {socketLayers}, Mag: {magLayers})");
-                    
-                    // Force native hover if everything matches but it's just not triggering natively!
-                    if (canHover && layerMatch && !magazineSocket.interactablesHovered.Contains(grabInteractable))
+                    // If CanSelect is true, it means the object is NOT held by a hand and is ready to be socketed!
+                    if (magazineSocket.CanSelect((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable))
                     {
-                        var manager = magazineSocket.interactionManager;
-                        if (manager != null)
+                        int socketLayers = magazineSocket.interactionLayers.value;
+                        int magLayers = grabInteractable.interactionLayers.value;
+                        
+                        if ((socketLayers & magLayers) != 0)
                         {
-                            Debug.Log($"[XRI-Diag] FORCING HOVER via InteractionManager!");
-                            manager.HoverEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor)magazineSocket, grabInteractable);
+                            var manager = magazineSocket.interactionManager;
+                            if (manager != null)
+                            {
+                                Debug.LogWarning($"<color=green>[WeaponController]</color> CustomSocketUpdate caught dropped mag '{mag.gameObject.name}'! Snapping in.");
+                                manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, grabInteractable);
+                                return; // Only snap one
+                            }
                         }
                     }
                 }
@@ -887,10 +879,10 @@ public class WeaponController : NetworkBehaviour
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
 
-        // ── XRI Native Diagnosis ──
+        // ── Custom Socket Fallback ──
         if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
         {
-            UpdateDiagnosis();
+            CustomSocketUpdate();
         }
 
         // Auto-firing logic for when the trigger is held down over multiple frames
