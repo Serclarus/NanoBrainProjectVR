@@ -197,6 +197,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         if (magazineSocket != null)
         {
             magazineSocket.socketActive = true; // Ensure socket active is enabled
+            magazineSocket.recycleDelayTime = 0f; // Disable recycle delay lockout
+            magazineSocket.hoverSocketSnapping = true; // Allow hover socket snapping
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
             magazineSocket.hoverEntered.AddListener(OnSocketHoverEntered);
@@ -653,18 +655,35 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         // If this weapon specifies a magazinePrefab, verify that the magazine is compatible
         if (magazinePrefab != null)
         {
-            string targetName = GetCleanPrefabName(magazinePrefab.name);
-            string candidateName = GetCleanPrefabName(mag.gameObject.name);
+            string targetClean = GetCleanPrefabName(magazinePrefab.name);
+            string candidateClean = GetCleanPrefabName(mag.gameObject.name);
 
-            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetName}' (from '{magazinePrefab.name}') with mag candidate '{candidateName}' (from '{mag.gameObject.name}')");
+            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetClean}' (from '{magazinePrefab.name}') with mag candidate '{candidateClean}' (from '{mag.gameObject.name}')");
 
-            if (!string.IsNullOrEmpty(targetName) && !string.IsNullOrEmpty(candidateName))
+            // Explicit check for MagPistol and MagAKM
+            if (targetClean.Equals("MagPistol", System.StringComparison.OrdinalIgnoreCase) || targetClean.Contains("pistol"))
             {
-                if (!candidateName.StartsWith(targetName, System.StringComparison.OrdinalIgnoreCase) &&
-                    !targetName.StartsWith(candidateName, System.StringComparison.OrdinalIgnoreCase))
+                if (!candidateClean.Contains("magpistol") && !candidateClean.Contains("pistol"))
                 {
-                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Name mismatch between candidate '{candidateName}' and target '{targetName}'");
-                    return false; // Wrong type of magazine!
+                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Weapon expects MagPistol, but candidate is '{candidateClean}'");
+                    return false;
+                }
+            }
+            else if (targetClean.Equals("MagAKM", System.StringComparison.OrdinalIgnoreCase) || targetClean.Contains("akm") || targetClean.Contains("rifle"))
+            {
+                if (!candidateClean.Contains("magakm") && !candidateClean.Contains("akm") && !candidateClean.Contains("rifle"))
+                {
+                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Weapon expects MagAKM, but candidate is '{candidateClean}'");
+                    return false;
+                }
+            }
+            else if (!string.IsNullOrEmpty(targetClean) && !string.IsNullOrEmpty(candidateClean))
+            {
+                if (!candidateClean.StartsWith(targetClean, System.StringComparison.OrdinalIgnoreCase) &&
+                    !targetClean.StartsWith(candidateClean, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Mismatch between target '{targetClean}' and candidate '{candidateClean}'");
+                    return false;
                 }
             }
         }
