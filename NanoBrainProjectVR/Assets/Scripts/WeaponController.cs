@@ -22,7 +22,7 @@ public struct RecoilTier
 }
 
 [RequireComponent(typeof(TwoHandGrabInteractable))]
-public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilter
+public class WeaponController : NetworkBehaviour
 {
     [Header("Fire Mode")]
     [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
@@ -199,30 +199,9 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             magazineSocket.socketActive = true; // Ensure socket active is enabled
             magazineSocket.recycleDelayTime = 0f; // Disable recycle delay lockout
             magazineSocket.hoverSocketSnapping = true; // Allow hover socket snapping
-            magazineSocket.socketSnappingRadius = 0.2f; // Increase snapping radius
             magazineSocket.showInteractableHoverMeshes = true; // Ensure hover meshes are visible
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
-            magazineSocket.hoverEntered.AddListener(OnSocketHoverEntered);
-            
-            // Enlarge the socket's trigger collider so magazines are easier to detect
-            BoxCollider socketCollider = magazineSocket.GetComponent<BoxCollider>();
-            if (socketCollider != null)
-            {
-                socketCollider.isTrigger = true;
-                socketCollider.size = new Vector3(
-                    Mathf.Max(socketCollider.size.x, 0.08f),
-                    Mathf.Max(socketCollider.size.y, 0.12f),
-                    Mathf.Max(socketCollider.size.z, 0.08f)
-                );
-            }
-            
-            // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
-            magazineSocket.hoverFilters.Add(this);
-            magazineSocket.selectFilters.Add(this);
-            
-            // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
-            magazineSocket.interactableCantHoverMeshMaterial = null;
         }
 
         if (triggerTransform != null)
@@ -283,10 +262,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
-            magazineSocket.hoverEntered.RemoveListener(OnSocketHoverEntered);
-            
-            magazineSocket.hoverFilters.Remove(this);
-            magazineSocket.selectFilters.Remove(this);
         }
     }
 
@@ -600,186 +575,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         StartCoroutine(SyncMagazineRoutine(newMag));
     }
 
-    // --- XR SOCKET FILTERING ---
-    public bool canProcess => true;
-
-    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
-    {
-        return IsMagazineAllowed(interactable);
-    }
-
-    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
-    {
-        return IsMagazineAllowed(interactable);
-    }
-
-    private void OnSocketHoverEntered(HoverEnterEventArgs args)
-    {
-        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnSocketHoverEntered on '{gameObject.name}'. Hovered interactable: '{args.interactableObject.transform.name}'");
-
-        if (magazineSocket == null)
-        {
-            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket is NULL on '{gameObject.name}'");
-            return;
-        }
-
-        if (magazineSocket.hasSelection)
-        {
-            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: magazineSocket already has selection ('{magazineSocket.firstInteractableSelected.transform.name}')");
-            return;
-        }
-
-        IXRSelectInteractable selectInteractable = args.interactableObject as IXRSelectInteractable;
-        if (selectInteractable == null)
-        {
-            Debug.LogWarning($"[WeaponController] OnSocketHoverEntered: Hovered object '{args.interactableObject.transform.name}' is not an IXRSelectInteractable");
-            return;
-        }
-
-        if (IsMagazineAllowed(args.interactableObject))
-        {
-            Debug.LogWarning($"<color=green>[WeaponController]</color> Valid magazine '{selectInteractable.transform.name}' hovered socket on '{gameObject.name}'. Forcefully socketing via SelectEnter!");
-            
-            var manager = magazineSocket.interactionManager;
-            if (manager == null)
-            {
-                manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-                if (manager != null) magazineSocket.interactionManager = manager;
-            }
-
-            if (manager != null)
-            {
-                UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable baseInteractable = args.interactableObject as UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
-                if (baseInteractable != null && baseInteractable.interactionManager != manager)
-                {
-                    baseInteractable.interactionManager = manager;
-                    manager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)baseInteractable);
-                }
-            }
-            else
-            {
-                Debug.LogError($"[WeaponController] Could not find valid XRInteractionManager for magazineSocket on '{gameObject.name}'!");
-            }
-        }
-    }
-
-    private void TryProximitySocketMagazine()
-    {
-        if (magazineSocket == null || magazineSocket.hasSelection) return;
-
-        Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        float checkRadius = 0.15f; // 15cm detection radius
-
-        Collider[] nearby = Physics.OverlapSphere(socketPos, checkRadius);
-        foreach (var col in nearby)
-        {
-            if (col == null || col.gameObject == gameObject) continue;
-
-            Magazine mag = col.GetComponentInParent<Magazine>();
-            if (mag == null) mag = col.GetComponentInChildren<Magazine>();
-            if (mag == null) continue;
-
-            var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-            if (grabInteractable == null) continue;
-            
-            // IF THE PLAYER IS HOLDING IT, DO NOT STEAL IT!
-            // Wait until the player naturally drops it near the socket.
-            if (grabInteractable.isSelected) continue;
-
-            // Check compatibility
-            IXRInteractable interactable = grabInteractable as IXRInteractable;
-            if (!IsMagazineAllowed(interactable)) continue;
-
-            var manager = magazineSocket.interactionManager;
-            if (manager == null) manager = UnityEngine.Object.FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-
-            if (manager != null)
-            {
-                IXRSelectInteractable selectInteractable = grabInteractable as IXRSelectInteractable;
-                if (selectInteractable != null)
-                {
-                    Debug.LogWarning($"<color=cyan>[WeaponController]</color> Proximity caught dropped magazine '{mag.gameObject.name}'!");
-                    manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, selectInteractable);
-                    return; // Only socket one magazine
-                }
-            }
-        }
-    }
-
-    private bool IsMagazineAllowed(IXRInteractable interactable)
-    {
-        if (interactable == null || interactable.transform == null)
-        {
-            Debug.LogWarning("[WeaponController] IsMagazineAllowed: interactable or transform is NULL!");
-            return false;
-        }
-
-        // Search for Magazine component on the interactable, its parents, or its children
-        Magazine mag = interactable.transform.GetComponentInParent<Magazine>();
-        if (mag == null)
-        {
-            mag = interactable.transform.GetComponentInChildren<Magazine>();
-        }
-
-        if (mag == null) 
-        {
-            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: No Magazine component found on '{interactable.transform.name}' or its parents/children.");
-            return false; // Not a magazine! Reject it completely.
-        }
-
-        // If this weapon specifies a magazinePrefab, verify that the magazine is compatible
-        if (magazinePrefab != null)
-        {
-            string targetClean = GetCleanPrefabName(magazinePrefab.name).ToLower();
-            string candidateClean = GetCleanPrefabName(mag.gameObject.name).ToLower();
-
-            Debug.LogWarning($"[WeaponController] IsMagazineAllowed: Comparing weapon target '{targetClean}' (from '{magazinePrefab.name}') with mag candidate '{candidateClean}' (from '{mag.gameObject.name}')");
-
-            // Explicit check for MagPistol and MagAKM
-            if (targetClean == "magpistol" || targetClean.Contains("pistol"))
-            {
-                if (!candidateClean.Contains("magpistol") && !candidateClean.Contains("pistol"))
-                {
-                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Weapon expects MagPistol, but candidate is '{candidateClean}'");
-                    return false;
-                }
-            }
-            else if (targetClean == "magakm" || targetClean.Contains("akm") || targetClean.Contains("rifle"))
-            {
-                if (!candidateClean.Contains("magakm") && !candidateClean.Contains("akm") && !candidateClean.Contains("rifle"))
-                {
-                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Weapon expects MagAKM, but candidate is '{candidateClean}'");
-                    return false;
-                }
-            }
-            else if (!string.IsNullOrEmpty(targetClean) && !string.IsNullOrEmpty(candidateClean))
-            {
-                if (!candidateClean.StartsWith(targetClean) && !targetClean.StartsWith(candidateClean))
-                {
-                    Debug.LogWarning($"[WeaponController] IsMagazineAllowed: REJECTED! Mismatch between target '{targetClean}' and candidate '{candidateClean}'");
-                    return false;
-                }
-            }
-        }
-
-        Debug.LogWarning($"<color=green>[WeaponController] IsMagazineAllowed: ALLOWED!</color> '{mag.gameObject.name}' for weapon '{gameObject.name}'");
-        return true;
-    }
-
-    private string GetCleanPrefabName(string rawName)
-    {
-        if (string.IsNullOrEmpty(rawName)) return "";
-        string clean = rawName;
-        int cloneIdx = clean.IndexOf("(Clone)", System.StringComparison.OrdinalIgnoreCase);
-        if (cloneIdx >= 0) clean = clean.Substring(0, cloneIdx);
-        int pooledIdx = clean.IndexOf("_Pooled", System.StringComparison.OrdinalIgnoreCase);
-        if (pooledIdx >= 0) clean = clean.Substring(0, pooledIdx);
-        int prefabIdx = clean.IndexOf("_Prefab", System.StringComparison.OrdinalIgnoreCase);
-        if (prefabIdx >= 0) clean = clean.Substring(0, prefabIdx);
-        
-        clean = clean.Trim();
-        return clean;
-    }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
     {
@@ -1038,11 +833,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
 
-        // ── Proximity-based Magazine Socketing Fallback ──
-        if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
-        {
-            TryProximitySocketMagazine();
-        }
 
         // Auto-firing logic for when the trigger is held down over multiple frames
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
