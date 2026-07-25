@@ -656,6 +656,13 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                     manager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)baseInteractable);
                 }
 
+                // CRITICAL FIX: The socket MUST steal the magazine from the player's hand!
+                // XRI will ignore SelectEnter if the item is already held by a hand.
+                for (int i = selectInteractable.interactorsSelecting.Count - 1; i >= 0; i--)
+                {
+                    manager.SelectCancel(selectInteractable.interactorsSelecting[i], selectInteractable);
+                }
+
                 manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, selectInteractable);
             }
             else
@@ -711,6 +718,12 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                 IXRSelectInteractable selectInteractable = grabInteractable as IXRSelectInteractable;
                 if (selectInteractable != null)
                 {
+                    // CRITICAL FIX: The socket MUST steal the magazine from the player's hand!
+                    for (int i = selectInteractable.interactorsSelecting.Count - 1; i >= 0; i--)
+                    {
+                        manager.SelectCancel(selectInteractable.interactorsSelecting[i], selectInteractable);
+                    }
+
                     manager.SelectEnter(
                         (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket,
                         selectInteractable
