@@ -54,6 +54,20 @@ public class PCSpectatorMonitor : MonoBehaviour
         Application.runInBackground = true;
 
         spectatorCamera = GetComponent<Camera>();
+        if (spectatorCamera != null)
+        {
+            // Ensure the spectator camera sees all gameplay layers (Hands, Weapons, Players, Environment)
+            // and only ignores layer 14 (HideFromCamera).
+            int hideFromCameraLayer = LayerMask.NameToLayer("HideFromCamera");
+            if (hideFromCameraLayer >= 0)
+            {
+                spectatorCamera.cullingMask = ~0 & ~(1 << hideFromCameraLayer);
+            }
+            else
+            {
+                spectatorCamera.cullingMask = ~0; // Everything
+            }
+        }
 
         // If we are outputting to a UI screen, we need a RenderTexture
         if (dashboardMonitor != null && spectatorCamera != null)
