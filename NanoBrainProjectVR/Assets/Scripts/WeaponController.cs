@@ -34,6 +34,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     [Header("Audio Settings")]
     public AudioClip shootSound;
     public AudioClip dryFireSound;
+    public AudioClip magazineInsertSound;
+    public AudioClip magazineReleaseSound;
     public Vector2 soundPitchRange = new Vector2(0.95f, 1.05f);
     [Range(0f, 1f)] public float shootVolume = 1f;
 
@@ -439,11 +441,21 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             {
                 StartCoroutine(SnapMagazineRoutine(mag.gameObject, magazineSocket));
             }
+
+            if (audioSource != null && magazineInsertSound != null)
+            {
+                audioSource.PlayOneShot(magazineInsertSound, shootVolume);
+            }
         }
     }
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
+        if (audioSource != null && magazineReleaseSound != null)
+        {
+            audioSource.PlayOneShot(magazineReleaseSound, shootVolume);
+        }
+
         if (currentMagazine != null)
         {
             NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
