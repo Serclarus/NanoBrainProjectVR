@@ -549,17 +549,17 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
     public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable interactable)
     {
-        return IsMagazineAllowed(interactable.transform);
+        return IsMagazineAllowed(interactable);
     }
 
     public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable interactable)
     {
-        return IsMagazineAllowed(interactable.transform);
+        return IsMagazineAllowed(interactable);
     }
 
-    private bool IsMagazineAllowed(Transform interactableTransform)
+    private bool IsMagazineAllowed(UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable interactable)
     {
-        Magazine mag = interactableTransform.GetComponent<Magazine>();
+        Magazine mag = interactable.transform.GetComponent<Magazine>();
         if (mag == null) 
         {
             return false; // Not a magazine! Reject it completely.
@@ -567,8 +567,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (magazinePrefab != null)
         {
-            // Fix for NGO Pooled objects: the name might be "MagPistol_Pooled_0" or "MagPistol(Clone)"
-            if (!interactableTransform.name.StartsWith(magazinePrefab.name) && !interactableTransform.name.Contains(magazinePrefab.name))
+            if (!interactable.transform.name.StartsWith(magazinePrefab.name))
             {
                 return false; // Wrong type of magazine!
             }
