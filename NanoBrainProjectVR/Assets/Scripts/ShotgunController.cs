@@ -19,7 +19,7 @@ public class ShotgunController : NetworkBehaviour
     [Tooltip("How many rounds are loaded when 1 physical shell is inserted (QoL)")]
     public int ammoPerShellReloaded = 3;
     
-    public NetworkVariable<ChamberState> chamberState = new NetworkVariable<ChamberState>(ChamberState.LiveRound, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<ChamberState> chamberState = new NetworkVariable<ChamberState>(ChamberState.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Pellet Spread")]
     public float damagePerPellet = 34f;
@@ -144,9 +144,13 @@ public class ShotgunController : NetworkBehaviour
             {
                 currentAmmo.Value = initialAmmo;
             }
-            if (chamberState.Value == ChamberState.Empty)
+            if (initialAmmo > 0)
             {
                 chamberState.Value = ChamberState.LiveRound;
+            }
+            else
+            {
+                chamberState.Value = ChamberState.Empty;
             }
         }
     }
@@ -159,9 +163,13 @@ public class ShotgunController : NetworkBehaviour
             {
                 currentAmmo.Value = initialAmmo;
             }
-            if (chamberState.Value == ChamberState.Empty)
+            if (initialAmmo > 0)
             {
                 chamberState.Value = ChamberState.LiveRound;
+            }
+            else
+            {
+                chamberState.Value = ChamberState.Empty;
             }
         }
 
