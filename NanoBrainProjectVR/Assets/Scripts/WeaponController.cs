@@ -625,18 +625,29 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                         
                         if (!magazineSocket.hasSelection)
                         {
+                            Transform attach = magazineSocket.attachTransform != null ? magazineSocket.attachTransform : magazineSocket.transform;
+                            currentMagazine.transform.position = attach.position;
+                            currentMagazine.transform.rotation = attach.rotation;
+                            var rb = currentMagazine.GetComponent<Rigidbody>();
+                            if (rb != null)
+                            {
+                                rb.isKinematic = true;
+                                rb.linearVelocity = Vector3.zero;
+                                rb.angularVelocity = Vector3.zero;
+                            }
+
                             manager.SelectEnter(
                                 (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
                                 (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
                             );
                             
-                            // BRUTE FORCE FALLBACK: If XRI refused to socket it (e.g. mismatched layers), forcefully snap it!
-                            if (!magazineSocket.hasSelection)
+                            currentMagazine.transform.position = attach.position;
+                            currentMagazine.transform.rotation = attach.rotation;
+                            if (rb != null)
                             {
-                                currentMagazine.transform.position = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-                                currentMagazine.transform.rotation = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.rotation : magazineSocket.transform.rotation;
-                                var rb = currentMagazine.GetComponent<Rigidbody>();
-                                if (rb != null) rb.isKinematic = true;
+                                rb.isKinematic = true;
+                                rb.linearVelocity = Vector3.zero;
+                                rb.angularVelocity = Vector3.zero;
                             }
                         }
                     }
@@ -676,7 +687,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         }
 
         Debug.LogWarning($"[WeaponController] Instantiating magazine prefab locally...");
-        GameObject newMag = Instantiate(magazinePrefab, magazineSocket.transform.position, magazineSocket.transform.rotation);
+        Transform attach = magazineSocket.attachTransform != null ? magazineSocket.attachTransform : magazineSocket.transform;
+        GameObject newMag = Instantiate(magazinePrefab, attach.position, attach.rotation);
         
         NetworkObject netObj = newMag.GetComponent<NetworkObject>();
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
@@ -724,18 +736,29 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
                 magazineSocket.interactionManager.RegisterInteractable((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable)grabInteractable);
             }
             
+            attach = magazineSocket.attachTransform != null ? magazineSocket.attachTransform : magazineSocket.transform;
+            newMag.transform.position = attach.position;
+            newMag.transform.rotation = attach.rotation;
+            var rb = newMag.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
             magazineSocket.interactionManager.SelectEnter(
                 (UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, 
                 (UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable
             );
             
-            // BRUTE FORCE FALLBACK: If XRI refused to socket it (e.g. mismatched layers), forcefully snap it!
-            if (!magazineSocket.hasSelection)
+            newMag.transform.position = attach.position;
+            newMag.transform.rotation = attach.rotation;
+            if (rb != null)
             {
-                newMag.transform.position = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-                newMag.transform.rotation = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.rotation : magazineSocket.transform.rotation;
-                var rb = newMag.GetComponent<Rigidbody>();
-                if (rb != null) rb.isKinematic = true;
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
             }
         }
     }
