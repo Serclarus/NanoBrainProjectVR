@@ -396,21 +396,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered standalone interactor '{interactor.name}' with manager '{newManager.name}'");
         }
 
-        // 3. Bind all persistent interactables (weapons, magazines, items)
-        var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
-        foreach (var interactable in allInteractables)
-        {
-            interactable.interactionManager = newManager;
-
-            // NEVER toggle enabled state if the interactable is currently selected or socketed!
-            // Toggling enabled on a socketed item (like a magazine in a gun or pouch) triggers OnDisable(), which breaks socket selection!
-            if (!interactable.isSelected && interactable.enabled)
-            {
-                interactable.enabled = false;
-                interactable.enabled = true;
-            }
-        }
-
         // Re-enable locomotion providers and character controllers if we are in a gameplay scene
         string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (activeSceneName != "MainMenu")
