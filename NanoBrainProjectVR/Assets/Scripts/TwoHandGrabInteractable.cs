@@ -134,21 +134,9 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     Vector3 localHandPos = transform.InverseTransformPoint(secondaryController.position);
                     
                     float currentZ = pumpSlideTransform.localPosition.z;
-                    float deltaZ = localHandPos.z - currentZ;
-
-                    float targetZ = currentZ;
-                    if (deltaZ > pumpDeadzone)
-                    {
-                        targetZ = localHandPos.z - pumpDeadzone;
-                    }
-                    else if (deltaZ < -pumpDeadzone)
-                    {
-                        targetZ = localHandPos.z + pumpDeadzone;
-                    }
-
                     float minZ = Mathf.Min(pumpForwardZ, pumpBackZ);
                     float maxZ = Mathf.Max(pumpForwardZ, pumpBackZ);
-                    float clampedZ = Mathf.Clamp(targetZ, minZ, maxZ);
+                    float clampedZ = Mathf.Clamp(localHandPos.z, minZ, maxZ);
 
                     // Actually slide the pump object!
                     pumpSlideTransform.localPosition = new Vector3(
@@ -171,7 +159,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                     }
 
                     // Fire events when it hits the limits!
-                    float pumpThreshold = 0.025f;
+                    float pumpThreshold = 0.035f;
                     if (Mathf.Abs(clampedZ - pumpBackZ) < pumpThreshold && !hasPumpedBack)
                     {
                         hasPumpedBack = true;
