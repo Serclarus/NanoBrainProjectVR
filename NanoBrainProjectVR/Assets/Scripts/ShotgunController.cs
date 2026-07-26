@@ -178,6 +178,7 @@ public class ShotgunController : NetworkBehaviour
             shellPool = new Queue<GameObject>();
             activeShellCoroutines = new Dictionary<GameObject, Coroutine>();
             GameObject shellParent = new GameObject("ShotgunShellPool");
+            shellParent.transform.SetParent(transform, false);
 
             for (int i = 0; i < shellPoolSize; i++)
             {
@@ -572,6 +573,18 @@ public class ShotgunController : NetworkBehaviour
 
         GameObject shell = shellPool.Dequeue();
         
+        // Failsafe: if a shell in the pool was destroyed by a scene unload, instantiate a fresh one!
+        if (shell == null)
+        {
+            Transform poolParent = transform.Find("ShotgunShellPool");
+            if (poolParent == null)
+            {
+                poolParent = new GameObject("ShotgunShellPool").transform;
+                poolParent.SetParent(transform, false);
+            }
+            shell = Instantiate(shellPrefab, poolParent);
+        }
+
         // Move the shell to the ejection port BEFORE applying physics!
         shell.transform.position = shellEjectionPoint.position;
         shell.transform.rotation = shellEjectionPoint.rotation;

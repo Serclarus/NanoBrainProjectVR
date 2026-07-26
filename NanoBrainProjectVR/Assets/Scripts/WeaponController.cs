@@ -890,6 +890,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
             // Create a parent object just to keep the hierarchy clean
             Transform poolParent = new GameObject(gameObject.name + "_ShellPool").transform;
+            poolParent.SetParent(transform, false);
 
             for (int i = 0; i < shellPoolSize; i++)
             {
@@ -1359,6 +1360,16 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         // Dequeue oldest shell (cyclic buffer format)
         GameObject shell = shellPool.Dequeue();
+        if (shell == null)
+        {
+            Transform poolParent = transform.Find(gameObject.name + "_ShellPool");
+            if (poolParent == null)
+            {
+                poolParent = new GameObject(gameObject.name + "_ShellPool").transform;
+                poolParent.SetParent(transform, false);
+            }
+            shell = Instantiate(shellPrefab, poolParent);
+        }
 
         // Move the shell to the ejection port BEFORE applying physics!
         shell.transform.position = shellEjectionPoint.position;
