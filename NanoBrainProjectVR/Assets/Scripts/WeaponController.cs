@@ -22,7 +22,7 @@ public struct RecoilTier
 }
 
 [RequireComponent(typeof(TwoHandGrabInteractable))]
-public class WeaponController : NetworkBehaviour
+public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilter
 {
     [Header("Fire Mode")]
     [Tooltip("If true, holding the trigger will fire continuously. If false, one shot per trigger pull.")]
@@ -34,10 +34,6 @@ public class WeaponController : NetworkBehaviour
     [Header("Audio Settings")]
     public AudioClip shootSound;
     public AudioClip dryFireSound;
-    [Tooltip("Sound played when a magazine is inserted into the socket")]
-    public AudioClip magazineInsertSound;
-    [Tooltip("Sound played when a magazine is removed from the socket")]
-    public AudioClip magazineReleaseSound;
     public Vector2 soundPitchRange = new Vector2(0.95f, 1.05f);
     [Range(0f, 1f)] public float shootVolume = 1f;
 
@@ -196,12 +192,15 @@ public class WeaponController : NetworkBehaviour
 
         if (magazineSocket != null)
         {
-            magazineSocket.socketActive = true; // Ensure socket active is enabled
-            magazineSocket.recycleDelayTime = 0f; // Disable recycle delay lockout
-            magazineSocket.hoverSocketSnapping = true; // Allow hover socket snapping
-            magazineSocket.showInteractableHoverMeshes = true; // Ensure hover meshes are visible
             magazineSocket.selectEntered.AddListener(OnMagazineInserted);
             magazineSocket.selectExited.AddListener(OnMagazineRemoved);
+            
+            // Programmatic Filter to prevent other guns from being stuffed into the mag socket!
+            magazineSocket.hoverFilters.Add(this);
+            magazineSocket.selectFilters.Add(this);
+            
+            // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
+            magazineSocket.interactableCantHoverMeshMaterial = null;
         }
 
         if (triggerTransform != null)
@@ -213,12 +212,6 @@ public class WeaponController : NetworkBehaviour
     private void SetSubInteractablesState(bool state)
     {
         Debug.LogWarning($"[WeaponController] SetSubInteractablesState called on {gameObject.name}. State: {state}, isHeld: {isHeld}, syncedIsHeld: {syncedIsHeld.Value}");
-        if (magazineSocket != null)
-        {
-            magazineSocket.enabled = true;
-            magazineSocket.socketActive = true;
-        }
-
         if (subInteractablesGroup != null)
         {
             var interactables = subInteractablesGroup.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true);
@@ -226,6 +219,9 @@ public class WeaponController : NetworkBehaviour
             {
                 // SAFETY: Never disable the main handle of the gun!
                 if (interactable == grabInteractable) continue;
+                
+                // CRITICAL SAFETY: Never disable the XRSocketInteractor! If you disable a socket, it forcefully drops whatever is inside it!
+                if (interactable is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
                 
                 interactable.enabled = state;
             }
@@ -262,6 +258,9 @@ public class WeaponController : NetworkBehaviour
         {
             magazineSocket.selectEntered.RemoveListener(OnMagazineInserted);
             magazineSocket.selectExited.RemoveListener(OnMagazineRemoved);
+            
+            magazineSocket.hoverFilters.Remove(this);
+            magazineSocket.selectFilters.Remove(this);
         }
     }
 
@@ -434,18 +433,11 @@ public class WeaponController : NetworkBehaviour
             
             // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
             SetSubInteractablesState(isHeld || syncedIsHeld.Value);
-
-            if (!IsSpawned || IsOwner)
-            {
-                PlayMagazineInsertSound();
-            }
         }
     }
 
     private void OnMagazineRemoved(SelectExitEventArgs args)
     {
-        Debug.LogWarning($"<color=yellow>[WeaponController]</color> OnMagazineRemoved on '{gameObject.name}'. Removed: '{args.interactableObject.transform.name}'");
-
         if (currentMagazine != null)
         {
             NetworkObject netObj = currentMagazine.GetComponent<NetworkObject>();
@@ -470,29 +462,6 @@ public class WeaponController : NetworkBehaviour
         else if (IsOwner)
         {
             SetSyncedMagazineServerRpc(new NetworkObjectReference());
-        }
-
-        if (!IsSpawned || IsOwner)
-        {
-            PlayMagazineReleaseSound();
-        }
-
-        // CRITICAL: Force the socket back to fully active state immediately after removal
-        if (magazineSocket != null)
-        {
-            magazineSocket.socketActive = true;
-            magazineSocket.enabled = true;
-            magazineSocket.recycleDelayTime = 0f;
-            
-            // Re-enable the socket's trigger collider in case it was disabled
-            BoxCollider socketCollider = magazineSocket.GetComponent<BoxCollider>();
-            if (socketCollider != null)
-            {
-                socketCollider.enabled = true;
-                socketCollider.isTrigger = true;
-            }
-
-            Debug.LogWarning($"<color=green>[WeaponController]</color> Socket on '{gameObject.name}' re-activated after magazine removal. socketActive={magazineSocket.socketActive}, enabled={magazineSocket.enabled}, hasSelection={magazineSocket.hasSelection}");
         }
     }
 
@@ -575,47 +544,37 @@ public class WeaponController : NetworkBehaviour
         StartCoroutine(SyncMagazineRoutine(newMag));
     }
 
-    private void CustomSocketUpdate()
+    // --- XR SOCKET FILTERING ---
+    public bool canProcess => true;
+
+    public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable interactable)
     {
-        if (magazineSocket == null || magazineSocket.hasSelection) return;
-
-        if (!magazineSocket.isActiveAndEnabled || !magazineSocket.socketActive) return;
-
-        Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.04f); // 4cm radius - must be basically inserted!
-        
-        foreach (var col in nearby)
-        {
-            if (col == null || col.gameObject == gameObject) continue;
-
-            Magazine mag = col.GetComponentInParent<Magazine>();
-            if (mag == null) mag = col.GetComponentInChildren<Magazine>();
-            if (mag != null && mag.gameObject != gameObject)
-            {
-                var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-                if (grabInteractable != null)
-                {
-                    int socketLayers = magazineSocket.interactionLayers.value;
-                    int magLayers = grabInteractable.interactionLayers.value;
-                    
-                    if ((socketLayers & magLayers) != 0)
-                    {
-                        var manager = magazineSocket.interactionManager;
-                        if (manager != null)
-                        {
-                            Debug.LogWarning($"<color=green>[WeaponController]</color> CustomSocketUpdate FORCE STEALING mag '{mag.gameObject.name}' because it was pushed perfectly into the socket!");
-                            manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, grabInteractable);
-                            return; // Only snap one
-                        }
-                    }
-                }
-            }
-        }
+        return IsMagazineAllowed(interactable.transform);
     }
 
-    private string GetCleanPrefabName(string rawName)
+    public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable interactable)
     {
-        return rawName.Replace("(Clone)", "").Trim();
+        return IsMagazineAllowed(interactable.transform);
+    }
+
+    private bool IsMagazineAllowed(Transform interactableTransform)
+    {
+        Magazine mag = interactableTransform.GetComponent<Magazine>();
+        if (mag == null) 
+        {
+            return false; // Not a magazine! Reject it completely.
+        }
+
+        if (magazinePrefab != null)
+        {
+            // Fix for NGO Pooled objects: the name might be "MagPistol_Pooled_0" or "MagPistol(Clone)"
+            if (!interactableTransform.name.StartsWith(magazinePrefab.name) && !interactableTransform.name.Contains(magazinePrefab.name))
+            {
+                return false; // Wrong type of magazine!
+            }
+        }
+
+        return true;
     }
 
     private IEnumerator SyncMagazineRoutine(NetworkObjectReference newMag)
@@ -874,12 +833,6 @@ public class WeaponController : NetworkBehaviour
     {
         // Handle fire rate cooldown timer
         if (fireCooldownTimer > 0) fireCooldownTimer -= Time.deltaTime;
-
-        // ── Custom Socket Fallback ──
-        if (isHeld && magazineSocket != null && !magazineSocket.hasSelection && currentMagazine == null)
-        {
-            CustomSocketUpdate();
-        }
 
         // Auto-firing logic for when the trigger is held down over multiple frames
         bool isOffline = NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening;
@@ -1187,58 +1140,6 @@ public class WeaponController : NetworkBehaviour
         {
             audioSource.PlayOneShot(dryFireSound, shootVolume);
         }
-    }
-
-    public void PlayMagazineInsertSound()
-    {
-        PlayMagazineInsertSoundLocal();
-        if (IsSpawned)
-        {
-            PlayMagazineInsertSoundRpc();
-        }
-    }
-
-    private void PlayMagazineInsertSoundLocal()
-    {
-        if (audioSource == null)
-            audioSource = GetComponent<AudioSource>();
-
-        if (audioSource != null && magazineInsertSound != null)
-        {
-            audioSource.PlayOneShot(magazineInsertSound, shootVolume);
-        }
-    }
-
-    [Rpc(SendTo.NotOwner)]
-    private void PlayMagazineInsertSoundRpc()
-    {
-        PlayMagazineInsertSoundLocal();
-    }
-
-    public void PlayMagazineReleaseSound()
-    {
-        PlayMagazineReleaseSoundLocal();
-        if (IsSpawned)
-        {
-            PlayMagazineReleaseSoundRpc();
-        }
-    }
-
-    private void PlayMagazineReleaseSoundLocal()
-    {
-        if (audioSource == null)
-            audioSource = GetComponent<AudioSource>();
-
-        if (audioSource != null && magazineReleaseSound != null)
-        {
-            audioSource.PlayOneShot(magazineReleaseSound, shootVolume);
-        }
-    }
-
-    [Rpc(SendTo.NotOwner)]
-    private void PlayMagazineReleaseSoundRpc()
-    {
-        PlayMagazineReleaseSoundLocal();
     }
 
     // ────────────────────────────────────────────────────────────────────────
