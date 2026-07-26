@@ -434,6 +434,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
             SetSubInteractablesState(isHeld || syncedIsHeld.Value);
 
+            EnsureMagazineInteractionManager(mag.gameObject);
             if (magazineSocket != null)
             {
                 StartCoroutine(SnapMagazineRoutine(mag.gameObject, magazineSocket));
@@ -467,6 +468,38 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         else if (IsOwner)
         {
             SetSyncedMagazineServerRpc(new NetworkObjectReference());
+        }
+    }
+
+    private void EnsureMagazineInteractionManager(GameObject magObj)
+    {
+        var weaponGrab = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+        UnityEngine.XR.Interaction.Toolkit.XRInteractionManager correctManager = null;
+
+        if (weaponGrab != null && weaponGrab.interactionManager != null)
+        {
+            correctManager = weaponGrab.interactionManager;
+        }
+        else if (magazineSocket != null && magazineSocket.interactionManager != null)
+        {
+            correctManager = magazineSocket.interactionManager;
+        }
+
+        if (correctManager != null)
+        {
+            if (magazineSocket != null && magazineSocket.interactionManager != correctManager)
+            {
+                magazineSocket.interactionManager = correctManager;
+            }
+
+            if (magObj != null)
+            {
+                var magGrab = magObj.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                if (magGrab != null && magGrab.interactionManager != correctManager)
+                {
+                    magGrab.interactionManager = correctManager;
+                }
+            }
         }
     }
 
@@ -638,6 +671,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             // the physics engine will pull it down and it will fall out of the world!
             if (!IsServer)
             {
+                EnsureMagazineInteractionManager(currentMagazine.gameObject);
                 var grabInteractable = currentMagazine.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (grabInteractable != null && magazineSocket != null)
                 {
@@ -761,6 +795,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         Debug.LogWarning($"[WeaponController] Attempting to socket magazine...");
 
+        EnsureMagazineInteractionManager(newMag);
         var grabInteractable = newMag.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
         if (grabInteractable != null)
         {

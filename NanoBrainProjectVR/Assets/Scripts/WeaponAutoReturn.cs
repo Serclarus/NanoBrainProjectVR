@@ -155,9 +155,13 @@ public class WeaponAutoReturn : NetworkBehaviour
                 grabInteractable.enabled = false;
                 yield return new WaitForEndOfFrame();
 
-                if (grabInteractable.interactionManager != homeSocket.interactionManager)
+                if (homeSocket.interactionManager != null)
                 {
-                    grabInteractable.interactionManager = homeSocket.interactionManager;
+                    if (grabInteractable.interactionManager != homeSocket.interactionManager)
+                    {
+                        grabInteractable.interactionManager = homeSocket.interactionManager;
+                    }
+                    SyncAllSocketsInteractionManager(homeSocket.interactionManager);
                 }
 
                 // Snap the physical position immediately
@@ -314,6 +318,26 @@ public class WeaponAutoReturn : NetworkBehaviour
             catch (System.Exception e)
             {
                 Debug.LogError($"<color=red>[WeaponAutoReturn]</color> SelectEnter failed during auto-return: {e.Message}");
+            }
+        }
+    }
+
+    private void SyncAllSocketsInteractionManager(UnityEngine.XR.Interaction.Toolkit.XRInteractionManager targetManager)
+    {
+        if (targetManager == null) return;
+        foreach (var socket in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true))
+        {
+            if (socket.interactionManager != targetManager)
+            {
+                socket.interactionManager = targetManager;
+            }
+            if (socket.hasSelection && socket.interactablesSelected.Count > 0)
+            {
+                var magGrab = socket.interactablesSelected[0].transform.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+                if (magGrab != null && magGrab.interactionManager != targetManager)
+                {
+                    magGrab.interactionManager = targetManager;
+                }
             }
         }
     }
