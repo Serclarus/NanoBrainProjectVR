@@ -433,6 +433,11 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             
             // CRITICAL FIX: The magazine just spawned into the socket. If the weapon is holstered, we need to lock it immediately!
             SetSubInteractablesState(isHeld || syncedIsHeld.Value);
+
+            if (magazineSocket != null)
+            {
+                StartCoroutine(SnapMagazineRoutine(mag.gameObject, magazineSocket));
+            }
         }
     }
 
@@ -462,6 +467,36 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         else if (IsOwner)
         {
             SetSyncedMagazineServerRpc(new NetworkObjectReference());
+        }
+    }
+
+    private IEnumerator SnapMagazineRoutine(GameObject magObj, UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor socket)
+    {
+        if (magObj == null || socket == null) yield break;
+
+        Rigidbody rb = magObj.GetComponent<Rigidbody>();
+        float timer = 1.0f; // Continuously snap for 1 second while Netcode and XRI stabilize after spawning/inserting
+
+        while (timer > 0f)
+        {
+            yield return new WaitForEndOfFrame();
+            timer -= Time.deltaTime;
+
+            if (magObj == null || socket == null || !socket.hasSelection)
+            {
+                yield break;
+            }
+
+            Transform attach = socket.attachTransform != null ? socket.attachTransform : socket.transform;
+            magObj.transform.position = attach.position;
+            magObj.transform.rotation = attach.rotation;
+
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
     }
 
