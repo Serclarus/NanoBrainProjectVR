@@ -257,6 +257,7 @@ public class WeaponAutoReturn : NetworkBehaviour
             {
                 grabInteractable.interactionManager = homeSocket.interactionManager;
             }
+            SyncAllSocketsInteractionManager(homeSocket.interactionManager);
 
             Transform attach = homeSocket.attachTransform != null ? homeSocket.attachTransform : homeSocket.transform;
             transform.position = attach.position;
@@ -325,13 +326,21 @@ public class WeaponAutoReturn : NetworkBehaviour
     private void SyncAllSocketsInteractionManager(UnityEngine.XR.Interaction.Toolkit.XRInteractionManager targetManager)
     {
         if (targetManager == null) return;
-        foreach (var socket in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true))
+        foreach (var interactable in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true))
         {
-            if (socket.interactionManager != targetManager)
+            if (interactable.interactionManager != targetManager)
             {
-                socket.interactionManager = targetManager;
+                interactable.interactionManager = targetManager;
             }
-            if (socket.hasSelection && socket.interactablesSelected.Count > 0)
+        }
+        foreach (var interactor in GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true))
+        {
+            if (interactor.interactionManager != targetManager)
+            {
+                interactor.interactionManager = targetManager;
+            }
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor socket &&
+                socket.hasSelection && socket.interactablesSelected.Count > 0)
             {
                 var magGrab = socket.interactablesSelected[0].transform.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (magGrab != null && magGrab.interactionManager != targetManager)

@@ -396,6 +396,14 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered standalone interactor '{interactor.name}' with manager '{newManager.name}'");
         }
 
+        // 3. Bind all interactables on the player (including weapons, pump grips, slides, magazines)
+        var interactables = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true);
+        foreach (var interactable in interactables)
+        {
+            interactable.interactionManager = newManager;
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered interactable '{interactable.name}' with manager '{newManager.name}'");
+        }
+
         // Re-enable locomotion providers and character controllers if we are in a gameplay scene
         string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (activeSceneName != "MainMenu")
