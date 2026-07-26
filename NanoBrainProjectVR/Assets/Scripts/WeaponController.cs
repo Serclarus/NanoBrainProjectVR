@@ -201,6 +201,10 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             
             // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
             magazineSocket.interactableCantHoverMeshMaterial = null;
+
+            // ENFORCE XRI 3.0 native visual settings
+            magazineSocket.hoverSocketSnapping = true;
+            magazineSocket.showInteractableHoverMeshes = true;
         }
 
         if (triggerTransform != null)
@@ -567,7 +571,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (magazinePrefab != null)
         {
-            if (!interactable.transform.name.StartsWith(magazinePrefab.name))
+            // Fix for NGO Pooled objects: the name might be "MagPistol_Pooled_0" or "MagPistol(Clone)"
+            if (!interactable.transform.name.StartsWith(magazinePrefab.name) && !interactable.transform.name.Contains(magazinePrefab.name))
             {
                 return false; // Wrong type of magazine!
             }
