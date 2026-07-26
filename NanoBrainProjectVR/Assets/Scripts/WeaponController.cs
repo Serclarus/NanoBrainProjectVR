@@ -582,7 +582,7 @@ public class WeaponController : NetworkBehaviour
         if (!magazineSocket.isActiveAndEnabled || !magazineSocket.socketActive) return;
 
         Vector3 socketPos = magazineSocket.attachTransform != null ? magazineSocket.attachTransform.position : magazineSocket.transform.position;
-        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.10f); // 10cm radius
+        Collider[] nearby = Physics.OverlapSphere(socketPos, 0.04f); // 4cm radius - must be basically inserted!
         
         foreach (var col in nearby)
         {
@@ -590,26 +590,22 @@ public class WeaponController : NetworkBehaviour
 
             Magazine mag = col.GetComponentInParent<Magazine>();
             if (mag == null) mag = col.GetComponentInChildren<Magazine>();
-            if (mag != null)
+            if (mag != null && mag.gameObject != gameObject)
             {
                 var grabInteractable = mag.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
                 if (grabInteractable != null)
                 {
-                    // If CanSelect is true, it means the object is NOT held by a hand and is ready to be socketed!
-                    if (magazineSocket.CanSelect((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grabInteractable))
+                    int socketLayers = magazineSocket.interactionLayers.value;
+                    int magLayers = grabInteractable.interactionLayers.value;
+                    
+                    if ((socketLayers & magLayers) != 0)
                     {
-                        int socketLayers = magazineSocket.interactionLayers.value;
-                        int magLayers = grabInteractable.interactionLayers.value;
-                        
-                        if ((socketLayers & magLayers) != 0)
+                        var manager = magazineSocket.interactionManager;
+                        if (manager != null)
                         {
-                            var manager = magazineSocket.interactionManager;
-                            if (manager != null)
-                            {
-                                Debug.LogWarning($"<color=green>[WeaponController]</color> CustomSocketUpdate caught dropped mag '{mag.gameObject.name}'! Snapping in.");
-                                manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, grabInteractable);
-                                return; // Only snap one
-                            }
+                            Debug.LogWarning($"<color=green>[WeaponController]</color> CustomSocketUpdate FORCE STEALING mag '{mag.gameObject.name}' because it was pushed perfectly into the socket!");
+                            manager.SelectEnter((UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor)magazineSocket, grabInteractable);
+                            return; // Only snap one
                         }
                     }
                 }
