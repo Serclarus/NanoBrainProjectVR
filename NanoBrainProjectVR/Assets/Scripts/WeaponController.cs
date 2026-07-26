@@ -201,10 +201,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             
             // Fix: Disable the annoying red ghost meshes when you hold the wrong object near the mag socket!
             magazineSocket.interactableCantHoverMeshMaterial = null;
-
-            // ENFORCE XRI 3.0 native visual settings
-            magazineSocket.hoverSocketSnapping = true;
-            magazineSocket.showInteractableHoverMeshes = true;
         }
 
         if (triggerTransform != null)
@@ -551,17 +547,17 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
     // --- XR SOCKET FILTERING ---
     public bool canProcess => true;
 
-    public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable interactable)
+    public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable)
     {
         return IsMagazineAllowed(interactable);
     }
 
-    public bool Process(UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor interactor, UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable interactable)
+    public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
     {
         return IsMagazineAllowed(interactable);
     }
 
-    private bool IsMagazineAllowed(UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable interactable)
+    private bool IsMagazineAllowed(IXRInteractable interactable)
     {
         Magazine mag = interactable.transform.GetComponent<Magazine>();
         if (mag == null) 
@@ -571,8 +567,7 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (magazinePrefab != null)
         {
-            // Fix for NGO Pooled objects: the name might be "MagPistol_Pooled_0" or "MagPistol(Clone)"
-            if (!interactable.transform.name.StartsWith(magazinePrefab.name) && !interactable.transform.name.Contains(magazinePrefab.name))
+            if (!interactable.transform.name.StartsWith(magazinePrefab.name))
             {
                 return false; // Wrong type of magazine!
             }

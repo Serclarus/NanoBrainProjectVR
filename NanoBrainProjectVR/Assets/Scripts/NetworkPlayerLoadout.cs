@@ -23,26 +23,19 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    public NetworkVariable<Unity.Collections.FixedString32Bytes> requestedScene = new NetworkVariable<Unity.Collections.FixedString32Bytes>(
-        "",
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner);
-
     private bool isInitialized = false;
+
+    private static bool isGlobalListenerRegistered = false;
+    private static bool isTogglePauseRegistered = false;
 
     public override void OnNetworkSpawn()
     {
-        // Register this on EVERYONE so the Server/Host can listen to direct connection messages
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        if (!isGlobalListenerRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("GlobalRequest_SceneChange", OnGlobalSceneChangeRequest);
+            isGlobalListenerRegistered = true;
         }
 
-        if (IsServer)
-        {
-            requestedScene.OnValueChanged += OnSceneRequested;
-        }
-        
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
         // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
         if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
@@ -62,30 +55,13 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" OwnerClientId: {OwnerClientId}" +
                   $" Platform: {Application.platform}");
 
-        if (IsOwner)
+        if (IsOwner && !isTogglePauseRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
-            
-            // Listen to Scene Events to force drop items right before a scene change!
-            if (NetworkManager.Singleton.SceneManager != null)
-            {
-                NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
-            }
+            isTogglePauseRegistered = true;
         }
 
         InitializePlayer();
-    }
-
-    // Merged into the main OnNetworkDespawn at the bottom
-
-    private void OnSceneEvent(SceneEvent sceneEvent)
-    {
-        // When ANY scene load begins across the network, immediately force drop all held items!
-        if (sceneEvent.SceneEventType == SceneEventType.Load)
-        {
-            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Network Scene Load detected! Forcing drop of all items...");
-            ForceDropAllInteractables();
-        }
     }
 
 
@@ -117,61 +93,15 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (isVR)
             {
-                // CRITICAL MULTIPLAYER VR FIX:
-                // Find and destroy any pre-placed local VR Rigs in the scene to prevent conflicts.
-                // When we spawn as the network player, we are the new active VR Rig.
-                // Any other active XRInteractionManagers or XR Rigs in the scene must be destroyed.
-                var activeManagers = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
-                foreach (var manager in activeManagers)
-                {
-                    if (manager != null && !manager.transform.IsChildOf(transform) && manager.transform != transform)
-                    {
-                        Transform rootToDestroy = manager.transform;
-                        var origin = manager.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
-                        if (origin != null)
-                        {
-                            rootToDestroy = origin.transform;
-                        }
-                        
-                        var duplicateInputManagers = rootToDestroy.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(true);
-                        foreach (var dim in duplicateInputManagers)
-                        {
-                            dim.actionAssets = new System.Collections.Generic.List<UnityEngine.InputSystem.InputActionAsset>();
-                        }
-                        
-                        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Destroying duplicate pre-placed local VR Rig/Manager: {rootToDestroy.gameObject.name}");
-                        UnityEngine.Object.Destroy(rootToDestroy.gameObject);
-                    }
-                }
-
-                // Re-bind all World Space Canvases to our new camera
-                var localCamera = GetComponentInChildren<Camera>(true);
-                if (localCamera != null)
-                {
-                    var canvases = UnityEngine.Object.FindObjectsByType<Canvas>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
-                    foreach (var canvas in canvases)
-                    {
-                        if (canvas.renderMode == RenderMode.WorldSpace)
-                        {
-                            canvas.worldCamera = localCamera;
-                            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-bound WorldSpace Canvas '{canvas.name}' event camera to local player camera.");
-                        }
-                    }
-                }
-
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
                 SpawnWeaponsForClient(OwnerClientId);
 
-                // Bind interactors immediately for the Main Menu/Lobby scene!
-                StartCoroutine(RebuildInteractionManagerRoutine());
-
-                // Dynamically attach detailed diagnostics loop
-                gameObject.AddComponent<VRLastResortDiagnostics>();
-                Debug.Log("<color=green>[NetworkPlayerLoadout]</color> Dynamically attached VRLastResortDiagnostics to player.");
-
-                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnUnitySceneLoaded;
+                if (NetworkManager.Singleton.SceneManager != null)
+                {
+                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+                }
             }
             else
             {
@@ -299,25 +229,11 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnUnitySceneLoaded;
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
-            if (IsOwner)
-            {
-                NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
-            }
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
-
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
-        {
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("GlobalRequest_SceneChange");
-        }
-
-        if (IsServer)
-        {
-            requestedScene.OnValueChanged -= OnSceneRequested;
-        }
 
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
@@ -327,9 +243,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    private void OnUnitySceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode)
+    private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Native Scene Loaded: {scene.name}. Teleporting and rebuilding interaction manager.");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
         
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
@@ -342,112 +258,29 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private System.Collections.IEnumerator RebuildInteractionManagerRoutine()
     {
-        // Wait for the new scene to fully settle
+        // Wait briefly for the new scene's Interaction Manager to finish initializing
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
-        // Find the active interaction manager (preferring the one on the player, fallback to scene)
-        var newManager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
-        if (newManager == null)
+        var newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+        if (newManager != null)
         {
-            newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-        }
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager. Rebuilding socket links...");
 
-        if (newManager == null)
-        {
-            Debug.LogError("<color=red>[NetworkPlayerLoadout]</color> No XRInteractionManager found anywhere!");
-            yield break;
-        }
-
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Binding interactors and weapons to manager '{newManager.name}'");
-
-        // 1. Find and bind all Interaction Groups on the player first
-        var groups = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRInteractionGroup>(true);
-        foreach (var group in groups)
-        {
-            group.interactionManager = newManager;
-            if (group.enabled)
+            // Re-link all sockets on the player
+            var sockets = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true);
+            foreach (var socket in sockets)
             {
-                group.enabled = false;
-                group.enabled = true;
+                socket.interactionManager = newManager;
             }
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered XRInteractionGroup '{group.name}' with manager '{newManager.name}'");
-        }
 
-        // 2. Bind all interactors on the player (including NearFarInteractor)
-        var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
-        foreach (var interactor in interactors)
-        {
-            interactor.interactionManager = newManager;
-
-            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRGroupMember gm && gm.containingGroup != null)
+            // Command all owned weapons to violently re-socket themselves using the new manager!
+            var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
+            foreach (var weapon in weapons)
             {
-                // Toggle enabled state to force registration refresh within group (only if not a socket and has no active selection)
-                if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
+                if (weapon.IsOwner)
                 {
-                    interactor.enabled = false;
-                    interactor.enabled = true;
+                    weapon.ForceReturnToSocket();
                 }
-                continue;
-            }
-
-            // Only toggle enabled state on standalone interactors if they are NOT sockets and have no active selection!
-            // Toggling enabled on an XRSocketInteractor causes it to drop its socketed items (like magazines/weapons)!
-            if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
-            {
-                interactor.enabled = false;
-                interactor.enabled = true;
-            }
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered standalone interactor '{interactor.name}' with manager '{newManager.name}'");
-        }
-
-        // 3. Bind all persistent interactables (weapons, magazines, items)
-        var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
-        foreach (var interactable in allInteractables)
-        {
-            interactable.interactionManager = newManager;
-
-            // NEVER toggle enabled state if the interactable is currently selected or socketed!
-            // Toggling enabled on a socketed item (like a magazine in a gun or pouch) triggers OnDisable(), which breaks socket selection!
-            if (!interactable.isSelected && interactable.enabled)
-            {
-                interactable.enabled = false;
-                interactable.enabled = true;
-            }
-        }
-
-        // Re-enable locomotion providers and character controllers if we are in a gameplay scene
-        string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        if (activeSceneName != "MainMenu")
-        {
-            var locomotionProviders = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true);
-            foreach (var provider in locomotionProviders)
-            {
-                if (provider != null)
-                {
-                    provider.enabled = true;
-                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled LocomotionProvider '{provider.name}' for scene '{activeSceneName}'");
-                }
-            }
-
-            var charControllers = GetComponentsInChildren<CharacterController>(true);
-            foreach (var cc in charControllers)
-            {
-                if (cc != null)
-                {
-                    cc.enabled = true;
-                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled CharacterController '{cc.name}' for scene '{activeSceneName}'");
-                }
-            }
-        }
-
-        // ── Re-socket weapons into holsters ──
-        yield return null;
-        var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
-        foreach (var weapon in weapons)
-        {
-            if (weapon.IsOwner)
-            {
-                weapon.ForceReturnToSocket();
             }
         }
     }
@@ -570,20 +403,6 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
         }
     }
-
-    // --- NEW: SCENE CHANGE RPC ---
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestSceneChangeServerRpc(string sceneName)
-    {
-        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {sceneName}. Loading now...");
-        
-        if (NetworkManager.Singleton.SceneManager != null)
-        {
-            // The Server actually executes the scene change for everyone
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
-        }
-    }
-
     // --- CUSTOM COMMAND RECEIVERS ---
     private void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
     {
@@ -602,212 +421,52 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Game Paused.");
 
             // Force drop held weapons so they auto-return to holsters!
-            ForceDropAllInteractables();
+            ForceDropWeapons();
         }
     }
 
-    private void ForceDropAllInteractables()
+    private void ForceDropWeapons()
     {
-        var grabInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
-        foreach (var grab in grabInteractables)
+        var weapons = FindObjectsByType<WeaponController>(FindObjectsSortMode.None);
+        foreach (var weapon in weapons)
         {
-            if (grab != null && grab.isSelected && grab.interactorsSelecting.Count > 0)
+            var interactable = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+            if (interactable != null && interactable.isSelected)
             {
-                // Must iterate backward when modifying collections or cancelling selections
-                for (int i = grab.interactorsSelecting.Count - 1; i >= 0; i--)
+                if (interactable.interactionManager != null)
                 {
-                    var interactor = grab.interactorsSelecting[i];
-                    
-                    // Exclude sockets so magazines don't fall out of guns, and attachments don't break!
-                    if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
-                    
-                    if (grab.interactionManager != null)
-                    {
-                        grab.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grab);
-                        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop object: {grab.gameObject.name}");
-                    }
+                    interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
+                    Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
                 }
             }
-        }
-    }
-
-    private void OnSceneRequested(Unity.Collections.FixedString32Bytes previousValue, Unity.Collections.FixedString32Bytes newValue)
-    {
-        if (IsServer && !string.IsNullOrEmpty(newValue.ToString()))
-        {
-            Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {newValue.ToString()} via NetworkVariable! Executing...");
-            if (NetworkManager.Singleton.SceneManager != null)
-            {
-                NetworkManager.Singleton.SceneManager.LoadScene(newValue.ToString(), UnityEngine.SceneManagement.LoadSceneMode.Single);
-            }
-            requestedScene.Value = ""; // Reset
         }
     }
 
     // THIS METHOD RUNS ON THE PC HOST VIA DIRECT MESSAGING EXTRACTION
-    private void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
+    private static void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
     {
         messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
         string sceneToLoad = sceneNameBytes.ToString();
 
-        Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> CRITICAL: Bypassed scene-sync constraint! Received direct scene change request for: {sceneToLoad}");
-
-        bool isListen = NetworkManager.Singleton.IsListening;
-        bool hasSceneMgr = (NetworkManager.Singleton.SceneManager != null);
-        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Checking conditions -> Singleton.IsListening: {isListen}, HasSceneManager: {hasSceneMgr}");
+        // Remove any null terminators just in case
+        sceneToLoad = sceneToLoad.Trim('\0', ' ');
 
         // Use the EXACT same condition that OperatorDashboard uses successfully
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.SceneManager != null)
         {
-            var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
-            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> LoadScene result for {sceneToLoad}: {status}");
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestSceneChangeServerRpc(string sceneName)
+    {
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Received ServerRpc request to load scene: {sceneName}");
+        bool isHostOrOwner = NetworkManager.Singleton.IsServer || (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.CurrentSessionOwner);
+
+        if (isHostOrOwner && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
-
-public class VRLastResortDiagnostics : MonoBehaviour
-{
-    private void Start()
-    {
-        StartCoroutine(DiagnosticLoop());
-    }
-
-    private System.Collections.IEnumerator DiagnosticLoop()
-    {
-        Debug.Log("<color=cyan>[VRDiagnostics]</color> Started detailed VR diagnostics loop.");
-        yield return new UnityEngine.WaitForSeconds(2f); // Wait for scene to settle
-
-        while (true)
-        {
-            try
-            {
-                RunDiagnostics();
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"<color=red>[VRDiagnostics]</color> Exception during diagnostics: {e.Message}\n{e.StackTrace}");
-            }
-            yield return new UnityEngine.WaitForSeconds(3f); // Repeat every 3 seconds
-        }
-    }
-
-    private void RunDiagnostics()
-    {
-        Debug.Log("<color=yellow>================= VR RUNTIME DIAGNOSTICS =================</color>");
-        Debug.Log($"[Scene Info] Active Scene: '{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}' | Diagnostics Script Scene: '{gameObject.scene.name}'");
-
-        // 1. Check Active XRInteractionManager
-        var managers = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        Debug.Log($"[Manager Info] Found {managers.Length} XRInteractionManager(s) in scene:");
-        foreach (var mgr in managers)
-        {
-            Debug.Log($" - Manager Name: '{mgr.gameObject.name}' | Active: {mgr.gameObject.activeInHierarchy} | Enabled: {mgr.enabled} | Scene: {mgr.gameObject.scene.name}");
-        }
-
-        var activeManager = Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-        if (activeManager == null)
-        {
-            Debug.LogError("[Manager Info] CRITICAL: No active XRInteractionManager found!");
-            return;
-        }
-
-        // 2. Query Manager's registered list
-        var registeredInteractors = new System.Collections.Generic.List<UnityEngine.XR.Interaction.Toolkit.Interactors.IXRInteractor>();
-        activeManager.GetRegisteredInteractors(registeredInteractors);
-        Debug.Log($"[Manager Registrations] Registered Interactors in '{activeManager.name}' ({registeredInteractors.Count}):");
-        foreach (var ri in registeredInteractors)
-        {
-            if (ri is MonoBehaviour mb)
-            {
-                Debug.Log($"   * Interactor: '{mb.gameObject.name}' | Type: {ri.GetType().Name} | Enabled: {mb.enabled}");
-            }
-        }
-
-        var registeredInteractables = new System.Collections.Generic.List<UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable>();
-        activeManager.GetRegisteredInteractables(registeredInteractables);
-        Debug.Log($"[Manager Registrations] Registered Interactables in '{activeManager.name}' ({registeredInteractables.Count}):");
-        foreach (var ri in registeredInteractables)
-        {
-            if (ri is MonoBehaviour mb)
-            {
-                Debug.Log($"   * Interactable: '{mb.gameObject.name}' | Type: {ri.GetType().Name} | Enabled: {mb.enabled}");
-            }
-        }
-
-        // 3. Inspect Local Interactors (Hands/Rays/Sockets on this player)
-        var playerInteractors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
-        Debug.Log($"[Local Player Interactors] Found {playerInteractors.Length} interactors on local player rig:");
-        foreach (var interactor in playerInteractors)
-        {
-            string managerStr = interactor.interactionManager != null ? interactor.interactionManager.gameObject.name : "NULL";
-            bool isRegistered = registeredInteractors.Contains(interactor);
-            
-            // Check targets
-            string hoverTargetsStr = "None";
-            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor hoverInteractor)
-            {
-                var hovers = hoverInteractor.interactablesHovered;
-                if (hovers != null && hovers.Count > 0)
-                {
-                    var names = new System.Collections.Generic.List<string>();
-                    foreach (var h in hovers)
-                    {
-                        if (h is MonoBehaviour mb) names.Add(mb.gameObject.name);
-                    }
-                    hoverTargetsStr = string.Join(", ", names);
-                }
-            }
-
-            string selectTargetsStr = "None";
-            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor selectInteractor)
-            {
-                var selects = selectInteractor.interactablesSelected;
-                if (selects != null && selects.Count > 0)
-                {
-                    var names = new System.Collections.Generic.List<string>();
-                    foreach (var s in selects)
-                    {
-                        if (s is MonoBehaviour mb) names.Add(mb.gameObject.name);
-                    }
-                    selectTargetsStr = string.Join(", ", names);
-                }
-            }
-
-            Debug.Log($"   * Name: '{interactor.gameObject.name}' | Type: {interactor.GetType().Name}\n" +
-                      $"     Enabled: {interactor.enabled} | Assigned Manager: '{managerStr}' | Registered: {isRegistered}\n" +
-                      $"     Hovering: [{hoverTargetsStr}] | Selecting: [{selectTargetsStr}]\n" +
-                      $"     Local Position: {interactor.transform.localPosition} | Local Rotation: {interactor.transform.localRotation.eulerAngles}");
-
-            // Additional Ray Interactor specific check
-            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor rayInteractor)
-            {
-                if (rayInteractor.TryGetHitInfo(out Vector3 hitPosition, out Vector3 hitNormal, out int positionInLine, out bool isValidTarget))
-                {
-                    Debug.Log($"     [Ray Interactor] Ray is HIT! Target position: {hitPosition} | Valid Target: {isValidTarget}");
-                }
-                else
-                {
-                    Debug.Log("     [Ray Interactor] Ray is NOT hitting any physics colliders.");
-                }
-            }
-        }
-
-        // 4. Check global inputs & actions
-        Debug.Log("[Input Tracking Check]");
-        var inputManagers = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var iam in inputManagers)
-        {
-            Debug.Log($" - InputActionManager: '{iam.gameObject.name}' | Enabled: {iam.enabled}");
-            if (iam.actionAssets != null)
-            {
-                foreach (var asset in iam.actionAssets)
-                {
-                    Debug.Log($"   * Action Asset: '{asset.name}' | Enabled: {asset.enabled}");
-                }
-            }
-        }
-
-        Debug.Log("<color=yellow>==========================================================</color>");
-    }
-}
-
