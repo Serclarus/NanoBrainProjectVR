@@ -23,19 +23,26 @@ public class NetworkPlayerLoadout : NetworkBehaviour
     public bool forceVRInEditor = true;
     public NetworkVariable<bool> isVRUser = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    private bool isInitialized = false;
+    public NetworkVariable<Unity.Collections.FixedString32Bytes> requestedScene = new NetworkVariable<Unity.Collections.FixedString32Bytes>(
+        "",
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner);
 
-    private static bool isGlobalListenerRegistered = false;
-    private static bool isTogglePauseRegistered = false;
+    private bool isInitialized = false;
 
     public override void OnNetworkSpawn()
     {
-        if (!isGlobalListenerRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        // Register this on EVERYONE so the Server/Host can listen to direct connection messages
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("GlobalRequest_SceneChange", OnGlobalSceneChangeRequest);
-            isGlobalListenerRegistered = true;
         }
 
+        if (IsServer)
+        {
+            requestedScene.OnValueChanged += OnSceneRequested;
+        }
+        
         // 1. If this is a pre-placed scene object, only the server should despawn/destroy it.
         // We must defer it to the end of the frame to prevent Netcode state corruption during spawn processing.
         if (IsServer && NetworkObject != null && NetworkObject.IsSceneObject == true)
@@ -55,13 +62,30 @@ public class NetworkPlayerLoadout : NetworkBehaviour
                   $" OwnerClientId: {OwnerClientId}" +
                   $" Platform: {Application.platform}");
 
-        if (IsOwner && !isTogglePauseRegistered && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        if (IsOwner)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("OperatorCommand_TogglePause", OnTogglePauseReceived);
-            isTogglePauseRegistered = true;
+            
+            // Listen to Scene Events to force drop items right before a scene change!
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+            }
         }
 
         InitializePlayer();
+    }
+
+    // Merged into the main OnNetworkDespawn at the bottom
+
+    private void OnSceneEvent(SceneEvent sceneEvent)
+    {
+        // When ANY scene load begins across the network, immediately force drop all held items!
+        if (sceneEvent.SceneEventType == SceneEventType.Load)
+        {
+            Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Network Scene Load detected! Forcing drop of all items...");
+            ForceDropAllInteractables();
+        }
     }
 
 
@@ -93,15 +117,57 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
             if (isVR)
             {
+                // CRITICAL MULTIPLAYER VR FIX:
+                // Find and destroy any pre-placed local VR Rigs in the scene to prevent conflicts.
+                // When we spawn as the network player, we are the new active VR Rig.
+                // Any other active XRInteractionManagers or XR Rigs in the scene must be destroyed.
+                var activeManagers = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+                foreach (var manager in activeManagers)
+                {
+                    if (manager != null && !manager.transform.IsChildOf(transform) && manager.transform != transform)
+                    {
+                        Transform rootToDestroy = manager.transform;
+                        var origin = manager.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+                        if (origin != null)
+                        {
+                            rootToDestroy = origin.transform;
+                        }
+                        
+                        var duplicateInputManagers = rootToDestroy.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager>(true);
+                        foreach (var dim in duplicateInputManagers)
+                        {
+                            dim.actionAssets = new System.Collections.Generic.List<UnityEngine.InputSystem.InputActionAsset>();
+                        }
+                        
+                        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Destroying duplicate pre-placed local VR Rig/Manager: {rootToDestroy.gameObject.name}");
+                        UnityEngine.Object.Destroy(rootToDestroy.gameObject);
+                    }
+                }
+
+                // Re-bind all World Space Canvases to our new camera
+                var localCamera = GetComponentInChildren<Camera>(true);
+                if (localCamera != null)
+                {
+                    var canvases = UnityEngine.Object.FindObjectsByType<Canvas>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+                    foreach (var canvas in canvases)
+                    {
+                        if (canvas.renderMode == RenderMode.WorldSpace)
+                        {
+                            canvas.worldCamera = localCamera;
+                            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-bound WorldSpace Canvas '{canvas.name}' event camera to local player camera.");
+                        }
+                    }
+                }
+
                 // VR user: spawn weapons
                 debugStatus = $"Spawning weapons for Client {OwnerClientId}!";
                 Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> {debugStatus}");
                 SpawnWeaponsForClient(OwnerClientId);
 
-                if (NetworkManager.Singleton.SceneManager != null)
-                {
-                    NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
-                }
+                // Bind interactors immediately for the Main Menu/Lobby scene!
+                StartCoroutine(RebuildInteractionManagerRoutine());
+
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnUnitySceneLoaded;
             }
             else
             {
@@ -229,11 +295,25 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnUnitySceneLoaded;
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
+            if (IsOwner)
+            {
+                NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+            }
         }
         isVRUser.OnValueChanged -= OnVRUserChanged;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("GlobalRequest_SceneChange");
+        }
+
+        if (IsServer)
+        {
+            requestedScene.OnValueChanged -= OnSceneRequested;
+        }
 
         if (IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
         {
@@ -243,9 +323,9 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    private void OnSceneLoaded(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    private void OnUnitySceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode)
     {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Scene loaded: {sceneName}. Teleporting and respawning weapons.");
+        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Native Scene Loaded: {scene.name}. Teleporting and rebuilding interaction manager.");
         
         // Teleport to the spawn point in the new scene first
         TeleportToSpawnPoint();
@@ -258,29 +338,112 @@ public class NetworkPlayerLoadout : NetworkBehaviour
 
     private System.Collections.IEnumerator RebuildInteractionManagerRoutine()
     {
-        // Wait briefly for the new scene's Interaction Manager to finish initializing
+        // Wait for the new scene to fully settle
         yield return new UnityEngine.WaitForSeconds(0.5f);
 
-        var newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
-        if (newManager != null)
+        // Find the active interaction manager (preferring the one on the player, fallback to scene)
+        var newManager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>(true);
+        if (newManager == null)
         {
-            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Found new InteractionManager. Rebuilding socket links...");
+            newManager = UnityEngine.Object.FindAnyObjectByType<UnityEngine.XR.Interaction.Toolkit.XRInteractionManager>();
+        }
 
-            // Re-link all sockets on the player
-            var sockets = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor>(true);
-            foreach (var socket in sockets)
+        if (newManager == null)
+        {
+            Debug.LogError("<color=red>[NetworkPlayerLoadout]</color> No XRInteractionManager found anywhere!");
+            yield break;
+        }
+
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Binding interactors and weapons to manager '{newManager.name}'");
+
+        // 1. Find and bind all Interaction Groups on the player first
+        var groups = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRInteractionGroup>(true);
+        foreach (var group in groups)
+        {
+            group.interactionManager = newManager;
+            if (group.enabled)
             {
-                socket.interactionManager = newManager;
+                group.enabled = false;
+                group.enabled = true;
+            }
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered XRInteractionGroup '{group.name}' with manager '{newManager.name}'");
+        }
+
+        // 2. Bind all interactors on the player (including NearFarInteractor)
+        var interactors = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor>(true);
+        foreach (var interactor in interactors)
+        {
+            interactor.interactionManager = newManager;
+
+            if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.IXRGroupMember gm && gm.containingGroup != null)
+            {
+                // Toggle enabled state to force registration refresh within group (only if not a socket and has no active selection)
+                if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
+                {
+                    interactor.enabled = false;
+                    interactor.enabled = true;
+                }
+                continue;
             }
 
-            // Command all owned weapons to violently re-socket themselves using the new manager!
-            var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
-            foreach (var weapon in weapons)
+            // Only toggle enabled state on standalone interactors if they are NOT sockets and have no active selection!
+            // Toggling enabled on an XRSocketInteractor causes it to drop its socketed items (like magazines/weapons)!
+            if (!interactor.hasSelection && !(interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) && interactor.enabled)
             {
-                if (weapon.IsOwner)
+                interactor.enabled = false;
+                interactor.enabled = true;
+            }
+            Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-registered standalone interactor '{interactor.name}' with manager '{newManager.name}'");
+        }
+
+        // 3. Bind all persistent interactables (weapons, magazines, items)
+        var allInteractables = UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(UnityEngine.FindObjectsSortMode.None);
+        foreach (var interactable in allInteractables)
+        {
+            interactable.interactionManager = newManager;
+
+            // NEVER toggle enabled state if the interactable is currently selected or socketed!
+            // Toggling enabled on a socketed item (like a magazine in a gun or pouch) triggers OnDisable(), which breaks socket selection!
+            if (!interactable.isSelected && interactable.enabled)
+            {
+                interactable.enabled = false;
+                interactable.enabled = true;
+            }
+        }
+
+        // Re-enable locomotion providers and character controllers if we are in a gameplay scene
+        string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (activeSceneName != "MainMenu")
+        {
+            var locomotionProviders = GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true);
+            foreach (var provider in locomotionProviders)
+            {
+                if (provider != null)
                 {
-                    weapon.ForceReturnToSocket();
+                    provider.enabled = true;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled LocomotionProvider '{provider.name}' for scene '{activeSceneName}'");
                 }
+            }
+
+            var charControllers = GetComponentsInChildren<CharacterController>(true);
+            foreach (var cc in charControllers)
+            {
+                if (cc != null)
+                {
+                    cc.enabled = true;
+                    Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Re-enabled CharacterController '{cc.name}' for scene '{activeSceneName}'");
+                }
+            }
+        }
+
+        // ── Re-socket weapons into holsters ──
+        yield return null;
+        var weapons = UnityEngine.Object.FindObjectsByType<WeaponAutoReturn>(UnityEngine.FindObjectsSortMode.None);
+        foreach (var weapon in weapons)
+        {
+            if (weapon.IsOwner)
+            {
+                weapon.ForceReturnToSocket();
             }
         }
     }
@@ -403,6 +566,20 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.LogError($"<color=red>[NetworkPlayerLoadout]</color> {debugStatus}\n{e.StackTrace}");
         }
     }
+
+    // --- NEW: SCENE CHANGE RPC ---
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestSceneChangeServerRpc(string sceneName)
+    {
+        Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {sceneName}. Loading now...");
+        
+        if (NetworkManager.Singleton.SceneManager != null)
+        {
+            // The Server actually executes the scene change for everyone
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    }
+
     // --- CUSTOM COMMAND RECEIVERS ---
     private void OnTogglePauseReceived(ulong senderId, FastBufferReader messagePayload)
     {
@@ -421,52 +598,66 @@ public class NetworkPlayerLoadout : NetworkBehaviour
             Debug.Log($"<color=green>[NetworkPlayerLoadout]</color> Game Paused.");
 
             // Force drop held weapons so they auto-return to holsters!
-            ForceDropWeapons();
+            ForceDropAllInteractables();
         }
     }
 
-    private void ForceDropWeapons()
+    private void ForceDropAllInteractables()
     {
-        var weapons = FindObjectsByType<WeaponController>(FindObjectsSortMode.None);
-        foreach (var weapon in weapons)
+        var grabInteractables = FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>(FindObjectsSortMode.None);
+        foreach (var grab in grabInteractables)
         {
-            var interactable = weapon.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
-            if (interactable != null && interactable.isSelected)
+            if (grab != null && grab.isSelected && grab.interactorsSelecting.Count > 0)
             {
-                if (interactable.interactionManager != null)
+                // Must iterate backward when modifying collections or cancelling selections
+                for (int i = grab.interactorsSelecting.Count - 1; i >= 0; i--)
                 {
-                    interactable.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)interactable);
-                    Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop weapon: {weapon.gameObject.name} due to Pause.");
+                    var interactor = grab.interactorsSelecting[i];
+                    
+                    // Exclude sockets so magazines don't fall out of guns, and attachments don't break!
+                    if (interactor is UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor) continue;
+                    
+                    if (grab.interactionManager != null)
+                    {
+                        grab.interactionManager.CancelInteractableSelection((UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable)grab);
+                        Debug.Log($"<color=yellow>[NetworkPlayerLoadout]</color> Forced player to drop object: {grab.gameObject.name}");
+                    }
                 }
             }
         }
     }
 
+    private void OnSceneRequested(Unity.Collections.FixedString32Bytes previousValue, Unity.Collections.FixedString32Bytes newValue)
+    {
+        if (IsServer && !string.IsNullOrEmpty(newValue.ToString()))
+        {
+            Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> VR Client requested scene change to: {newValue.ToString()} via NetworkVariable! Executing...");
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(newValue.ToString(), UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            requestedScene.Value = ""; // Reset
+        }
+    }
+
     // THIS METHOD RUNS ON THE PC HOST VIA DIRECT MESSAGING EXTRACTION
-    private static void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
+    private void OnGlobalSceneChangeRequest(ulong senderId, FastBufferReader messagePayload)
     {
         messagePayload.ReadValueSafe(out Unity.Collections.FixedString32Bytes sceneNameBytes);
         string sceneToLoad = sceneNameBytes.ToString();
 
-        // Remove any null terminators just in case
-        sceneToLoad = sceneToLoad.Trim('\0', ' ');
+        Debug.Log($"<color=magenta>[NetworkPlayerLoadout]</color> CRITICAL: Bypassed scene-sync constraint! Received direct scene change request for: {sceneToLoad}");
+
+        bool isListen = NetworkManager.Singleton.IsListening;
+        bool hasSceneMgr = (NetworkManager.Singleton.SceneManager != null);
+        Debug.Log($"<color=orange>[NetworkPlayerLoadout]</color> Checking conditions -> Singleton.IsListening: {isListen}, HasSceneManager: {hasSceneMgr}");
 
         // Use the EXACT same condition that OperatorDashboard uses successfully
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.SceneManager != null)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestSceneChangeServerRpc(string sceneName)
-    {
-        Debug.Log($"<color=cyan>[NetworkPlayerLoadout]</color> Received ServerRpc request to load scene: {sceneName}");
-        bool isHostOrOwner = NetworkManager.Singleton.IsServer || (NetworkManager.Singleton.LocalClientId == NetworkManager.Singleton.CurrentSessionOwner);
-
-        if (isHostOrOwner && NetworkManager.Singleton.SceneManager != null)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            var status = NetworkManager.Singleton.SceneManager.LoadScene(sceneToLoad, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 }
+
+
