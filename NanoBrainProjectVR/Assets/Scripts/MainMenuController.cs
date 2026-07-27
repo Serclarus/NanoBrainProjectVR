@@ -23,7 +23,7 @@ public class MainMenuController : MonoBehaviour
     
     // Safety timer to prevent accidental double-clicks from loading the scene instantly
     private float timeWhenPreviewed = -10f;
-    private float previewLockDuration = 1.5f; // Must wait 1.5 seconds after previewing before you can click Start
+    private float previewLockDuration = 0.75f; // Must wait 0.75 seconds after previewing before you can click Start
     
     // Track the currently active 3D map so we can turn it off
     private GameObject currentlyActivePreview;

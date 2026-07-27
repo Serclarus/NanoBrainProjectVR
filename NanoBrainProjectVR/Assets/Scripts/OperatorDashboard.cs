@@ -105,7 +105,7 @@ public class OperatorDashboard : MonoBehaviour
         panelRT.anchorMax = new Vector2(0, 1);
         panelRT.pivot = new Vector2(0, 1);
         panelRT.anchoredPosition = new Vector2(15, -15);
-        panelRT.sizeDelta = new Vector2(300, 480);
+        panelRT.sizeDelta = new Vector2(300, 280);
 
         // Add a Title
         var titleTxt = CreateText(panelObj.transform, "OPERATOR DASHBOARD", new Vector2(0, -25), 18, 280, 40);
@@ -136,12 +136,7 @@ public class OperatorDashboard : MonoBehaviour
         CreateButton(panelObj.transform, "Reset Map", new Vector2(leftX, -220f), btnWidth, btnHeight, ResetCurrentMap);
         CreateButton(panelObj.transform, "Pause Game", new Vector2(rightX, -220f), btnWidth, btnHeight, TogglePause);
 
-        // ROW 4: FORCE Spawn
-        CreateButton(panelObj.transform, "FORCE Spawn", new Vector2(leftX, -275f), btnWidth, btnHeight, ForceSpawnWeaponsForVR);
-
-        // ROW 5: Refill Mag and Load Shotgun
-        CreateButton(panelObj.transform, "Refill Mag", new Vector2(leftX, -320f), btnWidth, btnHeight, RefillMags);
-        CreateButton(panelObj.transform, "Load Shotgun", new Vector2(rightX, -320f), btnWidth, btnHeight, LoadShotgun);
+        // FORCE Spawn, Refill Mag, and Load Shotgun buttons removed per user request
 
         // DIAGNOSTIC LOGS (Removed per user request)
 

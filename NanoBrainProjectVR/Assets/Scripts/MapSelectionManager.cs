@@ -53,7 +53,7 @@ public class MapSelectionManager : MonoBehaviour
     // Safety and State
     private int currentlyPreviewedIndex = -1;
     private float timeWhenPreviewed = -10f;
-    private float previewLockDuration = 1.5f; // Wait 1.5s after preview before "Start" works
+    private float previewLockDuration = 0.75f; // Wait 0.75s after preview before "Start" works
 
     private void Start()
     {
