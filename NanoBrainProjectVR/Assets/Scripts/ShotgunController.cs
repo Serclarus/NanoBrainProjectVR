@@ -599,10 +599,15 @@ public class ShotgunController : NetworkBehaviour
     // PUMP ACTION LOGIC
     // ────────────────────────────────────────────────────────────────────────
 
+    private float lastPumpActionTime = 0f;
+    private const float PUMP_ACTION_COOLDOWN = 0.2f;
+
     // Call this via UnityEvent on the TwoHandGrabInteractable!
     public void OnPumpPulledBack()
     {
         if (IsSpawned && !IsOwner) return;
+        if (Time.time - lastPumpActionTime < PUMP_ACTION_COOLDOWN) return;
+        lastPumpActionTime = Time.time;
 
         if (chamberState.Value == ChamberState.SpentShell || chamberState.Value == ChamberState.LiveRound)
         {
@@ -620,6 +625,8 @@ public class ShotgunController : NetworkBehaviour
     public void OnPumpPushedForward()
     {
         if (IsSpawned && !IsOwner) return;
+        if (Time.time - lastPumpActionTime < PUMP_ACTION_COOLDOWN) return;
+        lastPumpActionTime = Time.time;
 
         if (chamberState.Value == ChamberState.Empty && currentAmmo.Value > 0)
         {

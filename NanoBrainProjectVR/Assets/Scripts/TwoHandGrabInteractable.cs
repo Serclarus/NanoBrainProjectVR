@@ -41,6 +41,7 @@ public class TwoHandGrabInteractable : XRGrabInteractable
 
     private bool hasPumpedBack = false;
     private bool hasPumpedForward = true; // Assume it starts forward!
+    private float lastPumpEventTime = 0f;
 
     /// <summary>
     /// Checks if the object is currently held by both hands.
@@ -158,24 +159,29 @@ public class TwoHandGrabInteractable : XRGrabInteractable
                         );
                     }
 
-                    // Fire events when it hits the limits!
-                    float pumpThreshold = 0.035f;
-                    if (Mathf.Abs(clampedZ - pumpBackZ) < pumpThreshold && !hasPumpedBack)
+                    // Fire events when it hits the limits (only during Dynamic update phase with debounce cooldown!)
+                    if (updatePhase == XRInteractionUpdateOrder.UpdatePhase.Dynamic && Time.time - lastPumpEventTime >= 0.25f)
                     {
-                        hasPumpedBack = true;
-                        hasPumpedForward = false;
-                        OnPumpPulledBack?.Invoke();
-                    }
-                    else if (Mathf.Abs(clampedZ - pumpForwardZ) < pumpThreshold && !hasPumpedForward)
-                    {
-                        hasPumpedForward = true;
-                        hasPumpedBack = false;
-                        OnPumpPushedForward?.Invoke();
-
-                        // Automatically force the player to let go of the pump grip if enabled
-                        if (autoReleasePumpOnComplete && secondaryInteractor != null && secondaryGrip != null)
+                        float pumpThreshold = 0.015f;
+                        if (Mathf.Abs(clampedZ - pumpBackZ) < pumpThreshold && !hasPumpedBack)
                         {
-                            interactionManager.SelectCancel(secondaryInteractor, secondaryGrip);
+                            hasPumpedBack = true;
+                            hasPumpedForward = false;
+                            lastPumpEventTime = Time.time;
+                            OnPumpPulledBack?.Invoke();
+                        }
+                        else if (Mathf.Abs(clampedZ - pumpForwardZ) < pumpThreshold && !hasPumpedForward)
+                        {
+                            hasPumpedForward = true;
+                            hasPumpedBack = false;
+                            lastPumpEventTime = Time.time;
+                            OnPumpPushedForward?.Invoke();
+
+                            // Automatically force the player to let go of the pump grip if enabled
+                            if (autoReleasePumpOnComplete && secondaryInteractor != null && secondaryGrip != null)
+                            {
+                                interactionManager.SelectCancel(secondaryInteractor, secondaryGrip);
+                            }
                         }
                     }
                 }
