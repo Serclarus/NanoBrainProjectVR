@@ -45,7 +45,7 @@ public class BoarHuntingManager : MonoBehaviour
         BoarAI[] existingBoars = FindObjectsOfType<BoarAI>();
         foreach (BoarAI boar in existingBoars)
         {
-            RegisterBoar(boar.transform.root.gameObject);
+            RegisterBoar(GetBoarRoot(boar.gameObject));
         }
 
         StartCoroutine(SpawnRoutine());
@@ -62,6 +62,18 @@ public class BoarHuntingManager : MonoBehaviour
         {
             totalShotsFired += amount;
         }
+    }
+
+    private GameObject GetBoarRoot(GameObject obj)
+    {
+        if (obj == null) return null;
+        BoarAI ai = obj.GetComponentInParent<BoarAI>();
+        if (ai != null) return ai.gameObject;
+        ai = obj.GetComponent<BoarAI>();
+        if (ai != null) return ai.gameObject;
+        ai = obj.GetComponentInChildren<BoarAI>(true);
+        if (ai != null) return ai.gameObject;
+        return obj;
     }
 
     private IEnumerator SpawnRoutine()
@@ -117,13 +129,13 @@ public class BoarHuntingManager : MonoBehaviour
         
         // Spawn as a child of this manager so SendMessageUpwards works!
         GameObject newBoar = Instantiate(boarPrefab, chosenPoint.position, chosenPoint.rotation, this.transform);
-        RegisterBoar(newBoar.transform.root.gameObject);
+        RegisterBoar(GetBoarRoot(newBoar));
     }
 
     private void RegisterBoar(GameObject boarObj)
     {
-        GameObject rootObj = boarObj.transform.root.gameObject;
-        if (activeBoars.Contains(rootObj) || resolvedBoars.Contains(rootObj))
+        GameObject rootObj = GetBoarRoot(boarObj);
+        if (rootObj == null || activeBoars.Contains(rootObj) || resolvedBoars.Contains(rootObj))
         {
             return;
         }
@@ -159,8 +171,8 @@ public class BoarHuntingManager : MonoBehaviour
     {
         // Called via SendMessageUpwards from BoarAI
         if (gameEnded || fledBoar == null) return;
-        GameObject rootObj = fledBoar.transform.root.gameObject;
-        if (resolvedBoars.Contains(rootObj)) return;
+        GameObject rootObj = GetBoarRoot(fledBoar);
+        if (rootObj == null || resolvedBoars.Contains(rootObj)) return;
         resolvedBoars.Add(rootObj);
         fledBoars++;
         activeBoars.Remove(rootObj);
