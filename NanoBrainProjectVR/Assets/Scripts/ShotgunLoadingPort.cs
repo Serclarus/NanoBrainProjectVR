@@ -37,8 +37,8 @@ public class ShotgunLoadingPort : MonoBehaviour
                     grabItem.interactionManager.SelectCancel(grabItem.firstInteractorSelecting, grabItem);
                 }
 
-                // 2. Destroy the physical shell
-                Destroy(other.gameObject);
+                // 2. Recycle the physical shell back to the Ammo Pouch pool instead of destroying it
+                AmmoPouch.RecycleAmmo(other.gameObject);
 
                 // 3. Add the digital ammo (QoL: 1 physical shell = X digital shells)
                 int newAmmo = shotgun.currentAmmo.Value + shotgun.ammoPerShellReloaded;

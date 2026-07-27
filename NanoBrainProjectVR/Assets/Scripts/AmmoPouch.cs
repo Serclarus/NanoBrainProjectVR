@@ -433,4 +433,44 @@ public class AmmoPouch : Unity.Netcode.NetworkBehaviour, IXRSelectFilter
         
         originalMaterials.Clear();
     }
+
+    /// <summary>
+    /// Recycles pooled ammo back to the void pool instead of destroying it, allowing AmmoPouch to dispense infinite shells.
+    /// </summary>
+    public static void RecycleAmmo(GameObject ammoObj)
+    {
+        if (ammoObj == null) return;
+
+        Magazine mag = ammoObj.GetComponentInParent<Magazine>();
+        if (mag != null)
+        {
+            mag.InstantDespawn();
+            return;
+        }
+
+        Unity.Netcode.NetworkObject netObj = ammoObj.GetComponentInParent<Unity.Netcode.NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
+        {
+            netObj.transform.position = new Vector3(0, -100, 0);
+            Rigidbody rb = netObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+        else
+        {
+            ammoObj.SetActive(false);
+            ammoObj.transform.position = new Vector3(0, -100, 0);
+            Rigidbody rb = ammoObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+    }
 }
