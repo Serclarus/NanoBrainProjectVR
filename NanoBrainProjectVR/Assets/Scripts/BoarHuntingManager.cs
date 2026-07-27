@@ -30,6 +30,7 @@ public class BoarHuntingManager : MonoBehaviour
     private bool gameEnded = false;
 
     private List<GameObject> activeBoars = new List<GameObject>();
+    private HashSet<GameObject> resolvedBoars = new HashSet<GameObject>();
     private Camera mainCamera;
 
     private void Start()
@@ -66,39 +67,30 @@ public class BoarHuntingManager : MonoBehaviour
     private IEnumerator SpawnRoutine()
     {
         maxBoarsPerSession = 5;
-        
-        // 1. Wait 15 seconds, then spawn the 3rd boar unconditionally
-        yield return new WaitForSeconds(15f);
-        
-        // Only spawn the 15-second boar if we haven't already hit the limit
-        if (huntedBoars + fledBoars + activeBoars.Count < maxBoarsPerSession)
-        {
-            SpawnBoar();
-        }
 
-        // 2. Keep checking if we need to spawn more
-        while (true)
+        while (!gameEnded)
         {
-            // Clean up list just in case
             activeBoars.RemoveAll(b => b == null);
-            
+
             if (huntedBoars + fledBoars >= maxBoarsPerSession)
             {
-                break; // Game is over!
+                EndGame();
+                break;
             }
 
-            // If there's 1 or 0 boars on the map, spawn a new one to replace it
-            if (activeBoars.Count <= 1)
+            // Keep up to 2 active boars on the map at once until a total of 5 boars have spawned
+            if (activeBoars.Count < 2 && totalSpawned < maxBoarsPerSession)
             {
-                yield return new WaitForSeconds(7f);
-                
-                // Bulletproof check: If the total number of boars (dead + fled + currently alive) is less than 5, spawn a new one!
-                if (huntedBoars + fledBoars + activeBoars.Count < maxBoarsPerSession)
+                yield return new WaitForSeconds(2.5f); // Short natural delay between spawns
+
+                activeBoars.RemoveAll(b => b == null);
+                if (activeBoars.Count < 2 && totalSpawned < maxBoarsPerSession && !gameEnded)
                 {
                     SpawnBoar();
                 }
             }
-            yield return new WaitForSeconds(1f); // Check every second
+
+            yield return new WaitForSeconds(0.5f);
         }
     }
 
@@ -132,7 +124,8 @@ public class BoarHuntingManager : MonoBehaviour
             });
             
             health.onDeathEvent.AddListener(() => {
-                if (gameEnded) return;
+                if (gameEnded || resolvedBoars.Contains(boarObj)) return;
+                resolvedBoars.Add(boarObj);
                 huntedBoars++;
                 activeBoars.Remove(boarObj);
                 CheckEndCondition();
@@ -143,13 +136,10 @@ public class BoarHuntingManager : MonoBehaviour
     public void OnBoarFled(GameObject fledBoar)
     {
         // Called via SendMessageUpwards from BoarAI
-        if (gameEnded) return;
+        if (gameEnded || fledBoar == null || resolvedBoars.Contains(fledBoar)) return;
+        resolvedBoars.Add(fledBoar);
         fledBoars++;
-        // Instantly remove the boar from the active list so the spawner knows it is gone immediately!
-        if (fledBoar != null)
-        {
-            activeBoars.Remove(fledBoar);
-        }
+        activeBoars.Remove(fledBoar);
         CheckEndCondition();
     }
 

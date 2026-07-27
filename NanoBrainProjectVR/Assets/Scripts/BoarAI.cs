@@ -489,7 +489,7 @@ public class BoarAI : MonoBehaviour
 
     private System.Collections.IEnumerator FadeOutAndDestroy()
     {
-        if (isFadingOut) yield break;
+        if (isFadingOut || currentState == BoarState.Dead) yield break;
         isFadingOut = true;
         
         agent.isStopped = true;
