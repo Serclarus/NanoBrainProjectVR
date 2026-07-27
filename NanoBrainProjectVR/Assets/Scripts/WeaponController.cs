@@ -233,8 +233,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         if (shootSound != null) shootSound.LoadAudioData();
         if (dryFireSound != null) dryFireSound.LoadAudioData();
-        if (magInsertSound != null) magInsertSound.LoadAudioData();
-        if (magReleaseSound != null) magReleaseSound.LoadAudioData();
+        if (magazineInsertSound != null) magazineInsertSound.LoadAudioData();
+        if (magazineReleaseSound != null) magazineReleaseSound.LoadAudioData();
     }
 
     private void SetSubInteractablesState(bool state)
