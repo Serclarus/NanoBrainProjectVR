@@ -265,6 +265,16 @@ public class NetworkPlayerLoadout : NetworkBehaviour
         var xrOrigin = GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
         if (xrOrigin != null) xrOrigin.enabled = false;
 
+        // CRITICAL MULTIPLAYER FIX:
+        // Disable XRInputModalityManager on remote avatars so it doesn't deactivate controllers (SetActive(false)) on remote machines.
+        var modalityManager = GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.Inputs.XRInputModalityManager>(true);
+        if (modalityManager != null)
+        {
+            modalityManager.enabled = false;
+            if (modalityManager.leftController != null) modalityManager.leftController.SetActive(true);
+            if (modalityManager.rightController != null) modalityManager.rightController.SetActive(true);
+        }
+
         // CRITICAL: Destroy ALL Cameras and AudioListeners on remote avatars!
         // If we don't do this, when a remote player spawns, their camera (which is at their waist/floor level) 
         // can hijack the local VR player's rendering, making it look like the VR player dropped to waist level!
