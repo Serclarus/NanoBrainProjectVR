@@ -209,10 +209,11 @@ namespace XRMultiplayer
                 List<JointToTransformReference> fingerJoints = new();
                 JointToTransformReference currentJoint = new();
 
-                var handRoot = m_CurrentPlatformIndex == (int)XRPlatformType.Quest ? m_HandRootQuest : m_HandRootAXR;
+                bool isAXR = m_CurrentPlatformIndex == (int)XRPlatformType.AndroidXR;
+                var handRoot = isAXR ? m_HandRootAXR : m_HandRootQuest;
 
-                m_HandObjectRootQuest.SetActive(m_CurrentPlatformIndex == (int)XRPlatformType.Quest);
-                m_HandObjectRootAXR.SetActive(m_CurrentPlatformIndex == (int)XRPlatformType.AndroidXR);
+                if (m_HandObjectRootQuest != null) m_HandObjectRootQuest.SetActive(!isAXR);
+                if (m_HandObjectRootAXR != null) m_HandObjectRootAXR.SetActive(isAXR);
 
                 foreach (Transform child in handRoot)
                 {
