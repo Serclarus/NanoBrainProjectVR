@@ -119,7 +119,8 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
     [Header("Visual Effects")]
     [Tooltip("Assign the Muzzle Flash GameObject here (it should be a child of the weapon). All Particle Systems on this object and its children will be played.")]
-    public GameObject muzzleFlash; 
+    public GameObject muzzleFlash;
+    private ParticleSystem[] cachedMuzzleFlashParticles;
 
     [Header("Audio Settings")]
     [Tooltip("The AudioSource component used to play the sound")]
@@ -209,6 +210,31 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             triggerOriginalRotation = triggerTransform.localRotation;
         }
+
+        PrewarmShadersAndAudio();
+    }
+
+    private void PrewarmShadersAndAudio()
+    {
+        if (muzzleFlash != null)
+        {
+            cachedMuzzleFlashParticles = muzzleFlash.GetComponentsInChildren<ParticleSystem>(true);
+            muzzleFlash.SetActive(true);
+            if (cachedMuzzleFlashParticles != null)
+            {
+                foreach (var p in cachedMuzzleFlashParticles)
+                {
+                    p.Emit(1);
+                    p.Clear(true);
+                }
+            }
+            muzzleFlash.SetActive(false);
+        }
+
+        if (shootSound != null) shootSound.LoadAudioData();
+        if (dryFireSound != null) dryFireSound.LoadAudioData();
+        if (magInsertSound != null) magInsertSound.LoadAudioData();
+        if (magReleaseSound != null) magReleaseSound.LoadAudioData();
     }
 
     private void SetSubInteractablesState(bool state)
@@ -895,6 +921,10 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             for (int i = 0; i < shellPoolSize; i++)
             {
                 GameObject shell = Instantiate(shellPrefab, poolParent);
+                if (i == 0)
+                {
+                    shell.SetActive(true);
+                }
                 shell.SetActive(false);
                 shellPool.Enqueue(shell);
             }
@@ -1257,11 +1287,13 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         {
             muzzleFlash.SetActive(false);
             muzzleFlash.SetActive(true);
-            ParticleSystem[] pSystems = muzzleFlash.GetComponentsInChildren<ParticleSystem>();
-            foreach (ParticleSystem p in pSystems)
+            if (cachedMuzzleFlashParticles != null)
             {
-                p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                p.Play(true);
+                foreach (ParticleSystem p in cachedMuzzleFlashParticles)
+                {
+                    p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    p.Play(true);
+                }
             }
         }
 

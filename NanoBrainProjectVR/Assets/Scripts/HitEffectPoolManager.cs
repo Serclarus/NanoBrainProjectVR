@@ -52,7 +52,18 @@ public class HitEffectPoolManager : MonoBehaviour
             {
                 // Spawn at the pool manager's location.
                 GameObject effect = Instantiate(setup.effectPrefab, transform.position, Quaternion.identity, transform);
-                effect.SetActive(false); // Just keep it disabled until needed
+                if (i == 0)
+                {
+                    // WARM UP SHADERS & PARTICLE BUFFERS ON SCENE LOAD:
+                    effect.SetActive(true);
+                    ParticleSystem[] particles = effect.GetComponentsInChildren<ParticleSystem>(true);
+                    foreach (var p in particles)
+                    {
+                        p.Emit(1);
+                        p.Clear(true);
+                    }
+                }
+                effect.SetActive(false); // Disable after warming up
                 
                 objectPool.Enqueue(effect);
             }
