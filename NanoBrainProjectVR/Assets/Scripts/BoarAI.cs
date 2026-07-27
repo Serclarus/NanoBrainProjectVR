@@ -81,6 +81,12 @@ public class BoarAI : MonoBehaviour
     // Keep track of all living boars for highly performant custom avoidance!
     public static System.Collections.Generic.List<BoarAI> activeBoars = new System.Collections.Generic.List<BoarAI>();
 
+    private void Awake()
+    {
+        if (healthScript == null) healthScript = GetComponent<AnimalHealth>();
+        if (healthScript == null) healthScript = GetComponentInChildren<AnimalHealth>(true);
+    }
+
     private void OnEnable()
     {
         activeBoars.Add(this);

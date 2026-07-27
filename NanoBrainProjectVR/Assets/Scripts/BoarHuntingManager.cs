@@ -70,7 +70,21 @@ public class BoarHuntingManager : MonoBehaviour
 
         while (!gameEnded)
         {
-            activeBoars.RemoveAll(b => b == null);
+            activeBoars.RemoveAll(b => {
+                if (b == null || resolvedBoars.Contains(b)) return true;
+                BoarAI ai = b.GetComponent<BoarAI>();
+                if (ai != null && ai.currentState == BoarAI.BoarState.Dead)
+                {
+                    if (!resolvedBoars.Contains(b))
+                    {
+                        resolvedBoars.Add(b);
+                        huntedBoars++;
+                        CheckEndCondition();
+                    }
+                    return true;
+                }
+                return false;
+            });
 
             if (huntedBoars + fledBoars >= maxBoarsPerSession)
             {
@@ -83,7 +97,7 @@ public class BoarHuntingManager : MonoBehaviour
             {
                 yield return new WaitForSeconds(2.5f); // Short natural delay between spawns
 
-                activeBoars.RemoveAll(b => b == null);
+                activeBoars.RemoveAll(b => b == null || resolvedBoars.Contains(b));
                 if (activeBoars.Count < 2 && totalSpawned < maxBoarsPerSession && !gameEnded)
                 {
                     SpawnBoar();
@@ -113,9 +127,11 @@ public class BoarHuntingManager : MonoBehaviour
             totalSpawned++;
         }
 
-        // Hook into AnimalHealth. Try to use the explicit reference from BoarAI first!
         BoarAI ai = boarObj.GetComponent<BoarAI>();
-        AnimalHealth health = (ai != null && ai.healthScript != null) ? ai.healthScript : boarObj.GetComponentInChildren<AnimalHealth>();
+        AnimalHealth health = boarObj.GetComponent<AnimalHealth>();
+        if (health == null) health = boarObj.GetComponentInChildren<AnimalHealth>(true);
+        if (health == null && ai != null) health = ai.healthScript;
+        if (health == null && ai != null) health = ai.GetComponentInChildren<AnimalHealth>(true);
         
         if (health != null)
         {
