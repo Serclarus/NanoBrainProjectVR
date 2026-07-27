@@ -52,23 +52,55 @@ public class HitEffectPoolManager : MonoBehaviour
             {
                 // Spawn at the pool manager's location.
                 GameObject effect = Instantiate(setup.effectPrefab, transform.position, Quaternion.identity, transform);
-                if (i == 0)
-                {
-                    // WARM UP SHADERS & PARTICLE BUFFERS ON SCENE LOAD:
-                    effect.SetActive(true);
-                    ParticleSystem[] particles = effect.GetComponentsInChildren<ParticleSystem>(true);
-                    foreach (var p in particles)
-                    {
-                        p.Emit(1);
-                        p.Clear(true);
-                    }
-                }
-                effect.SetActive(false); // Disable after warming up
+                effect.SetActive(false);
                 
                 objectPool.Enqueue(effect);
             }
 
             poolDictionary.Add(setup.surfaceType, objectPool);
+        }
+    }
+
+    private void Start()
+    {
+        StartCoroutine(GPUWarmupHitEffectsRoutine());
+    }
+
+    private IEnumerator GPUWarmupHitEffectsRoutine()
+    {
+        // Wait 2 frames so the scene and cameras are fully initialized
+        yield return null;
+        yield return null;
+
+        foreach (var kvp in poolDictionary)
+        {
+            Queue<GameObject> pool = kvp.Value;
+            if (pool != null && pool.Count > 0)
+            {
+                GameObject effect = pool.Peek();
+                if (effect != null)
+                {
+                    Vector3 origScale = effect.transform.localScale;
+                    effect.transform.localScale = Vector3.one * 0.0001f; // microscopic
+                    effect.SetActive(true);
+
+                    ParticleSystem[] particles = effect.GetComponentsInChildren<ParticleSystem>(true);
+                    foreach (var p in particles)
+                    {
+                        p.Play(true);
+                    }
+
+                    // Let Unity's camera render 1 frame to compile the GPU shader variant
+                    yield return null;
+
+                    foreach (var p in particles)
+                    {
+                        p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    }
+                    effect.SetActive(false);
+                    effect.transform.localScale = origScale;
+                }
+            }
         }
     }
 

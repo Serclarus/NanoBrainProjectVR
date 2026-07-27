@@ -83,6 +83,7 @@ public class ShotgunController : NetworkBehaviour
 
     [Header("Visual Effects")]
     public GameObject muzzleFlash;
+    private ParticleSystem[] cachedMuzzleFlashParticles;
 
     [Header("Trigger Animation")]
     [Tooltip("The trigger bone/transform on the weapon model")]
@@ -186,6 +187,73 @@ public class ShotgunController : NetworkBehaviour
                 shell.SetActive(false);
                 shellPool.Enqueue(shell);
             }
+        }
+
+        if (muzzleFlash != null)
+        {
+            cachedMuzzleFlashParticles = muzzleFlash.GetComponentsInChildren<ParticleSystem>(true);
+        }
+
+        if (shootSound != null) shootSound.LoadAudioData();
+        if (dryFireSound != null) dryFireSound.LoadAudioData();
+
+        StartCoroutine(GPUWarmupRoutine());
+    }
+
+    private System.Collections.IEnumerator GPUWarmupRoutine()
+    {
+        yield return null;
+        yield return null;
+
+        if (muzzleFlash != null)
+        {
+            Vector3 originalScale = muzzleFlash.transform.localScale;
+            muzzleFlash.transform.localScale = Vector3.one * 0.0001f;
+            muzzleFlash.SetActive(true);
+
+            if (cachedMuzzleFlashParticles != null)
+            {
+                foreach (var p in cachedMuzzleFlashParticles)
+                {
+                    p.Play(true);
+                }
+            }
+
+            yield return null;
+
+            if (cachedMuzzleFlashParticles != null)
+            {
+                foreach (var p in cachedMuzzleFlashParticles)
+                {
+                    p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                }
+            }
+            muzzleFlash.SetActive(false);
+            muzzleFlash.transform.localScale = originalScale;
+        }
+
+        if (shellPool != null && shellPool.Count > 0)
+        {
+            GameObject shell = shellPool.Peek();
+            if (shell != null)
+            {
+                Vector3 origScale = shell.transform.localScale;
+                shell.transform.localScale = Vector3.one * 0.0001f;
+                shell.SetActive(true);
+                yield return null;
+                shell.SetActive(false);
+                shell.transform.localScale = origScale;
+            }
+        }
+
+        if (audioSource != null && shootSound != null)
+        {
+            float oldVol = audioSource.volume;
+            audioSource.volume = 0f;
+            audioSource.PlayOneShot(shootSound);
+            yield return null;
+            audioSource.Stop();
+            audioSource.volume = oldVol;
         }
     }
 
@@ -503,11 +571,13 @@ public class ShotgunController : NetworkBehaviour
         {
             muzzleFlash.SetActive(false);
             muzzleFlash.SetActive(true);
-            ParticleSystem[] pSystems = muzzleFlash.GetComponentsInChildren<ParticleSystem>();
-            foreach (ParticleSystem p in pSystems)
+            if (cachedMuzzleFlashParticles != null)
             {
-                p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                p.Play(true);
+                foreach (ParticleSystem p in cachedMuzzleFlashParticles)
+                {
+                    p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    p.Play(true);
+                }
             }
         }
         

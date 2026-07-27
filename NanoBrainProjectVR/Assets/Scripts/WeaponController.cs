@@ -219,16 +219,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
         if (muzzleFlash != null)
         {
             cachedMuzzleFlashParticles = muzzleFlash.GetComponentsInChildren<ParticleSystem>(true);
-            muzzleFlash.SetActive(true);
-            if (cachedMuzzleFlashParticles != null)
-            {
-                foreach (var p in cachedMuzzleFlashParticles)
-                {
-                    p.Emit(1);
-                    p.Clear(true);
-                }
-            }
-            muzzleFlash.SetActive(false);
         }
 
         if (shootSound != null) shootSound.LoadAudioData();
@@ -921,10 +911,6 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
             for (int i = 0; i < shellPoolSize; i++)
             {
                 GameObject shell = Instantiate(shellPrefab, poolParent);
-                if (i == 0)
-                {
-                    shell.SetActive(true);
-                }
                 shell.SetActive(false);
                 shellPool.Enqueue(shell);
             }
@@ -932,6 +918,70 @@ public class WeaponController : NetworkBehaviour, IXRHoverFilter, IXRSelectFilte
 
         // Ensure sub-interactables and magazine are properly disabled now that everything has initialized
         SetSubInteractablesState(false);
+
+        StartCoroutine(GPUWarmupRoutine());
+    }
+
+    private System.Collections.IEnumerator GPUWarmupRoutine()
+    {
+        // Wait 2 frames so the scene and cameras are fully initialized
+        yield return null;
+        yield return null;
+
+        // 1. Warm up Muzzle Flash shader on GPU for 1 actual rendered frame
+        if (muzzleFlash != null)
+        {
+            Vector3 originalScale = muzzleFlash.transform.localScale;
+            muzzleFlash.transform.localScale = Vector3.one * 0.0001f; // Virtually invisible
+            muzzleFlash.SetActive(true);
+
+            if (cachedMuzzleFlashParticles != null)
+            {
+                foreach (var p in cachedMuzzleFlashParticles)
+                {
+                    p.Play(true);
+                }
+            }
+
+            // Let camera render 1 frame so GPU compiles the shader variant
+            yield return null;
+
+            if (cachedMuzzleFlashParticles != null)
+            {
+                foreach (var p in cachedMuzzleFlashParticles)
+                {
+                    p.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                }
+            }
+            muzzleFlash.SetActive(false);
+            muzzleFlash.transform.localScale = originalScale;
+        }
+
+        // 2. Warm up Shell Casing shader & Rigidbody for 1 rendered frame
+        if (shellPool != null && shellPool.Count > 0)
+        {
+            GameObject shell = shellPool.Peek();
+            if (shell != null)
+            {
+                Vector3 origScale = shell.transform.localScale;
+                shell.transform.localScale = Vector3.one * 0.0001f;
+                shell.SetActive(true);
+                yield return null;
+                shell.SetActive(false);
+                shell.transform.localScale = origScale;
+            }
+        }
+
+        // 3. Warm up AudioSource buffer silently
+        if (audioSource != null && shootSound != null)
+        {
+            float oldVol = audioSource.volume;
+            audioSource.volume = 0f;
+            audioSource.PlayOneShot(shootSound);
+            yield return null;
+            audioSource.Stop();
+            audioSource.volume = oldVol;
+        }
     }
 
     private void TriggerSlideRecoil()
