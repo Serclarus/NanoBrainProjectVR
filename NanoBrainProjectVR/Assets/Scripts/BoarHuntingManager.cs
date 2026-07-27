@@ -45,7 +45,7 @@ public class BoarHuntingManager : MonoBehaviour
         BoarAI[] existingBoars = FindObjectsOfType<BoarAI>();
         foreach (BoarAI boar in existingBoars)
         {
-            RegisterBoar(boar.gameObject);
+            RegisterBoar(boar.transform.root.gameObject);
         }
 
         StartCoroutine(SpawnRoutine());
@@ -73,6 +73,7 @@ public class BoarHuntingManager : MonoBehaviour
             activeBoars.RemoveAll(b => {
                 if (b == null || resolvedBoars.Contains(b)) return true;
                 BoarAI ai = b.GetComponent<BoarAI>();
+                if (ai == null) ai = b.GetComponentInChildren<BoarAI>(true);
                 if (ai != null && ai.currentState == BoarAI.BoarState.Dead)
                 {
                     if (!resolvedBoars.Contains(b))
@@ -116,20 +117,25 @@ public class BoarHuntingManager : MonoBehaviour
         
         // Spawn as a child of this manager so SendMessageUpwards works!
         GameObject newBoar = Instantiate(boarPrefab, chosenPoint.position, chosenPoint.rotation, this.transform);
-        RegisterBoar(newBoar);
+        RegisterBoar(newBoar.transform.root.gameObject);
     }
 
     private void RegisterBoar(GameObject boarObj)
     {
-        if (!activeBoars.Contains(boarObj))
+        GameObject rootObj = boarObj.transform.root.gameObject;
+        if (activeBoars.Contains(rootObj) || resolvedBoars.Contains(rootObj))
         {
-            activeBoars.Add(boarObj);
-            totalSpawned++;
+            return;
         }
 
-        BoarAI ai = boarObj.GetComponent<BoarAI>();
-        AnimalHealth health = boarObj.GetComponent<AnimalHealth>();
-        if (health == null) health = boarObj.GetComponentInChildren<AnimalHealth>(true);
+        activeBoars.Add(rootObj);
+        totalSpawned++;
+
+        BoarAI ai = rootObj.GetComponent<BoarAI>();
+        if (ai == null) ai = rootObj.GetComponentInChildren<BoarAI>(true);
+
+        AnimalHealth health = rootObj.GetComponent<AnimalHealth>();
+        if (health == null) health = rootObj.GetComponentInChildren<AnimalHealth>(true);
         if (health == null && ai != null) health = ai.healthScript;
         if (health == null && ai != null) health = ai.GetComponentInChildren<AnimalHealth>(true);
         
@@ -140,10 +146,10 @@ public class BoarHuntingManager : MonoBehaviour
             });
             
             health.onDeathEvent.AddListener(() => {
-                if (gameEnded || resolvedBoars.Contains(boarObj)) return;
-                resolvedBoars.Add(boarObj);
+                if (gameEnded || resolvedBoars.Contains(rootObj)) return;
+                resolvedBoars.Add(rootObj);
                 huntedBoars++;
-                activeBoars.Remove(boarObj);
+                activeBoars.Remove(rootObj);
                 CheckEndCondition();
             });
         }
@@ -152,10 +158,12 @@ public class BoarHuntingManager : MonoBehaviour
     public void OnBoarFled(GameObject fledBoar)
     {
         // Called via SendMessageUpwards from BoarAI
-        if (gameEnded || fledBoar == null || resolvedBoars.Contains(fledBoar)) return;
-        resolvedBoars.Add(fledBoar);
+        if (gameEnded || fledBoar == null) return;
+        GameObject rootObj = fledBoar.transform.root.gameObject;
+        if (resolvedBoars.Contains(rootObj)) return;
+        resolvedBoars.Add(rootObj);
         fledBoars++;
-        activeBoars.Remove(fledBoar);
+        activeBoars.Remove(rootObj);
         CheckEndCondition();
     }
 
